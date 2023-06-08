@@ -1,15 +1,15 @@
-use wgpu::{Backends, util::DeviceExt};
+use wgpu::{util::DeviceExt, Backends};
 use winit::window::Window;
- 
-use crate::render::{VERTICES, Vertex, INDICES};
- 
+
+use crate::render::{Vertex, INDICES, VERTICES};
+
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     r: 0.1, // Pick any color you want here
     g: 0.1,
     b: 0.1,
     a: 1.0,
 };
- 
+
 pub struct State {
     pub surface: wgpu::Surface,
     pub device: wgpu::Device,
@@ -21,11 +21,11 @@ pub struct State {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
 }
- 
+
 impl State {
     pub async fn new(window: Window) -> Self {
         let size = window.inner_size();
- 
+
         // ==============================================
         // Setup backend, surface and render devce
         // ==============================================
@@ -33,13 +33,13 @@ impl State {
             backends: Backends::VULKAN,
             ..Default::default()
         });
- 
+
         let surface = unsafe {
             instance
                 .create_surface(&window)
                 .expect("Could not create window surface!")
         };
- 
+
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -48,9 +48,9 @@ impl State {
             })
             .await
             .unwrap();
- 
+
         println!("Loaded backend: {:?}", adapter.get_info().backend);
- 
+
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
@@ -60,7 +60,7 @@ impl State {
             None, // Trace path
         ))
         .unwrap();
- 
+
         // ==============================================
         //       Configure surface
         // ==============================================
@@ -72,7 +72,7 @@ impl State {
             .copied()
             .find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
- 
+
         // create surface config
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -83,9 +83,9 @@ impl State {
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
         };
- 
+
         surface.configure(&device, &config);
- 
+
         // ==============================================
         // Load and setup shaders and render pipeline.
         // ==============================================
@@ -93,7 +93,7 @@ impl State {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("assets/shader.wgsl").into()),
         });
- 
+
         // Define pipeline layout
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -101,23 +101,19 @@ impl State {
                 bind_group_layouts: &[],
                 push_constant_ranges: &[],
             });
- 
+
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[
-                    Vertex::desc(),
-                ],
+                buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
- 
                 module: &shader,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
- 
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
@@ -143,23 +139,19 @@ impl State {
             },
             multiview: None,
         });
- 
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
- 
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
- 
+
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
         Self {
             window,
             surface,
@@ -172,8 +164,9 @@ impl State {
             index_buffer,
         }
     }
- 
+
     pub fn window(&self) -> &Window {
         &self.window
     }
 }
+

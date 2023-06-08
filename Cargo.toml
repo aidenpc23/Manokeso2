@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bytemuck = "1.13.1"
+bytemuck = {version="1.13.1", features=["derive"]}
 env_logger = "0.10.0"
 log = "0.4.18"
 pollster = "0.3.0"
