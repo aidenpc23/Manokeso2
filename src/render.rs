@@ -64,11 +64,7 @@ impl State {
         output.present();
     }
 
-    /// Function: draw
-    ///
-    /// Summary:
-    ///  Every frame of the game draws to the screen.
-    ///
+    /// Uses the encoder to send commands to the GPU; this draws to the screen
     fn draw(&mut self, encoder: &mut CommandEncoder, view: &TextureView) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),

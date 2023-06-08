@@ -4,7 +4,7 @@ use winit::window::Window;
 use crate::render::{Vertex, INDICES, VERTICES};
 
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
-    r: 0.1, // Pick any color you want here
+    r: 0.1,
     g: 0.1,
     b: 0.1,
     a: 1.0,
@@ -163,10 +163,6 @@ impl State {
             vertex_buffer,
             index_buffer,
         }
-    }
-
-    pub fn window(&self) -> &Window {
-        &self.window
     }
 }
 
