@@ -2,7 +2,6 @@
 
 struct VertexInput {
     @location(0) position: vec2<f32>,
-    @location(1) color: vec3<f32>,
 };
 
 struct VertexOutput {
@@ -11,7 +10,8 @@ struct VertexOutput {
 };
 
 struct InstanceInput {
-    @location(2) position: vec2<u32>,
+    @location(1) position: vec2<u32>,
+    @location(2) color: vec3<f32>,
 };
 
 struct CameraUniform {
@@ -24,12 +24,12 @@ var<uniform> camera: CameraUniform;
 @vertex
 fn vs_main(
     @builtin(vertex_index) my_index: u32,
-    model: VertexInput,
+    vertex: VertexInput,
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = model.color;
-    var pos = model.position + vec2<f32>(instance.position);
+    out.color = instance.color;
+    var pos = vertex.position + vec2<f32>(instance.position);
     pos -= camera.pos;
     pos *= camera.proj;
     out.clip_position = vec4<f32>(pos.x, pos.y, 0.0, 1.0);

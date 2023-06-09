@@ -38,7 +38,7 @@ impl GameWindow {
     pub fn update_view(&mut self, camera: &Camera, size: &[u32; 2]) {
         self.camera_uniform.update_view_proj(&camera, size);
         self.queue.write_buffer(
-            &self.camera_buffer,
+            &self.buffer.camera,
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
         );

@@ -1,6 +1,7 @@
 mod buffer;
 mod init;
 mod render;
+mod res;
 mod uniform;
 
 use crate::Camera;
@@ -22,6 +23,13 @@ pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     a: 1.0,
 };
 
+pub struct Buffers {
+    pub vertex: wgpu::Buffer,
+    pub index: wgpu::Buffer,
+    pub instance: wgpu::Buffer,
+    pub camera: wgpu::Buffer,
+}
+
 pub struct GameWindow {
     // window & device stuff
     pub window: Window,
@@ -30,13 +38,10 @@ pub struct GameWindow {
     pub(super) queue: wgpu::Queue,
     // render stuff
     pub(super) render_pipeline: wgpu::RenderPipeline,
-    pub(super) vertex_buffer: wgpu::Buffer,
-    pub(super) index_buffer: wgpu::Buffer,
     pub(super) instances: Vec<Instance>,
-    pub(super) instance_buffer: wgpu::Buffer,
+    pub(super) buffer: Buffers,
     // camera
     pub(super) camera_uniform: CameraUniform,
-    pub(super) camera_buffer: wgpu::Buffer,
     pub(super) camera_bind_group: wgpu::BindGroup,
 }
 
@@ -51,12 +56,9 @@ impl GameWindow {
 
         let (
             render_pipeline,
-            vertex_buffer,
-            index_buffer,
             instances,
-            instance_buffer,
+            buffer,
             camera_uniform,
-            camera_buffer,
             camera_bind_group,
         ) = init_renderer(&device, &config, &camera);
 
@@ -66,12 +68,9 @@ impl GameWindow {
             device,
             queue,
             render_pipeline,
-            vertex_buffer,
-            index_buffer,
             instances,
-            instance_buffer,
             camera_uniform,
-            camera_buffer,
+            buffer,
             camera_bind_group,
         }
     }

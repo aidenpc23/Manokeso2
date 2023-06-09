@@ -1,13 +1,16 @@
+use crate::window::{res::square::{INDICES, VERTICES}, Buffers};
 use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
 
 use crate::{
     camera::Camera,
-    res::{HEIGHT, SHADER, WIDTH},
+    res::{HEIGHT, WIDTH},
     window::{
-        buffer::{Instance, Vertex, INDICES, VERTICES},
+        buffer::{Instance, Vertex},
         uniform::CameraUniform,
     },
 };
+
+pub const SHADER: &str = include_str!("../shader/shader.wgsl");
 
 pub fn init_renderer(
     device: &Device,
@@ -15,12 +18,9 @@ pub fn init_renderer(
     camera: &Camera,
 ) -> (
     RenderPipeline,
-    wgpu::Buffer,
-    wgpu::Buffer,
     Vec<Instance>,
-    wgpu::Buffer,
+    Buffers,
     CameraUniform,
-    wgpu::Buffer,
     BindGroup,
 ) {
     // shaders
@@ -43,7 +43,10 @@ pub fn init_renderer(
     });
 
     let instances = (0..WIDTH)
-        .flat_map(|x| (0..HEIGHT).map(move |y| Instance { position: [x, y] }))
+        .flat_map(|x| (0..HEIGHT).map(move |y| Instance {
+            position: [x, y],
+            color: [x as f32 / WIDTH as f32, 0.0, y as f32 / HEIGHT as f32]
+        }))
         .collect::<Vec<_>>();
 
     let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -130,12 +133,14 @@ pub fn init_renderer(
 
     (
         render_pipeline,
-        vertex_buffer,
-        index_buffer,
         instances,
-        instance_buffer,
+        Buffers {
+            vertex: vertex_buffer,
+            index: index_buffer,
+            instance: instance_buffer,
+            camera: camera_buffer
+        },
         camera_uniform,
-        camera_buffer,
         camera_bind_group,
     )
 }
