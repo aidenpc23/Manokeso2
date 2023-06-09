@@ -1,34 +1,25 @@
-use state::State;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
 };
 
-mod render;
-mod state;
+mod res;
+mod window;
+
+use window::GameWindow;
 
 fn main() {
     pollster::block_on(run());
 }
 
 async fn run() {
-    // Setup logger
+    // Setup logger, event loop, and window
     env_logger::init();
     let event_loop = EventLoop::new();
-    // Create window and application state
-    let window = WindowBuilder::new()
-        .with_visible(false)
-        .build(&event_loop)
-        .unwrap();
-
-    let mut state: State = State::new(window).await;
-
-    // ==============================================
-    // Define event loop functionality
-    // ==============================================
+    let mut state: GameWindow = GameWindow::new(&event_loop).await;
     state.window.set_visible(true);
 
+    // Game loop
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -50,4 +41,3 @@ async fn run() {
         }
     });
 }
-

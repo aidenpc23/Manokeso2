@@ -1,51 +1,8 @@
 use wgpu::{CommandEncoder, TextureView};
 
-use crate::state::{State, CLEAR_COLOR};
+use super::{GameWindow, CLEAR_COLOR};
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Vertex {
-    position: [f32; 3],
-    color: [f32; 3],
-}
-
-impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 2] =
-        wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3];
-
-    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
-        use std::mem;
-
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBS,
-        }
-    }
-}
-
-pub const VERTICES: &[Vertex] = &[
-    Vertex {
-        position: [-0.5, -0.5, 0.0],
-        color: [1.0, 0.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.0],
-        color: [0.0, 1.0, 0.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, 0.0],
-        color: [0.0, 0.0, 1.0],
-    },
-    Vertex {
-        position: [-0.5, 0.5, 0.0],
-        color: [0.0, 1.0, 0.0],
-    },
-];
-
-pub const INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];
-
-impl State {
+impl GameWindow {
     pub fn render(&mut self) {
         let output = self.surface.get_current_texture().unwrap();
         let view = output
@@ -81,8 +38,8 @@ impl State {
         render_pass.set_pipeline(&self.render_pipeline);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..6, 0, 0..1);
+        render_pass.draw_indexed(0..6, 0, 0..self.instances.len() as _);
     }
 }
-
