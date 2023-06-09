@@ -10,7 +10,7 @@ use crate::{
     },
 };
 
-pub const SHADER: &str = include_str!("../shader/shader.wgsl");
+pub const SHADER: &str = include_str!("../shader/tile.wgsl");
 
 pub fn init_renderer(
     device: &Device,
@@ -45,7 +45,7 @@ pub fn init_renderer(
     let instances = (0..WIDTH)
         .flat_map(|x| (0..HEIGHT).map(move |y| Instance {
             position: [x, y],
-            color: [x as f32 / WIDTH as f32, 0.0, y as f32 / HEIGHT as f32]
+            color: rand::random()
         }))
         .collect::<Vec<_>>();
 

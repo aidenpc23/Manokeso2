@@ -6,6 +6,7 @@ use winit::{
 mod camera;
 mod res;
 mod window;
+mod input;
 
 use camera::Camera;
 use window::GameWindow;
