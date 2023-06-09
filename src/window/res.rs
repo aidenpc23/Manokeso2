@@ -1,3 +1,10 @@
+pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
+    r: 0.1,
+    g: 0.1,
+    b: 0.1,
+    a: 1.0,
+};
+
 pub mod square {
     use crate::window::buffer::Vertex;
 

@@ -1,4 +1,4 @@
-use crate::window::{res::square::{INDICES, VERTICES}, Buffers};
+use crate::window::{res::square::{INDICES, VERTICES}, state::Buffers};
 use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
 
 use crate::{

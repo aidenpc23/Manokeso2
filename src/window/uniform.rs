@@ -1,8 +1,6 @@
-use winit::dpi::PhysicalSize;
-
 use crate::camera::Camera;
 
-use super::GameWindow;
+use crate::window::state::GameWindow;
 
 const DEFAULT_SCALE: f32 = 0.05;
 
