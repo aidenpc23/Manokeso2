@@ -1,4 +1,5 @@
-use crate::window::{rsc::square::{INDICES, VERTICES}, state::Buffers};
+use crate::{window::{rsc::square::{INDICES, VERTICES}, state::Buffers}, game::Board};
+use bytemuck::Contiguous;
 use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
 
 use crate::{
@@ -10,7 +11,7 @@ use crate::{
     },
 };
 
-pub const SHADER: &str = include_str!("../shader/tile.wgsl");
+pub const SHADER: &str = concat!(include_str!("../shader/tile.wgsl"), include_str!("../shader/util.wgsl"));
 
 pub fn init_renderer(
     device: &Device,
@@ -42,10 +43,12 @@ pub fn init_renderer(
         usage: wgpu::BufferUsages::INDEX,
     });
 
+    let board: &Board = &Board::new(WIDTH as usize, HEIGHT as usize);
+
     let instances = (0..WIDTH)
         .flat_map(|x| (0..HEIGHT).map(move |y| Instance {
             position: [x, y],
-            color: rand::random()
+            attributes: board.render_attributes(x as usize, y as usize),
         }))
         .collect::<Vec<_>>();
 

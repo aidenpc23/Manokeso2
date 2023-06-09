@@ -1,5 +1,6 @@
-// Vertex shader
 
+
+// Vertex shader
 struct VertexInput {
     @location(0) position: vec2<f32>,
 };
@@ -11,7 +12,7 @@ struct VertexOutput {
 
 struct InstanceInput {
     @location(1) position: vec2<u32>,
-    @location(2) color: vec3<f32>,
+    @location(2) attributes: vec4<f32>,
 };
 
 struct CameraUniform {
@@ -28,7 +29,9 @@ fn vs_main(
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = instance.color;
+    var value = min(instance.attributes.w, 150.);
+    out.color = hue_shift(instance.attributes.xyz, 0.);
+
     var pos = vertex.position + vec2<f32>(instance.position);
     pos -= camera.pos;
     pos *= camera.proj;

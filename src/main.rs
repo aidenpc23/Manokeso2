@@ -7,6 +7,7 @@ mod camera;
 mod rsc;
 mod window;
 mod input;
+mod game;
 
 use camera::Camera;
 use window::GameWindow;
