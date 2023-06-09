@@ -44,7 +44,7 @@ impl GameWindow {
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
         self.config.width = size.width;
-        self.config.height = size.width;
+        self.config.height = size.height;
         self.surface.configure(&self.device, &self.config);
     }
 }
