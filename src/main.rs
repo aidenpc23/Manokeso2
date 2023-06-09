@@ -53,7 +53,7 @@ async fn run() {
                     state.update_view(&camera);
                     state.render();
                 },
-                WindowEvent::Resized(s) => {
+                WindowEvent::Resized(_) => {
                     state.update_view(&camera);
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
