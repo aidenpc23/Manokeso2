@@ -4,7 +4,7 @@ use winit::{
 };
 
 mod camera;
-mod res;
+mod rsc;
 mod window;
 mod input;
 

@@ -1,5 +1,6 @@
 use crate::window::uniform::CameraUniform;
 use crate::Camera;
+use wgpu::SurfaceConfiguration;
 use winit::{
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
@@ -20,6 +21,7 @@ pub struct GameWindow {
     pub(super) surface: wgpu::Surface,
     pub(super) device: wgpu::Device,
     pub(super) queue: wgpu::Queue,
+    pub(super) config: SurfaceConfiguration,
     // render stuff
     pub(super) render_pipeline: wgpu::RenderPipeline,
     pub(super) instances: Vec<Instance>,
@@ -51,6 +53,7 @@ impl GameWindow {
             surface,
             device,
             queue,
+            config,
             render_pipeline,
             instances,
             camera_uniform,

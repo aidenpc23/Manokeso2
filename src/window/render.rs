@@ -1,6 +1,6 @@
 use wgpu::{CommandEncoder, TextureView};
 
-use super::{state::GameWindow, res::CLEAR_COLOR};
+use super::{state::GameWindow, rsc::CLEAR_COLOR};
 
 impl GameWindow {
     pub fn render(&mut self) {

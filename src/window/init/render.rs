@@ -1,9 +1,9 @@
-use crate::window::{res::square::{INDICES, VERTICES}, state::Buffers};
+use crate::window::{rsc::square::{INDICES, VERTICES}, state::Buffers};
 use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
 
 use crate::{
     camera::Camera,
-    res::{HEIGHT, WIDTH},
+    rsc::{HEIGHT, WIDTH},
     window::{
         buffer::{Instance, Vertex},
         uniform::CameraUniform,

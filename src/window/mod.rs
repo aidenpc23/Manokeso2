@@ -1,7 +1,7 @@
 mod buffer;
 mod init;
 mod render;
-mod res;
+mod rsc;
 mod uniform;
 mod state;
 
