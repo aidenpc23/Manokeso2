@@ -1,7 +1,9 @@
 mod buffer;
 mod init;
 mod render;
+mod uniform;
 
+use crate::Camera;
 use winit::{
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
@@ -10,6 +12,7 @@ use winit::{
 use self::{
     buffer::Instance,
     init::{init_renderer, init_surface},
+    uniform::CameraUniform,
 };
 
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
@@ -31,18 +34,31 @@ pub struct GameWindow {
     pub(super) index_buffer: wgpu::Buffer,
     pub(super) instances: Vec<Instance>,
     pub(super) instance_buffer: wgpu::Buffer,
+    // camera
+    pub(super) camera_uniform: CameraUniform,
+    pub(super) camera_buffer: wgpu::Buffer,
+    pub(super) camera_bind_group: wgpu::BindGroup,
 }
 
 impl GameWindow {
-    pub async fn new(event_loop: &EventLoop<()>) -> Self {
+    pub async fn new(event_loop: &EventLoop<()>, camera: &Camera) -> GameWindow {
         let window = WindowBuilder::new()
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
 
         let (surface, device, queue, config) = init_surface(&window).await;
-        let (render_pipeline, vertex_buffer, index_buffer, instances, instance_buffer) =
-            init_renderer(&device, &config);
+
+        let (
+            render_pipeline,
+            vertex_buffer,
+            index_buffer,
+            instances,
+            instance_buffer,
+            camera_uniform,
+            camera_buffer,
+            camera_bind_group,
+        ) = init_renderer(&device, &config, &camera);
 
         Self {
             window,
@@ -54,6 +70,9 @@ impl GameWindow {
             index_buffer,
             instances,
             instance_buffer,
+            camera_uniform,
+            camera_buffer,
+            camera_bind_group,
         }
     }
 }

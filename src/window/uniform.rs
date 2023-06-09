@@ -1,0 +1,44 @@
+use crate::camera::Camera;
+
+use super::GameWindow;
+
+// We need this for Rust to store our data correctly for the shaders
+#[repr(C)]
+// This is so we can store this in a buffer
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct CameraUniform {
+    pos: [f32; 2],
+    proj: [f32; 2],
+}
+
+impl CameraUniform {
+    pub fn new() -> Self {
+        Self {
+            pos: [0., 0.],
+            proj: [1., 1.],
+        }
+    }
+
+    pub fn update_view_proj(&mut self, camera: &Camera, size: &[u32; 2]) {
+        self.pos = camera.pos;
+        let win_aspect = size[0] as f32 / size[1] as f32;
+        self.proj = if win_aspect > camera.aspect {
+            [1.0, win_aspect / camera.aspect]
+        } else {
+            [camera.aspect / win_aspect, 1.0]
+        };
+        self.proj[0] *= camera.scale;
+        self.proj[1] *= camera.scale;
+    }
+}
+
+impl GameWindow {
+    pub fn update_view(&mut self, camera: &Camera, size: &[u32; 2]) {
+        self.camera_uniform.update_view_proj(&camera, size);
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        );
+    }
+}

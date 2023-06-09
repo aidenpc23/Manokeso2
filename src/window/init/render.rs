@@ -1,32 +1,92 @@
-use wgpu::{util::DeviceExt, Device, SurfaceConfiguration, RenderPipeline};
+use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
 
 use crate::{
-    res::{SHADER, WIDTH, HEIGHT},
-    window::buffer::{Instance, Vertex, INDICES, VERTICES},
+    camera::Camera,
+    res::{HEIGHT, SHADER, WIDTH},
+    window::{
+        buffer::{Instance, Vertex, INDICES, VERTICES},
+        uniform::CameraUniform,
+    },
 };
 
 pub fn init_renderer(
     device: &Device,
     config: &SurfaceConfiguration,
+    camera: &Camera,
 ) -> (
     RenderPipeline,
     wgpu::Buffer,
     wgpu::Buffer,
     Vec<Instance>,
-    wgpu::Buffer
+    wgpu::Buffer,
+    CameraUniform,
+    wgpu::Buffer,
+    BindGroup,
 ) {
-    // ==============================================
-    // Load and setup shaders and render pipeline.
-    // ==============================================
+    // shaders
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader"),
         source: wgpu::ShaderSource::Wgsl(SHADER.into()),
     });
 
-    // Define pipeline layout
+    // buffers
+    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Vertex Buffer"),
+        contents: bytemuck::cast_slice(VERTICES),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+
+    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Index Buffer"),
+        contents: bytemuck::cast_slice(INDICES),
+        usage: wgpu::BufferUsages::INDEX,
+    });
+
+    let instances = (0..WIDTH)
+        .flat_map(|x| (0..HEIGHT).map(move |y| Instance { position: [x, y] }))
+        .collect::<Vec<_>>();
+
+    let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Instance Buffer"),
+        contents: bytemuck::cast_slice(&instances),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+
+    let mut camera_uniform = CameraUniform::new();
+    camera_uniform.update_view_proj(&camera, &[config.width, config.height]);
+    let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Camera Buffer"),
+        contents: bytemuck::cast_slice(&[camera_uniform]),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
+    let camera_bind_group_layout =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+            label: Some("camera_bind_group_layout"),
+        });
+
+    let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &camera_bind_group_layout,
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: camera_buffer.as_entire_binding(),
+        }],
+        label: Some("camera_bind_group"),
+    });
+
+    // pipeline
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Render Pipeline Layout"),
-        bind_group_layouts: &[],
+        bind_group_layouts: &[&camera_bind_group_layout],
         push_constant_ranges: &[],
     });
 
@@ -68,40 +128,14 @@ pub fn init_renderer(
         multiview: None,
     });
 
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(VERTICES),
-        usage: wgpu::BufferUsages::VERTEX,
-    });
-
-    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(INDICES),
-        usage: wgpu::BufferUsages::INDEX,
-    });
-
-    let instances = (0..WIDTH).flat_map(|x| {
-        (0..HEIGHT).map(move |y| {
-            Instance {
-                position: [x, y]
-            }
-        })
-    }).collect::<Vec<_>>();
-
-    let instance_buffer = device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instances),
-            usage: wgpu::BufferUsages::VERTEX,
-        }
-    );
-
-
-    return (
+    (
         render_pipeline,
         vertex_buffer,
         index_buffer,
         instances,
-        instance_buffer
-    );
+        instance_buffer,
+        camera_uniform,
+        camera_buffer,
+        camera_bind_group,
+    )
 }
