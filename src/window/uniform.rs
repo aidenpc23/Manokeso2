@@ -1,3 +1,5 @@
+use winit::dpi::PhysicalSize;
+
 use crate::camera::Camera;
 
 use super::GameWindow;
@@ -35,8 +37,9 @@ impl CameraUniform {
 }
 
 impl GameWindow {
-    pub fn update_view(&mut self, camera: &Camera, size: &[u32; 2]) {
-        self.camera_uniform.update_view_proj(&camera, size);
+    pub fn update_view(&mut self, camera: &Camera) {
+        let size = self.window.inner_size();
+        self.camera_uniform.update_view_proj(&camera, &[size.width, size.height]);
         self.queue.write_buffer(
             &self.buffer.camera,
             0,

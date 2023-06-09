@@ -22,7 +22,6 @@ async fn run() {
     let mut state: GameWindow = GameWindow::new(&event_loop, &camera).await;
     state.window.set_visible(true);
 
-    let mut size = state.window.inner_size();
     let mut scroll = 0.;
 
     // Game loop
@@ -51,12 +50,11 @@ async fn run() {
                     if input.virtual_keycode == Some(VirtualKeyCode::S) {
                         camera.pos[0] += 0.1;
                     }
-                    state.update_view(&camera, &[size.width, size.height]);
+                    state.update_view(&camera);
                     state.render();
                 },
                 WindowEvent::Resized(s) => {
-                    state.update_view(&camera, &[s.width, s.height]);
-                    size = s;
+                    state.update_view(&camera);
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
                     scroll += match delta {
@@ -64,7 +62,7 @@ async fn run() {
                         MouseScrollDelta::PixelDelta(v) => v.y as f32
                     };
                     camera.scale = (scroll * 0.1).exp();
-                    state.update_view(&camera, &[size.width, size.height]);
+                    state.update_view(&camera);
                     state.render();
                 }
                 _ => {}
