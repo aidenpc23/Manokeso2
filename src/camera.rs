@@ -11,7 +11,7 @@ impl Default for Camera {
         Self {
             pos: [0., 0.],
             aspect: DEFAULT_ASPECT_RATIO,
-            scale: 0.1,
+            scale: 1.0,
         }
     }
 }

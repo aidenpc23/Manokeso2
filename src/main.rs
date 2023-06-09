@@ -23,6 +23,7 @@ async fn run() {
     state.window.set_visible(true);
 
     let mut size = state.window.inner_size();
+    let mut scroll = 0.;
 
     // Game loop
     event_loop.run(move |event, _, control_flow| {
@@ -56,6 +57,15 @@ async fn run() {
                 WindowEvent::Resized(s) => {
                     state.update_view(&camera, &[s.width, s.height]);
                     size = s;
+                }
+                WindowEvent::MouseWheel { delta, .. } => {
+                    scroll += match delta {
+                        MouseScrollDelta::LineDelta(_, v) => v,
+                        MouseScrollDelta::PixelDelta(v) => v.y as f32
+                    };
+                    camera.scale = (scroll * 0.1).exp();
+                    state.update_view(&camera, &[size.width, size.height]);
+                    state.render();
                 }
                 _ => {}
             }

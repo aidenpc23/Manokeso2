@@ -2,6 +2,8 @@ use crate::camera::Camera;
 
 use super::GameWindow;
 
+const DEFAULT_SCALE: f32 = 0.05;
+
 // We need this for Rust to store our data correctly for the shaders
 #[repr(C)]
 // This is so we can store this in a buffer
@@ -23,12 +25,12 @@ impl CameraUniform {
         self.pos = camera.pos;
         let win_aspect = size[0] as f32 / size[1] as f32;
         self.proj = if win_aspect > camera.aspect {
-            [1.0, win_aspect / camera.aspect]
+            [1.0, win_aspect]
         } else {
-            [camera.aspect / win_aspect, 1.0]
+            [camera.aspect/win_aspect, camera.aspect]
         };
-        self.proj[0] *= camera.scale;
-        self.proj[1] *= camera.scale;
+        self.proj[0] *= camera.scale * DEFAULT_SCALE;
+        self.proj[1] *= camera.scale * DEFAULT_SCALE;
     }
 }
 
