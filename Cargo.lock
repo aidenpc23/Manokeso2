@@ -682,6 +682,7 @@ dependencies = [
  "log",
  "pollster",
  "rand",
+ "rand_chacha",
  "wgpu",
  "winit",
 ]

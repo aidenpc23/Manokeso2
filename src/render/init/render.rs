@@ -1,13 +1,18 @@
-use crate::render::{rsc::square::{INDICES, VERTICES}, state::Buffers};
+use crate::render::{
+    rsc::square::{INDICES, VERTICES},
+    state::Buffers,
+};
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
 
 use crate::{
     camera::Camera,
-    rsc::{HEIGHT, WIDTH},
     render::{
         buffer::{Instance, Vertex},
         uniform::CameraUniform,
     },
+    rsc::{HEIGHT, WIDTH},
 };
 
 pub const SHADER: &str = include_str!("../shader/tile.wgsl");
@@ -42,12 +47,14 @@ pub fn init_renderer(
         usage: wgpu::BufferUsages::INDEX,
     });
 
-    let instances = (0..WIDTH)
-        .flat_map(|x| (0..HEIGHT).map(move |y| Instance {
-            position: [x, y],
-            color: rand::random()
-        }))
-        .collect::<Vec<_>>();
+    let mut rng = ChaCha8Rng::seed_from_u64(0);
+    let instances: Vec<Instance> = (0..WIDTH*HEIGHT)
+        .map(|i| {
+            Instance {
+                position: [(i % WIDTH) as u32, (i / WIDTH) as u32],
+                color: rng.gen(),
+            }
+        }).collect();
 
     let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Instance Buffer"),
@@ -133,12 +140,12 @@ pub fn init_renderer(
 
     (
         render_pipeline,
-        instances,
+        instances.to_vec(),
         Buffers {
             vertex: vertex_buffer,
             index: index_buffer,
             instance: instance_buffer,
-            camera: camera_buffer
+            camera: camera_buffer,
         },
         camera_uniform,
         camera_bind_group,
