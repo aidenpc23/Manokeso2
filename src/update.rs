@@ -24,7 +24,7 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
         camera.pos[0] += PLAYER_SPEED * delta_mult;
     }
     if input.just_pressed(Key::T) {
-        state.colors.push((0..100).map(|i| random()).collect());
+        state.colors.push((0..100).map(|_| random()).collect());
     }
     if input.just_pressed(Key::D) {
         state.colors.remove(0);
