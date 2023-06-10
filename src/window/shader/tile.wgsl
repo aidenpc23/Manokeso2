@@ -30,7 +30,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     var value = min(instance.attributes.w, 150.);
-    out.color = hue_shift(instance.attributes.xyz, 0.);
+    out.color = hsv_to_rgb(vec3(instance.attributes.x, instance.attributes.y, instance.attributes.w));
 
     var pos = vertex.position + vec2<f32>(instance.position);
     pos -= camera.pos;

@@ -36,7 +36,11 @@ impl Board {
         ])
     }
 
-    pub fn update() {
+    pub fn update(&mut self) {
+        for x in 0..self.width {
+            for y in 0..self.height {
 
+            }
+        }
     }
 }
