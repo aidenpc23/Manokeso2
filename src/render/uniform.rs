@@ -26,6 +26,22 @@ impl CameraUniform {
             proj,
         }
     }
+
+    pub fn bottom_left(&self) -> [f32; 2] {
+        self.cam_to_world([-1.0, -1.0])
+    }
+
+    pub fn top_right(&self) -> [f32; 2] {
+        self.cam_to_world([1.0, 1.0])
+    }
+
+    fn cam_to_world(&self, mut coords: [f32; 2]) -> [f32; 2] {
+        coords[0] /= self.proj[0];
+        coords[1] /= self.proj[1];
+        coords[0] += self.pos[0];
+        coords[1] += self.pos[1];
+        coords
+    }
 }
 
 impl PartialEq for CameraUniform {
@@ -39,13 +55,17 @@ impl PartialEq for CameraUniform {
 pub struct TileViewUniform {
     pos: [f32; 2],
     width: u32,
-     // shader has an alignment of 8, so we need to add padding
+    // shader has an alignment of 8, so we need to add padding
     _padding: u32,
 }
 
 impl TileViewUniform {
     pub fn new(pos: [f32; 2], width: u32) -> Self {
-        Self { pos, width, _padding: 0 }
+        Self {
+            pos,
+            width,
+            _padding: 0,
+        }
     }
 }
 

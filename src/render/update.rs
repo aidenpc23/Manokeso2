@@ -1,18 +1,16 @@
 use wgpu::util::DeviceExt;
 
-use crate::{camera::Camera, state::GameState};
+use crate::state::GameState;
 
 use super::{
     buffer::Instance,
-    uniform::{CameraUniform, TileViewUniform},
-    Renderer,
+    Renderer, uniform::{CameraUniform, TileViewUniform},
 };
 
 impl Renderer {
     pub fn update(&mut self, state: &GameState) {
-        self.update_tile_view(&state);
         self.update_instances(&state);
-        self.update_camera(&state.camera);
+        self.update_view(&state);
     }
 
     fn update_instances(&mut self, state: &GameState) {
@@ -40,11 +38,14 @@ impl Renderer {
         }
     }
 
-    fn update_tile_view(&mut self, state: &GameState) {
+    fn update_view(&mut self, state: &GameState) {
+        let camera = &state.camera;
+        let size = &self.window.inner_size();
+        let uniform = CameraUniform::new(camera, size);
+
         let width = state.colors.first().map(|row| row.len()).unwrap_or(0) as u32;
         let view = TileViewUniform::new([0.0, 0.0], width);
         if self.uniforms.tile_view != view {
-            println!("{:?}", view);
             self.uniforms.tile_view = view;
             self.queue.write_buffer(
                 &self.buffers.tile_view,
@@ -52,13 +53,9 @@ impl Renderer {
                 bytemuck::cast_slice(&[self.uniforms.tile_view]),
             )
         }
-    }
 
-    fn update_camera(&mut self, camera: &Camera) {
-        let size = self.window.inner_size();
-        let new_uniform = CameraUniform::new(camera, &size);
-        if self.uniforms.camera != new_uniform {
-            self.uniforms.camera = new_uniform;
+        if self.uniforms.camera != uniform {
+            self.uniforms.camera = uniform;
             self.queue.write_buffer(
                 &self.buffers.camera,
                 0,
