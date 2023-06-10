@@ -58,7 +58,7 @@ async fn run() {
                 // render if it's time
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
-                    renderer.update_view(&state.camera);
+                    renderer.update(&state);
                     renderer.render();
                     last_frame = now;
                 }

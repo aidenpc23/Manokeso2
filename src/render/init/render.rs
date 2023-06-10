@@ -45,11 +45,10 @@ pub fn init_renderer(
     });
 
     let instances: Vec<Instance> = Vec::new();
-
     let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Instance Buffer"),
         contents: bytemuck::cast_slice(&instances),
-        usage: wgpu::BufferUsages::VERTEX,
+        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     });
 
     let mut camera_uniform = CameraUniform::new();

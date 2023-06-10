@@ -1,7 +1,5 @@
 use crate::camera::Camera;
 
-use crate::render::state::Renderer;
-
 const DEFAULT_SCALE: f32 = 0.05;
 
 // We need this for Rust to store our data correctly for the shaders
@@ -34,17 +32,3 @@ impl CameraUniform {
     }
 }
 
-impl Renderer {
-    pub fn update_view(&mut self, camera: &Camera) {
-        let size = self.window.inner_size();
-        self.camera_uniform.update_view_proj(&camera, &[size.width, size.height]);
-        self.queue.write_buffer(
-            &self.buffer.camera,
-            0,
-            bytemuck::cast_slice(&[self.camera_uniform]),
-        );
-        self.config.width = size.width;
-        self.config.height = size.height;
-        self.surface.configure(&self.device, &self.config);
-    }
-}

@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use rand::random;
 use winit::event::VirtualKeyCode as Key;
 
 use crate::{input::Input, state::GameState, rsc::PLAYER_SPEED};
@@ -23,7 +24,10 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
         camera.pos[0] += PLAYER_SPEED * delta_mult;
     }
     if input.just_pressed(Key::T) {
-        println!("estamos jugando");
+        state.colors.push(random());
+    }
+    if input.just_pressed(Key::D) {
+        state.colors.remove(0);
     }
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
