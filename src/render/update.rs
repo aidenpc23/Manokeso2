@@ -10,6 +10,7 @@ impl Renderer {
         self.instances = state
             .colors
             .iter()
+            .flatten()
             .map(|c| Instance { color: c.clone() })
             .collect();
         if old_len != self.instances.len() {
@@ -20,9 +21,6 @@ impl Renderer {
                         contents: bytemuck::cast_slice(&self.instances),
                         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                     });
-            for i in &self.instances {
-                println!("{:?}", i.color);
-            }
         } else {
             self.queue.write_buffer(
                 &self.buffer.instance,

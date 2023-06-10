@@ -1,9 +1,11 @@
 use crate::camera::Camera;
 
+type Vec2<T> = Vec<Vec<T>>;
+
 pub struct GameState {
     pub camera: Camera,
     pub camera_scroll: f32,
-    pub colors: Vec<[f32; 3]>,
+    pub colors: Vec2<[f32; 3]>,
 }
 
 impl GameState {

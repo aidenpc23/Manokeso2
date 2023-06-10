@@ -24,13 +24,13 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
         camera.pos[0] += PLAYER_SPEED * delta_mult;
     }
     if input.just_pressed(Key::T) {
-        state.colors.push(random());
+        state.colors.push((0..100).map(|i| random()).collect());
     }
     if input.just_pressed(Key::D) {
         state.colors.remove(0);
     }
     if input.just_pressed(Key::P) {
-        state.colors[0] = [0.0; 3];
+        state.colors[0][0] = [0.0; 3];
     }
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
