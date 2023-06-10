@@ -6,13 +6,19 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use super::{buffer::Instance, init::*};
+use super::{buffer::Instance, init::*, uniform::TileViewUniform};
 
 pub struct Buffers {
     pub vertex: wgpu::Buffer,
     pub index: wgpu::Buffer,
     pub instance: wgpu::Buffer,
     pub camera: wgpu::Buffer,
+    pub tile_view: wgpu::Buffer,
+}
+
+pub struct Uniforms {
+    pub camera: CameraUniform,
+    pub tile_view: TileViewUniform,
 }
 
 pub struct Renderer {
@@ -25,9 +31,8 @@ pub struct Renderer {
     // render stuff
     pub(super) render_pipeline: wgpu::RenderPipeline,
     pub(super) instances: Vec<Instance>,
-    pub(super) buffer: Buffers,
-    // camera
-    pub(super) camera_uniform: CameraUniform,
+    pub(super) buffers: Buffers,
+    pub(super) uniforms: Uniforms,
     pub(super) camera_bind_group: wgpu::BindGroup,
 }
 
@@ -42,7 +47,7 @@ impl Renderer {
 
         let (surface, device, queue, config) = init_surface(&window).await;
 
-        let (render_pipeline, instances, buffer, camera_uniform, camera_bind_group) =
+        let (render_pipeline, instances, buffers, uniforms, camera_bind_group) =
             init_renderer(&device, &config, &camera, &size);
 
         Self {
@@ -53,8 +58,8 @@ impl Renderer {
             config,
             render_pipeline,
             instances,
-            camera_uniform,
-            buffer,
+            uniforms,
+            buffers,
             camera_bind_group,
         }
     }

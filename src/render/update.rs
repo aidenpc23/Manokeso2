@@ -2,12 +2,17 @@ use wgpu::util::DeviceExt;
 
 use crate::{camera::Camera, state::GameState};
 
-use super::{buffer::Instance, Renderer, uniform::CameraUniform};
+use super::{
+    buffer::Instance,
+    uniform::{CameraUniform, TileViewUniform},
+    Renderer,
+};
 
 impl Renderer {
     pub fn update(&mut self, state: &GameState) {
+        self.update_tile_view(&state);
         self.update_instances(&state);
-        self.update_view(&state.camera);
+        self.update_camera(&state.camera);
     }
 
     fn update_instances(&mut self, state: &GameState) {
@@ -19,7 +24,7 @@ impl Renderer {
             .map(|c| Instance { color: c.clone() })
             .collect();
         if old_len != self.instances.len() {
-            self.buffer.instance =
+            self.buffers.instance =
                 self.device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("Instance Buffer"),
@@ -27,24 +32,37 @@ impl Renderer {
                         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                     });
         } else {
-            // TODO: uncomment once colors update
-            // self.queue.write_buffer(
-            //     &self.buffer.instance,
-            //     0,
-            //     bytemuck::cast_slice(&self.instances),
-            // );
+            self.queue.write_buffer(
+                &self.buffers.instance,
+                0,
+                bytemuck::cast_slice(&self.instances),
+            );
         }
     }
 
-    fn update_view(&mut self, camera: &Camera) {
+    fn update_tile_view(&mut self, state: &GameState) {
+        let width = state.colors.first().map(|row| row.len()).unwrap_or(0) as u32;
+        let view = TileViewUniform::new([0.0, 0.0], width);
+        if self.uniforms.tile_view != view {
+            println!("{:?}", view);
+            self.uniforms.tile_view = view;
+            self.queue.write_buffer(
+                &self.buffers.tile_view,
+                0,
+                bytemuck::cast_slice(&[self.uniforms.tile_view]),
+            )
+        }
+    }
+
+    fn update_camera(&mut self, camera: &Camera) {
         let size = self.window.inner_size();
         let new_uniform = CameraUniform::new(camera, &size);
-        if self.camera_uniform != new_uniform {
-            self.camera_uniform = new_uniform;
+        if self.uniforms.camera != new_uniform {
+            self.uniforms.camera = new_uniform;
             self.queue.write_buffer(
-                &self.buffer.camera,
+                &self.buffers.camera,
                 0,
-                bytemuck::cast_slice(&[self.camera_uniform]),
+                bytemuck::cast_slice(&[self.uniforms.camera]),
             );
             self.config.width = size.width;
             self.config.height = size.height;

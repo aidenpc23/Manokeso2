@@ -4,9 +4,7 @@ use crate::camera::Camera;
 
 const DEFAULT_SCALE: f32 = 0.05;
 
-// We need this for Rust to store our data correctly for the shaders
 #[repr(C)]
-// This is so we can store this in a buffer
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
     pos: [f32; 2],
@@ -33,6 +31,27 @@ impl CameraUniform {
 impl PartialEq for CameraUniform {
     fn eq(&self, other: &Self) -> bool {
         arr_eq(self.proj, other.proj) && arr_eq(self.pos, other.pos)
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct TileViewUniform {
+    pos: [f32; 2],
+    width: u32,
+     // shader has an alignment of 8, so we need to add padding
+    padding: u32,
+}
+
+impl TileViewUniform {
+    pub fn new(pos: [f32; 2], width: u32) -> Self {
+        Self { pos, width, padding: 0 }
+    }
+}
+
+impl PartialEq for TileViewUniform {
+    fn eq(&self, other: &Self) -> bool {
+        arr_eq(self.pos, other.pos) && self.width == other.width
     }
 }
 

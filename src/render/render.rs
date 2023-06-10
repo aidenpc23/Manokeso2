@@ -40,9 +40,9 @@ impl Renderer {
 
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
-        render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
-        render_pass.set_vertex_buffer(1, self.buffer.instance.slice(..));
-        render_pass.set_index_buffer(self.buffer.index.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.set_vertex_buffer(0, self.buffers.vertex.slice(..));
+        render_pass.set_vertex_buffer(1, self.buffers.instance.slice(..));
+        render_pass.set_index_buffer(self.buffers.index.slice(..), wgpu::IndexFormat::Uint16);
 
         render_pass.draw_indexed(0..6, 0, 0..self.instances.len() as _);
     }

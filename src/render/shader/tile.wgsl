@@ -21,6 +21,13 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
+struct TileViewUniform {
+    pos: vec2<f32>,
+    width: u32,
+};
+@group(0) @binding(1)
+var<uniform> tile_view: TileViewUniform;
+
 @vertex
 fn vs_main(
     @builtin(instance_index) i: u32,
@@ -31,7 +38,9 @@ fn vs_main(
     out.color = instance.color;
     var pos = vertex.position;
     pos -= camera.pos;
-    pos.x += f32(i);
+    pos.x += f32(i % tile_view.width);
+    pos.y += f32(i / tile_view.width);
+    pos += tile_view.pos;
     pos *= camera.proj;
     out.clip_position = vec4<f32>(pos.x, pos.y, 0.0, 1.0);
     out.i = i;
