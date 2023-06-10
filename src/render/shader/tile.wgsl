@@ -5,8 +5,9 @@ struct VertexInput {
 };
 
 struct VertexOutput {
+    @location(0) i: u32,
+    @location(1) color: vec3<f32>,
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) color: vec3<f32>,
 };
 
 struct InstanceInput {
@@ -23,7 +24,7 @@ var<uniform> camera: CameraUniform;
 
 @vertex
 fn vs_main(
-    @builtin(vertex_index) my_index: u32,
+    @builtin(instance_index) i: u32,
     vertex: VertexInput,
     instance: InstanceInput,
 ) -> VertexOutput {
@@ -31,20 +32,22 @@ fn vs_main(
     out.color = instance.color;
     var pos = vertex.position + vec2<f32>(instance.position);
     pos -= camera.pos;
+    pos.x += f32(i);
     pos *= camera.proj;
     out.clip_position = vec4<f32>(pos.x, pos.y, 0.0, 1.0);
+    out.i = i;
     return out;
 }
 
 // Fragment shader
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    var color = rgb_to_hsv(in.color);
-    color.x += 0.5;
-    if color.x > 1.0 {
-        color.x -= 1.0;
-    }
+fn fs_main(
+    in: VertexOutput
+) -> @location(0) vec4<f32> {
+    var color = rgb_to_hsv(vec3(1.0, 0.0, 0.0));
+    color.x += f32(in.i) / 21.0;
+    color.x %= 1.0;
     color = hsv_to_rgb(color);
     return vec4<f32>(color, 1.0);
 }
@@ -65,9 +68,7 @@ fn rgb_to_hsv(color: vec3<f32>) -> vec3<f32> {
     var H = 1.0 / 6.0;
     if M == R {
         H *= 0.0 + (G - B) / d;
-        if H < 0.0 {
-            H += 1.0;
-        }
+        H %= 1.0;
     } else if M == G {
         H *= 2.0 + (B - R) / d;
     } else if M == B {

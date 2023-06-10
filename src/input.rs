@@ -3,14 +3,16 @@ use std::collections::HashSet;
 use winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 
 pub struct Input {
-    keys_down: HashSet<VirtualKeyCode>,
+    just_pressed: HashSet<VirtualKeyCode>,
+    pressed: HashSet<VirtualKeyCode>,
     pub scroll_delta: f32,
 }
 
 impl Input {
     pub fn new() -> Self {
         Self {
-            keys_down: HashSet::new(),
+            just_pressed: HashSet::new(),
+            pressed: HashSet::new(),
             scroll_delta: 0.,
         }
     }
@@ -19,8 +21,13 @@ impl Input {
             WindowEvent::KeyboardInput { input, .. } => {
                 if let Some(code) = input.virtual_keycode {
                     match input.state {
-                        ElementState::Pressed => self.keys_down.insert(code),
-                        ElementState::Released => self.keys_down.remove(&code),
+                        ElementState::Pressed => {
+                            self.just_pressed.insert(code);
+                            self.pressed.insert(code);
+                        }
+                        ElementState::Released => {
+                            self.pressed.remove(&code);
+                        }
                     };
                 }
             }
@@ -35,8 +42,12 @@ impl Input {
     }
     pub fn end(&mut self) {
         self.scroll_delta = 0.0;
+        self.just_pressed.clear();
     }
-    pub fn down(&self, key: VirtualKeyCode) -> bool {
-        self.keys_down.contains(&key)
+    pub fn pressed(&self, key: VirtualKeyCode) -> bool {
+        self.pressed.contains(&key)
+    }
+    pub fn just_pressed(&self, key: VirtualKeyCode) -> bool {
+        self.just_pressed.contains(&key)
     }
 }
