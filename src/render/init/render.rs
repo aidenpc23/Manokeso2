@@ -1,29 +1,31 @@
-use crate::{window::{rsc::square::{INDICES, VERTICES}, state::Buffers}, game::Board};
-use bytemuck::Contiguous;
-use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
+use crate::render::{
+    rsc::square::{INDICES, VERTICES},
+    state::Buffers,
+    uniform::TileViewUniform,
+    Uniforms,
+};
+use wgpu::{
+    util::{BufferInitDescriptor, DeviceExt},
+    BindGroup, BufferUsages, Device, RenderPipeline, SurfaceConfiguration,
+};
+use winit::dpi::PhysicalSize;
 
 use crate::{
     camera::Camera,
-    rsc::{HEIGHT, WIDTH},
-    window::{
+    render::{
         buffer::{Instance, Vertex},
         uniform::CameraUniform,
     },
 };
 
-pub const SHADER: &str = concat!(include_str!("../shader/tile.wgsl"), include_str!("../shader/util.wgsl"));
+pub const SHADER: &str = concat!(include_str!("../shader/tile.wgsl"));
 
 pub fn init_renderer(
     device: &Device,
     config: &SurfaceConfiguration,
     camera: &Camera,
-) -> (
-    RenderPipeline,
-    Vec<Instance>,
-    Buffers,
-    CameraUniform,
-    BindGroup,
-) {
+    size: &PhysicalSize<u32>,
+) -> (RenderPipeline, Vec<Instance>, Buffers, Uniforms, BindGroup) {
     // shaders
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader"),
@@ -31,44 +33,53 @@ pub fn init_renderer(
     });
 
     // buffers
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Vertex Buffer"),
         contents: bytemuck::cast_slice(VERTICES),
-        usage: wgpu::BufferUsages::VERTEX,
+        usage: BufferUsages::VERTEX,
     });
 
-    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Index Buffer"),
         contents: bytemuck::cast_slice(INDICES),
-        usage: wgpu::BufferUsages::INDEX,
+        usage: BufferUsages::INDEX,
     });
 
-    let board: &Board = &Board::new(WIDTH as usize, HEIGHT as usize);
-
-    let instances = (0..WIDTH)
-        .flat_map(|x| (0..HEIGHT).map(move |y| Instance {
-            position: [x, y],
-            attributes: board.render_attributes(x as usize, y as usize),
-        }))
-        .collect::<Vec<_>>();
-
-    let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let instances: Vec<Instance> = Vec::new();
+    let instance_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Instance Buffer"),
         contents: bytemuck::cast_slice(&instances),
-        usage: wgpu::BufferUsages::VERTEX,
+        usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
     });
 
-    let mut camera_uniform = CameraUniform::new();
-    camera_uniform.update_view_proj(&camera, &[config.width, config.height]);
-    let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let camera_uniform = CameraUniform::new(camera, size);
+    let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Camera Buffer"),
         contents: bytemuck::cast_slice(&[camera_uniform]),
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
     });
+
+    let tile_view_uniform = TileViewUniform::new([0.0, 0.0], 0);
+    let tile_view_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: Some("Tile View Buffer"),
+        contents: bytemuck::cast_slice(&[tile_view_uniform]),
+        usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+    });
+
+    // bind groups
     let camera_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }, wgpu::BindGroupLayoutEntry {
+                binding: 1,
                 visibility: wgpu::ShaderStages::VERTEX,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
@@ -82,10 +93,16 @@ pub fn init_renderer(
 
     let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &camera_bind_group_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: camera_buffer.as_entire_binding(),
-        }],
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: tile_view_buffer.as_entire_binding(),
+            },
+        ],
         label: Some("camera_bind_group"),
     });
 
@@ -136,14 +153,18 @@ pub fn init_renderer(
 
     (
         render_pipeline,
-        instances,
+        instances.to_vec(),
         Buffers {
             vertex: vertex_buffer,
             index: index_buffer,
             instance: instance_buffer,
-            camera: camera_buffer
+            camera: camera_buffer,
+            tile_view: tile_view_buffer,
         },
-        camera_uniform,
+        Uniforms {
+            camera: camera_uniform,
+            tile_view: tile_view_uniform,
+        },
         camera_bind_group,
     )
 }
