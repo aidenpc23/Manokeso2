@@ -1,3 +1,5 @@
+use winit::dpi::PhysicalSize;
+
 use crate::camera::Camera;
 
 const DEFAULT_SCALE: f32 = 0.05;
@@ -12,23 +14,28 @@ pub struct CameraUniform {
 }
 
 impl CameraUniform {
-    pub fn new() -> Self {
-        Self {
-            pos: [0., 0.],
-            proj: [1., 1.],
-        }
-    }
-
-    pub fn update_view_proj(&mut self, camera: &Camera, size: &[u32; 2]) {
-        self.pos = camera.pos;
-        let win_aspect = size[0] as f32 / size[1] as f32;
-        self.proj = if win_aspect > camera.aspect {
+    pub fn new(camera: &Camera, size: &PhysicalSize<u32>) -> Self {
+        let win_aspect = size.width as f32 / size.height as f32;
+        let mut proj = if win_aspect > camera.aspect {
             [1.0, win_aspect]
         } else {
-            [camera.aspect/win_aspect, camera.aspect]
+            [camera.aspect / win_aspect, camera.aspect]
         };
-        self.proj[0] *= camera.scale * DEFAULT_SCALE;
-        self.proj[1] *= camera.scale * DEFAULT_SCALE;
+        proj[0] *= camera.scale * DEFAULT_SCALE;
+        proj[1] *= camera.scale * DEFAULT_SCALE;
+        Self {
+            pos: camera.pos,
+            proj,
+        }
     }
 }
 
+impl PartialEq for CameraUniform {
+    fn eq(&self, other: &Self) -> bool {
+        arr_eq(self.proj, other.proj) && arr_eq(self.pos, other.pos)
+    }
+}
+
+fn arr_eq<T: PartialEq, const N: usize>(arr1: [T; N], arr2: [T; N]) -> bool {
+    arr1.iter().zip(arr2.iter()).all(|(x, y)| x == y)
+}

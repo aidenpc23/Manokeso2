@@ -3,6 +3,7 @@ use crate::render::{
     state::Buffers,
 };
 use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
+use winit::dpi::PhysicalSize;
 
 use crate::{
     camera::Camera,
@@ -18,6 +19,7 @@ pub fn init_renderer(
     device: &Device,
     config: &SurfaceConfiguration,
     camera: &Camera,
+    size: &PhysicalSize<u32>,
 ) -> (
     RenderPipeline,
     Vec<Instance>,
@@ -51,8 +53,8 @@ pub fn init_renderer(
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     });
 
-    let mut camera_uniform = CameraUniform::new();
-    camera_uniform.update_view_proj(&camera, &[config.width, config.height]);
+    let camera_uniform =
+        CameraUniform::new(camera, size);
     let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Camera Buffer"),
         contents: bytemuck::cast_slice(&[camera_uniform]),

@@ -1,5 +1,5 @@
-use crate::render::uniform::CameraUniform;
 use crate::camera::Camera;
+use crate::render::uniform::CameraUniform;
 use wgpu::SurfaceConfiguration;
 use winit::{
     event_loop::EventLoop,
@@ -38,15 +38,12 @@ impl Renderer {
             .build(&event_loop)
             .unwrap();
 
+        let size = window.inner_size();
+
         let (surface, device, queue, config) = init_surface(&window).await;
 
-        let (
-            render_pipeline,
-            instances,
-            buffer,
-            camera_uniform,
-            camera_bind_group,
-        ) = init_renderer(&device, &config, &camera);
+        let (render_pipeline, instances, buffer, camera_uniform, camera_bind_group) =
+            init_renderer(&device, &config, &camera, &size);
 
         Self {
             window,
@@ -62,4 +59,3 @@ impl Renderer {
         }
     }
 }
-
