@@ -9,17 +9,18 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
         return true;
     }
     let camera = &mut state.camera;
+    let delta_mult = delta.as_millis() as f32;
     if input.down(Key::W) {
-        camera.pos[1] += PLAYER_SPEED * delta.as_millis() as f32;
+        camera.pos[1] += PLAYER_SPEED * delta_mult;
     }
     if input.down(Key::A) {
-        camera.pos[0] -= PLAYER_SPEED * delta.as_millis() as f32;
+        camera.pos[0] -= PLAYER_SPEED * delta_mult;
     }
     if input.down(Key::R) {
-        camera.pos[1] -= PLAYER_SPEED * delta.as_millis() as f32;
+        camera.pos[1] -= PLAYER_SPEED * delta_mult;
     }
     if input.down(Key::S) {
-        camera.pos[0] += PLAYER_SPEED * delta.as_millis() as f32;
+        camera.pos[0] += PLAYER_SPEED * delta_mult;
     }
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
