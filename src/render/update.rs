@@ -6,20 +6,23 @@ use super::{buffer::Instance, Renderer};
 
 impl Renderer {
     pub fn update(&mut self, state: &GameState) {
-        if self.instances.len() != state.colors.len() {
-            self.instances = state
-                .colors
-                .iter()
-                .map(|c| Instance {
-                    position: [0, 0],
-                    color: c.clone(),
-                })
-                .collect();
-            self.buffer.instance = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&self.instances),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            });
+        let old_len = self.instances.len();
+        self.instances = state
+            .colors
+            .iter()
+            .map(|c| Instance { color: c.clone() })
+            .collect();
+        if old_len != self.instances.len() {
+            self.buffer.instance =
+                self.device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("Instance Buffer"),
+                        contents: bytemuck::cast_slice(&self.instances),
+                        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                    });
+            for i in &self.instances {
+                println!("{:?}", i.color);
+            }
         } else {
             self.queue.write_buffer(
                 &self.buffer.instance,

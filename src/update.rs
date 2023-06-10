@@ -29,6 +29,9 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
     if input.just_pressed(Key::D) {
         state.colors.remove(0);
     }
+    if input.just_pressed(Key::P) {
+        state.colors[0] = [0.0; 3];
+    }
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
         camera.scale = (state.camera_scroll * 0.1).exp();

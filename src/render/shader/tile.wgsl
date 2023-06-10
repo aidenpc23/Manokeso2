@@ -11,8 +11,7 @@ struct VertexOutput {
 };
 
 struct InstanceInput {
-    @location(1) position: vec2<u32>,
-    @location(2) color: vec3<f32>,
+    @location(1) color: vec3<f32>,
 };
 
 struct CameraUniform {
@@ -30,7 +29,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = instance.color;
-    var pos = vertex.position + vec2<f32>(instance.position);
+    var pos = vertex.position;
     pos -= camera.pos;
     pos.x += f32(i);
     pos *= camera.proj;
@@ -45,9 +44,7 @@ fn vs_main(
 fn fs_main(
     in: VertexOutput
 ) -> @location(0) vec4<f32> {
-    var color = rgb_to_hsv(vec3(1.0, 0.0, 0.0));
-    color.x += f32(in.i) / 21.0;
-    color.x %= 1.0;
+    var color = rgb_to_hsv(in.color);
     color = hsv_to_rgb(color);
     return vec4<f32>(color, 1.0);
 }
@@ -68,7 +65,9 @@ fn rgb_to_hsv(color: vec3<f32>) -> vec3<f32> {
     var H = 1.0 / 6.0;
     if M == R {
         H *= 0.0 + (G - B) / d;
-        H %= 1.0;
+        if H < 0.0 {
+            H += 1.0;
+        }
     } else if M == G {
         H *= 2.0 + (B - R) / d;
     } else if M == B {
