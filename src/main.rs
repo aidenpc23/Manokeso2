@@ -34,6 +34,7 @@ async fn run() {
     let mut last_update = time::Instant::now();
     let mut last_frame = time::Instant::now();
     let mut inputs = Input::new();
+    let mut resized = false;
 
     // Game loop
     event_loop.run(move |event, _, control_flow| {
@@ -43,6 +44,7 @@ async fn run() {
             Event::WindowEvent { event, window_id } if window_id == renderer.window.id() => {
                 match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::Resized(_) => resized = true,
                     _ => inputs.update(event),
                 }
             }
@@ -59,9 +61,15 @@ async fn run() {
                 // render if it's time
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
-                    renderer.update(&state);
+                    let fstart = time::Instant::now();
+                    renderer.update(&state, resized);
+                    resized = false;
                     renderer.render();
                     last_frame = now;
+                    let ftime = time::Instant::now() - fstart;
+                    if ftime > time::Duration::from_millis(10) {
+                        println!("Frame took {:?}", ftime);
+                    }
                 }
             }
             _ => {}

@@ -1,24 +1,39 @@
+use std::time;
+
 use wgpu::util::DeviceExt;
 
 use crate::state::GameState;
 
+const CHUNK_SHIFT: u32 = 5;
+const CHUNK_SIZE: usize = 2usize.pow(CHUNK_SHIFT);
+
 use super::{
-    buffer::Instance,
-    Renderer, uniform::{CameraUniform, TileViewUniform},
+    uniform::{CameraUniform, TileViewUniform},
+    Renderer,
 };
 
 impl Renderer {
-    pub fn update(&mut self, state: &GameState) {
-        self.update_instances(&state);
-        self.update_view(&state);
-    }
+    pub fn update(&mut self, state: &GameState, resize: bool) {
+        let camera = &state.camera;
+        let size = &self.window.inner_size();
+        let uniform = CameraUniform::new(camera, size);
 
-    fn update_instances(&mut self, state: &GameState) {
+        let [xs, ys] = self.uniforms.camera.bottom_left();
+        let [xe, ye] = self.uniforms.camera.top_right();
+        let [bx, by] = [0.0, 0.0];
+        let bxe = state.board.width();
+        let bye = state.board.height();
+        let mut xs = f32::max(xs - bx + 0.5, 0.0) as usize;
+        let mut ys = f32::max(ys - by + 0.5, 0.0) as usize;
+        let mut xe = f32::max(xe - bx + 1.5, xs as f32) as usize;
+        let mut ye = f32::max(ye - by + 1.5, ys as f32) as usize;
+        xs = usize::min((xs >> CHUNK_SHIFT) << CHUNK_SHIFT, bxe);
+        ys = usize::min((ys >> CHUNK_SHIFT) << CHUNK_SHIFT, bye);
+        xe = usize::min(((xe >> CHUNK_SHIFT) << CHUNK_SHIFT) + CHUNK_SIZE, bxe);
+        ye = usize::min(((ye >> CHUNK_SHIFT) << CHUNK_SHIFT) + CHUNK_SIZE, bye);
+
         let old_len = self.instances.len();
-        self.instances = state.board.render_attributes()
-            .into_iter()
-            .map(|attributes| Instance { attributes })
-            .collect();
+        self.instances = state.board.render_attributes(xs, xe, ys, ye);
         if old_len != self.instances.len() {
             self.buffers.instance =
                 self.device
@@ -34,15 +49,8 @@ impl Renderer {
                 bytemuck::cast_slice(&self.instances),
             );
         }
-    }
 
-    fn update_view(&mut self, state: &GameState) {
-        let camera = &state.camera;
-        let size = &self.window.inner_size();
-        let uniform = CameraUniform::new(camera, size);
-
-        let width = state.board.width() as u32;
-        let view = TileViewUniform::new([0.0, 0.0], width);
+        let view = TileViewUniform::new([xs as f32, ys as f32], (xe - xs) as u32);
         if self.uniforms.tile_view != view {
             self.uniforms.tile_view = view;
             self.queue.write_buffer(
@@ -59,9 +67,11 @@ impl Renderer {
                 0,
                 bytemuck::cast_slice(&[self.uniforms.camera]),
             );
-            self.config.width = size.width;
-            self.config.height = size.height;
-            self.surface.configure(&self.device, &self.config);
+            if resize {
+                self.config.width = size.width;
+                self.config.height = size.height;
+                self.surface.configure(&self.device, &self.config);
+            }
         }
     }
 }

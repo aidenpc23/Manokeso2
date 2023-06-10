@@ -53,8 +53,8 @@ impl PartialEq for CameraUniform {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct TileViewUniform {
-    pos: [f32; 2],
-    width: u32,
+    pub pos: [f32; 2],
+    pub width: u32,
     // shader has an alignment of 8, so we need to add padding
     _padding: u32,
 }
