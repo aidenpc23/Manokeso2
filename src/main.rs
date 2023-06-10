@@ -1,15 +1,22 @@
+use std::time;
+
+use input::Input;
+use rsc::FRAME_TIME;
+use state::GameState;
+use update::update;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
 };
 
 mod camera;
-mod rsc;
-mod window;
 mod input;
+mod render;
+mod rsc;
+mod state;
+mod update;
 
-use camera::Camera;
-use window::GameWindow;
+use render::Renderer;
 
 fn main() {
     pollster::block_on(run());
@@ -19,57 +26,44 @@ async fn run() {
     // Setup logger, event loop, and window
     env_logger::init();
     let event_loop = EventLoop::new();
-    let mut camera = Camera::default();
-    let mut state: GameWindow = GameWindow::new(&event_loop, &camera).await;
-    state.window.set_visible(true);
+    let mut state = GameState::new();
+    let mut renderer = Renderer::new(&event_loop, &state.camera).await;
+    renderer.window.set_visible(true);
 
-    let mut scroll = 0.;
+    let mut last_update = time::Instant::now();
+    let mut last_frame = time::Instant::now();
+    let mut inputs = Input::new();
 
     // Game loop
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
+        *control_flow = ControlFlow::Poll;
 
         match event {
-            Event::WindowEvent {
-                event,
-                window_id,
-            } if window_id == state.window.id() => match event {
-                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                WindowEvent::KeyboardInput { input, .. } => {
-                    if input.virtual_keycode == Some(VirtualKeyCode::Escape) {
-                        *control_flow = ControlFlow::Exit
-                    }
-                    if input.virtual_keycode == Some(VirtualKeyCode::W) {
-                        camera.pos[1] += 0.1;
-                    }
-                    if input.virtual_keycode == Some(VirtualKeyCode::A) {
-                        camera.pos[0] -= 0.1;
-                    }
-                    if input.virtual_keycode == Some(VirtualKeyCode::R) {
-                        camera.pos[1] -= 0.1;
-                    }
-                    if input.virtual_keycode == Some(VirtualKeyCode::S) {
-                        camera.pos[0] += 0.1;
-                    }
-                    state.update_view(&camera);
-                    state.render();
-                },
-                WindowEvent::Resized(_) => {
-                    state.update_view(&camera);
+            Event::WindowEvent { event, window_id } if window_id == renderer.window.id() => {
+                match event {
+                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    _ => inputs.update(event),
                 }
-                WindowEvent::MouseWheel { delta, .. } => {
-                    scroll += match delta {
-                        MouseScrollDelta::LineDelta(_, v) => v,
-                        MouseScrollDelta::PixelDelta(v) => v.y as f32
-                    };
-                    camera.scale = (scroll * 0.1).exp();
-                    state.update_view(&camera);
-                    state.render();
-                }
-                _ => {}
             }
-            Event::RedrawRequested(_) => state.render(),
-            _ => (),
+            Event::RedrawRequested(_) => renderer.render(),
+            Event::MainEventsCleared => {
+                let now = time::Instant::now();
+                // handle update
+                let delta = now - last_update;
+                last_update = now;
+                if update(&delta, &inputs, &mut state) {
+                    *control_flow = ControlFlow::Exit;
+                }
+                inputs.end();
+                // render if it's time
+                let delta = now - last_frame;
+                if delta > FRAME_TIME {
+                    renderer.update_view(&state.camera);
+                    renderer.render();
+                    last_frame = now;
+                }
+            }
+            _ => {}
         }
     });
 }

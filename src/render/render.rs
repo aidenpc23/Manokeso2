@@ -1,8 +1,8 @@
 use wgpu::{CommandEncoder, TextureView};
 
-use super::{state::GameWindow, rsc::CLEAR_COLOR};
+use super::{state::Renderer, rsc::CLEAR_COLOR};
 
-impl GameWindow {
+impl Renderer {
     pub fn render(&mut self) {
         let output = self.surface.get_current_texture().unwrap();
         let view = output

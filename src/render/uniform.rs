@@ -1,6 +1,6 @@
 use crate::camera::Camera;
 
-use crate::window::state::GameWindow;
+use crate::render::state::Renderer;
 
 const DEFAULT_SCALE: f32 = 0.05;
 
@@ -34,7 +34,7 @@ impl CameraUniform {
     }
 }
 
-impl GameWindow {
+impl Renderer {
     pub fn update_view(&mut self, camera: &Camera) {
         let size = self.window.inner_size();
         self.camera_uniform.update_view_proj(&camera, &[size.width, size.height]);

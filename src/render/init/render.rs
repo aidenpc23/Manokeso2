@@ -1,10 +1,10 @@
-use crate::window::{rsc::square::{INDICES, VERTICES}, state::Buffers};
+use crate::render::{rsc::square::{INDICES, VERTICES}, state::Buffers};
 use wgpu::{util::DeviceExt, BindGroup, Device, RenderPipeline, SurfaceConfiguration};
 
 use crate::{
     camera::Camera,
     rsc::{HEIGHT, WIDTH},
-    window::{
+    render::{
         buffer::{Instance, Vertex},
         uniform::CameraUniform,
     },

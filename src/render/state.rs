@@ -1,5 +1,5 @@
-use crate::window::uniform::CameraUniform;
-use crate::Camera;
+use crate::render::uniform::CameraUniform;
+use crate::camera::Camera;
 use wgpu::SurfaceConfiguration;
 use winit::{
     event_loop::EventLoop,
@@ -15,7 +15,7 @@ pub struct Buffers {
     pub camera: wgpu::Buffer,
 }
 
-pub struct GameWindow {
+pub struct Renderer {
     // window & device stuff
     pub window: Window,
     pub(super) surface: wgpu::Surface,
@@ -31,8 +31,8 @@ pub struct GameWindow {
     pub(super) camera_bind_group: wgpu::BindGroup,
 }
 
-impl GameWindow {
-    pub async fn new(event_loop: &EventLoop<()>, camera: &Camera) -> GameWindow {
+impl Renderer {
+    pub async fn new(event_loop: &EventLoop<()>, camera: &Camera) -> Renderer {
         let window = WindowBuilder::new()
             .with_visible(false)
             .build(&event_loop)

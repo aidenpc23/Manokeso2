@@ -6,7 +6,7 @@ pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
 };
 
 pub mod square {
-    use crate::window::buffer::Vertex;
+    use crate::render::buffer::Vertex;
 
     pub const VERTICES: &[Vertex] = &[
         Vertex {
