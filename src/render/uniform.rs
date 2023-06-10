@@ -40,12 +40,12 @@ pub struct TileViewUniform {
     pos: [f32; 2],
     width: u32,
      // shader has an alignment of 8, so we need to add padding
-    padding: u32,
+    _padding: u32,
 }
 
 impl TileViewUniform {
     pub fn new(pos: [f32; 2], width: u32) -> Self {
-        Self { pos, width, padding: 0 }
+        Self { pos, width, _padding: 0 }
     }
 }
 
