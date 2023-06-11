@@ -7,3 +7,4 @@ mod uniform;
 mod update;
 
 pub use state::*;
+pub use buffer::Instance;
