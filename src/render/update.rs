@@ -4,7 +4,7 @@ use crate::state::GameState;
 
 const CHUNK_ALIGN: u32 = 5;
 const CHUNK_SIZE: i32 = 2i32.pow(CHUNK_ALIGN);
-const CHUNK_MASK: i32 = !(CHUNK_SIZE-1);
+const CHUNK_MASK: i32 = !(CHUNK_SIZE - 1);
 
 use super::{
     uniform::{CameraUniform, TileViewUniform},
@@ -21,7 +21,7 @@ impl Renderer {
         // s = start, e = end
         let [cxs, cys] = self.uniforms.camera.bottom_left();
         let [cxe, cye] = self.uniforms.camera.top_right();
-        let [bx, by] = [0.0, 0.0]; // TODO: get board x and y from state
+        let [bx, by] = state.board.pos;
         let bw = state.board.width();
         let bh = state.board.height();
         // calculate camera position relative to board position
@@ -31,8 +31,8 @@ impl Renderer {
         let xe = (cxe - bx + 1.5) as i32;
         let ye = (cye - by + 1.5) as i32;
         // align with chunks and add an extra chunk in each direction
-        let xs = (xs & CHUNK_MASK) - CHUNK_SIZE;
-        let ys = (ys & CHUNK_MASK) - CHUNK_SIZE;
+        let xs = (xs & CHUNK_MASK) - 1 * CHUNK_SIZE;
+        let ys = (ys & CHUNK_MASK) - 1 * CHUNK_SIZE;
         let xe = (xe & CHUNK_MASK) + 2 * CHUNK_SIZE;
         let ye = (ye & CHUNK_MASK) + 2 * CHUNK_SIZE;
         // cut off values for bounds
@@ -59,7 +59,7 @@ impl Renderer {
             );
         }
 
-        let view = TileViewUniform::new([xs as f32, ys as f32], (xe - xs) as u32);
+        let view = TileViewUniform::new([bx + xs as f32, by + ys as f32], (xe - xs) as u32);
         if self.uniforms.tile_view != view {
             self.uniforms.tile_view = view;
             self.queue.write_buffer(

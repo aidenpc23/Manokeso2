@@ -5,6 +5,7 @@ use rand::distributions::Uniform;
 use crate::render::Instance;
 
 pub struct Board {
+    pub pos: [f32; 2],
     width: usize,
     height: usize,
     connex_numbers: Array2<u32>,
@@ -14,8 +15,9 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(width: usize, height: usize) -> Board {
+    pub fn new(pos: [f32; 2], width: usize, height: usize) -> Board {
         Board {
+            pos,
             width,
             height,
             connex_numbers: Array2::random((width, height), Uniform::new(0, 200)),
@@ -26,7 +28,7 @@ impl Board {
     }
 
     pub fn render_attributes(&self, xs: usize, xe: usize, ys: usize, ye: usize) -> Vec<Instance> {
-        let mut attrs = Vec::with_capacity((xe-xs) * (ye-ys));
+        let mut attrs = Vec::with_capacity((xe - xs) * (ye - ys));
         for y in ys..ye {
             for x in xs..xe {
                 attrs.push(Instance {
@@ -35,7 +37,7 @@ impl Board {
                         *self.stability.get((x, y)).unwrap(),
                         *self.reactivity.get((x, y)).unwrap(),
                         *self.energy.get((x, y)).unwrap(),
-                    ]
+                    ],
                 })
             }
         }
@@ -58,4 +60,3 @@ impl Board {
         self.height
     }
 }
-

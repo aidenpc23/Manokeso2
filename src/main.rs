@@ -61,15 +61,10 @@ async fn run() {
                 // render if it's time
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
-                    let fstart = time::Instant::now();
                     renderer.update(&state, resized);
                     resized = false;
                     renderer.render();
                     last_frame = now;
-                    let ftime = time::Instant::now() - fstart;
-                    if ftime > time::Duration::from_millis(10) {
-                        println!("Frame took {:?}", ftime);
-                    }
                 }
             }
             _ => {}
