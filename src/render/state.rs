@@ -30,6 +30,7 @@ pub struct Renderer {
     pub(super) config: SurfaceConfiguration,
     // render stuff
     pub(super) render_pipeline: wgpu::RenderPipeline,
+    pub(super) instance_len: usize,
     pub(super) instances: Vec<Instance>,
     pub(super) buffers: Buffers,
     pub(super) uniforms: Uniforms,
@@ -57,6 +58,7 @@ impl Renderer {
             queue,
             config,
             render_pipeline,
+            instance_len: 0,
             instances,
             uniforms,
             buffers,

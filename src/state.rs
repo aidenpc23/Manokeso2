@@ -11,7 +11,7 @@ impl GameState {
         Self {
             camera: Camera::default(),
             camera_scroll: 0.0,
-            board: Board::new([-1., -1.], 1000, 1000),
+            board: Board::new([-500., -500.], 1000, 1000),
         }
     }
 }

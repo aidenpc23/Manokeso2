@@ -1,6 +1,7 @@
 use ndarray::Array2;
 use ndarray_rand::RandomExt;
-use rand::distributions::Uniform;
+use rand::{distributions::Uniform, Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 
 use crate::render::Instance;
 
@@ -8,15 +9,29 @@ pub struct Board {
     pub pos: [f32; 2],
     width: usize,
     height: usize,
-    connex_numbers: Array2<u32>,
-    stability: Array2<f32>,
-    reactivity: Array2<f32>,
-    energy: Array2<f32>,
+    pub test: Vec<Vec<Instance>>,
+    pub connex_numbers: Array2<u32>,
+    pub stability: Array2<f32>,
+    pub reactivity: Array2<f32>,
+    pub energy: Array2<f32>,
 }
 
 impl Board {
     pub fn new(pos: [f32; 2], width: usize, height: usize) -> Board {
+        let mut rng = ChaCha8Rng::seed_from_u64(0);
         Board {
+            test: (0..height)
+                .map(|_| {
+                    (0..width)
+                        .map(|_| Instance {
+                            connex_number: rng.gen_range(0..200),
+                            stability: rng.gen_range(0.0..1.0),
+                            reactivity: rng.gen_range(-1.0..1.0),
+                            energy: rng.gen_range(0.0..150.0),
+                        })
+                        .collect()
+                })
+                .collect(),
             pos,
             width,
             height,
@@ -25,23 +40,6 @@ impl Board {
             reactivity: Array2::random((width, height), Uniform::new(-1., 1.)),
             energy: Array2::random((width, height), Uniform::new(0., 150.)),
         }
-    }
-
-    pub fn render_attributes(&self, xs: usize, xe: usize, ys: usize, ye: usize) -> Vec<Instance> {
-        let mut attrs = Vec::with_capacity((xe - xs) * (ye - ys));
-        for y in ys..ye {
-            for x in xs..xe {
-                attrs.push(Instance {
-                    attributes: [
-                        *self.connex_numbers.get((x, y)).unwrap() as f32,
-                        *self.stability.get((x, y)).unwrap(),
-                        *self.reactivity.get((x, y)).unwrap(),
-                        *self.energy.get((x, y)).unwrap(),
-                    ],
-                })
-            }
-        }
-        attrs
     }
 
     pub fn update(&mut self) {

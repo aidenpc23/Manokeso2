@@ -44,6 +44,6 @@ impl Renderer {
         render_pass.set_vertex_buffer(1, self.buffers.instance.slice(..));
         render_pass.set_index_buffer(self.buffers.index.slice(..), wgpu::IndexFormat::Uint16);
 
-        render_pass.draw_indexed(0..6, 0, 0..self.instances.len() as _);
+        render_pass.draw_indexed(0..6, 0, 0..self.instance_len as _);
     }
 }

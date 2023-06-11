@@ -23,12 +23,18 @@ impl Vertex {
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Instance {
-    pub attributes: [f32; 4],
+    pub connex_number: u32,
+    pub stability: f32,
+    pub reactivity: f32,
+    pub energy: f32,
 }
 
 impl Instance {
-    const ATTRIBS: [wgpu::VertexAttribute; 1] = wgpu::vertex_attr_array![
-        1 => Float32x4,
+    const ATTRIBS: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
+        1 => Uint32,
+        2 => Float32,
+        3 => Float32,
+        4 => Float32,
     ];
 
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {

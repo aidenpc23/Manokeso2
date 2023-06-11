@@ -6,12 +6,18 @@ struct VertexInput {
 
 struct VertexOutput {
     @location(0) i: u32,
-    @location(1) attributes: vec4<f32>,
+    @location(1) connex_number: u32,
+    @location(2) stability: f32,
+    @location(3) reactivity: f32,
+    @location(4) energy: f32,
     @builtin(position) clip_position: vec4<f32>,
 };
 
 struct InstanceInput {
-    @location(1) attributes: vec4<f32>,
+    @location(1) connex_number: u32,
+    @location(2) stability: f32,
+    @location(3) reactivity: f32,
+    @location(4) energy: f32,
 };
 
 struct CameraUniform {
@@ -35,7 +41,10 @@ fn vs_main(
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.attributes = instance.attributes;
+    out.connex_number = instance.connex_number;
+    out.stability = instance.stability;
+    out.reactivity = instance.reactivity;
+    out.energy = instance.energy;
     out.i = i;
 
     var pos = vertex.position;
@@ -54,7 +63,7 @@ fn vs_main(
 fn fs_main(
     in: VertexOutput
 ) -> @location(0) vec4<f32> {
-    var hsv = rgb_to_hsv(in.attributes.xyz);
+    var hsv = rgb_to_hsv(vec3<f32>(f32(in.connex_number), in.stability, in.reactivity));
     let rgb = hsv_to_rgb(hsv);
     return vec4<f32>(rgb, 1.0);
 }
