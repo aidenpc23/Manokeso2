@@ -1,4 +1,5 @@
-use ndarray::{s, Axis};
+use itertools::izip;
+use ndarray::{azip, s, Axis};
 
 use crate::world::Board;
 
@@ -16,34 +17,40 @@ impl Board {
         let width = xe - xs;
         let size = width * (ye - ys);
         if instances.len() >= size {
-            // let mut i = 0;
-            // for rows in self.test[ys..ye].iter() {
-            //     for row in rows[xs..xe].iter() {
-            //         let tile = &mut instances[i];
-            //         tile.connex_number = row[0] as u32;
-            //         tile.stability = row[1];
-            //         tile.reactivity = row[2];
-            //         tile.energy = row[3];
-            //         i += 1;
-            //     }
-            // }
             let mut i = 0;
-            for row in self.test.slice(s![ys..ye, xs..xe]).axis_iter(Axis(0)) {
-                instances[i..i+width].copy_from_slice(&row.as_slice().unwrap());
-                i += width;
+            for rows in izip!(
+                self.connex_numbers.current()[ys..ye].iter(),
+                self.conductivity.current()[ys..ye].iter(),
+                self.reactivity.current()[ys..ye].iter(),
+                self.energy.current()[ys..ye].iter()
+            ) {
+                for row in izip!(
+                    &rows.0[xs..xe],
+                    &rows.1[xs..xe],
+                    &rows.2[xs..xe],
+                    &rows.3[xs..xe]
+                ) {
+                    let tile = &mut instances[i];
+                    tile.connex_number = *row.0 as u32;
+                    tile.stability = *row.1;
+                    tile.reactivity = *row.2;
+                    tile.energy = *row.3;
+                    i += 1;
+                }
             }
+
             // azip!((index (y, x),
-            //     &c in &self.connex_numbers.slice(s![xs..xe, ys..ye]),
-            //     &s in &self.stability.slice(s![xs..xe, ys..ye]),
-            //     &r in &self.reactivity.slice(s![xs..xe, ys..ye]),
-            //     &e in &self.energy.slice(s![xs..xe, ys..ye])
+            //     &c in &self.connex_numbers.current().slice(s![xs..xe, ys..ye]),
+            //     &s in &self.stability.current().slice(s![xs..xe, ys..ye]),
+            //     &r in &self.reactivity.current().slice(s![xs..xe, ys..ye]),
+            //     &e in &self.energy.current().slice(s![xs..xe, ys..ye])
             // ) {
             //     let i = y * width + x;
-            //     let attrs = &mut instances[i].attributes;
-            //     attrs[0] = c as f32;
-            //     attrs[1] = s;
-            //     attrs[2] = r;
-            //     attrs[3] = e;
+            //     let instance: &mut Instance = &mut instances[i];
+            //     instance.connex_number = c;
+            //     instance.stability = s;
+            //     instance.reactivity = r;
+            //     instance.energy = e;
             // });
             // for y in ys..ye {
             //     for x in xs..xe {
@@ -58,19 +65,26 @@ impl Board {
             // }
         } else {
             instances.clear();
-            for row in self.test.slice(s![ys..ye, xs..xe]).axis_iter(Axis(0)) {
-                instances.extend_from_slice(&row.as_slice().unwrap());
+            for rows in izip!(
+                self.connex_numbers.current()[ys..ye].iter(),
+                self.conductivity.current()[ys..ye].iter(),
+                self.reactivity.current()[ys..ye].iter(),
+                self.energy.current()[ys..ye].iter()
+            ) {
+                for row in izip!(
+                    &rows.0[xs..xe],
+                    &rows.1[xs..xe],
+                    &rows.2[xs..xe],
+                    &rows.3[xs..xe]
+                ) {
+                    instances.push(Instance {
+                        connex_number: *row.0 as u32,
+                        stability: *row.1,
+                        reactivity: *row.2,
+                        energy: *row.3,
+                    });
+                }
             }
-            // for rows in self.test[ys..ye].iter() {
-            //     for row in rows[xs..xe].iter() {
-            //         instances.push(Instance {
-            //             connex_number: row[0] as u32,
-            //             stability: row[1],
-            //             reactivity: row[2],
-            //             energy: row[3],
-            //         })
-            //     }
-            // }
         }
         size
     }

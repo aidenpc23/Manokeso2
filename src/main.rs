@@ -65,7 +65,7 @@ async fn run() {
                     resized = false;
                     renderer.render();
                     last_frame = now;
-                    println!("{:?}", time::Instant::now() - now);
+                    //println!("{:?}", time::Instant::now() - now);
                 }
             }
             _ => {}

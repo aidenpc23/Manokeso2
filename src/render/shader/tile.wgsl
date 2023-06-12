@@ -63,7 +63,8 @@ fn vs_main(
 fn fs_main(
     in: VertexOutput
 ) -> @location(0) vec4<f32> {
-    var hsv = rgb_to_hsv(vec3<f32>(f32(in.connex_number) / 200.0, in.stability, in.energy / 150.0));
+    var hsv = rgb_to_hsv(vec3<f32>(f32(in.connex_number) / 200.0, in.stability, (in.reactivity+1.0)/2.0));
+    hsv.z = min(in.energy / 150.0, 150.0);
     let rgb = hsv_to_rgb(hsv);
     return vec4<f32>(rgb, 1.0);
 }
