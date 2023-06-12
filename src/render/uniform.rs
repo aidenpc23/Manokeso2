@@ -27,12 +27,8 @@ impl CameraUniform {
         }
     }
 
-    pub fn bottom_left(&self) -> [f32; 2] {
-        self.cam_to_world([-1.0, -1.0])
-    }
-
-    pub fn top_right(&self) -> [f32; 2] {
-        self.cam_to_world([1.0, 1.0])
+    pub fn world_dimensions(&self) -> [f32; 2] {
+        [2.0 / self.proj[0], 2.0 / self.proj[1]]
     }
 
     fn cam_to_world(&self, mut coords: [f32; 2]) -> [f32; 2] {

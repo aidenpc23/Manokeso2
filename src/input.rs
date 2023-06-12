@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 
 pub struct Input {
+    pub mouse_pos: [f32; 2],
     just_pressed: HashSet<VirtualKeyCode>,
     pressed: HashSet<VirtualKeyCode>,
     pub scroll_delta: f32,
@@ -11,6 +12,7 @@ pub struct Input {
 impl Input {
     pub fn new() -> Self {
         Self {
+            mouse_pos: [0.0, 0.0],
             just_pressed: HashSet::new(),
             pressed: HashSet::new(),
             scroll_delta: 0.,
@@ -34,8 +36,14 @@ impl Input {
             WindowEvent::MouseWheel { delta, .. } => {
                 self.scroll_delta = match delta {
                     MouseScrollDelta::LineDelta(_, v) => v,
-                    MouseScrollDelta::PixelDelta(v) => v.y as f32,
+                    MouseScrollDelta::PixelDelta(v) => (v.y / 2.0) as f32,
                 };
+            }
+            WindowEvent::CursorLeft { .. } => {
+                self.pressed.clear();
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.mouse_pos = [position.x as f32, position.y as f32];
             }
             _ => (),
         }

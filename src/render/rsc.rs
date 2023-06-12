@@ -6,20 +6,22 @@ pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
 };
 
 pub mod square {
+    const SIZE: f32 = 1.0;
+    const DIST: f32 = SIZE / 2.0;
     use crate::render::buffer::Vertex;
 
     pub const VERTICES: &[Vertex] = &[
         Vertex {
-            position: [-0.5, -0.5],
+            position: [-DIST, -DIST],
         },
         Vertex {
-            position: [0.5, -0.5],
+            position: [DIST, -DIST],
         },
         Vertex {
-            position: [0.5, 0.5],
+            position: [DIST, DIST],
         },
         Vertex {
-            position: [-0.5, 0.5],
+            position: [-DIST, DIST],
         },
     ];
 
