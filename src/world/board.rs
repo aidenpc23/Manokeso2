@@ -1,21 +1,11 @@
-use std::{ops::Range, time::Duration};
+use std::time::Duration;
 
-use convolutions_rs::{
-    convolutions::{conv2d, ConvolutionLayer},
-    Padding,
-};
-use rand::{distributions::Uniform, Rng, SeedableRng};
+use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-
-use crate::render::Instance;
 
 use super::swap_buffer::SwapBuffer;
 
-const BASE_KERNEL: [[f32; 3]; 3] = [
-    [0.5, 1.0, 0.5,],
-    [1.0, 2.0, 1.0,],
-    [0.5, 1.0, 0.5,],
-];
+const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
 
 pub struct Board {
     pub pos: [f32; 2],
@@ -35,33 +25,28 @@ impl Board {
             pos,
             width,
             height,
-            connex_numbers: SwapBuffer::from_array((0..height)
-                .map(|_| {
-                    (0..width)
-                        .map(|_| rng.gen_range(0..200))
-                        .collect()
-                }).collect()),
-            conductivity: SwapBuffer::from_array((0..height)
-            .map(|_| {
-                (0..width)
-                    .map(|_| rng.gen_range(0.0..1.0))
-                    .collect()
-            }).collect()),
-            reactivity: SwapBuffer::from_array((0..height)
-            .map(|_| {
-                (0..width)
-                    .map(|_| rng.gen_range(-1.0..1.0))
-                    .collect()
-            }).collect()),
-            energy: SwapBuffer::from_array((0..height)
-            .map(|_| {
-                (0..width)
-                    .map(|_| rng.gen_range(0.0..150.0))
-                    .collect()
-            }).collect()),
+            connex_numbers: SwapBuffer::from_array(
+                (0..height)
+                    .map(|_| (0..width).map(|_| rng.gen_range(0..200)).collect())
+                    .collect(),
+            ),
+            conductivity: SwapBuffer::from_array(
+                (0..height)
+                    .map(|_| (0..width).map(|_| rng.gen_range(0.0..1.0)).collect())
+                    .collect(),
+            ),
+            reactivity: SwapBuffer::from_array(
+                (0..height)
+                    .map(|_| (0..width).map(|_| rng.gen_range(-1.0..1.0)).collect())
+                    .collect(),
+            ),
+            energy: SwapBuffer::from_array(
+                (0..height)
+                    .map(|_| (0..width).map(|_| rng.gen_range(0.0..150.0)).collect())
+                    .collect(),
+            ),
         }
     }
-
 
     pub fn update(&mut self, delta: &Duration) {
         // for x in 0..self.width {
@@ -69,7 +54,7 @@ impl Board {
 
         //     }
         // }
-        
+
         let mut s = 0.0;
         let d = delta.as_secs_f32();
 
@@ -79,20 +64,27 @@ impl Board {
                 let mut weights = 0.;
                 for dx in 0..=2 {
                     for dy in 0..=2 {
-                        if x+dx>=1 && y+dy>=1&&x+dx-1<self.width && y+dy-1<self.height {
-                            let cond = (1. - self.conductivity.get(x+dx-1, y+dy-1)) * (if !((dx==0)&(dx==0)) {1.} else {0.});
-                            sum += BASE_KERNEL[dx][dy] * self.energy.get(x+dx-1, y+dy-1) * cond;
+                        if x + dx >= 1
+                            && y + dy >= 1
+                            && x + dx - 1 < self.width
+                            && y + dy - 1 < self.height
+                        {
+                            let cond = (1. - self.conductivity.get(x + dx - 1, y + dy - 1))
+                                * (if !((dx == 0) & (dy == 0)) { 1. } else { 0. });
+                            sum += BASE_KERNEL[dx][dy]
+                                * self.energy.get(x + dx - 1, y + dy - 1)
+                                * cond;
                             weights += BASE_KERNEL[dx][dy] * cond;
                         }
                     }
                 }
-                let t = sum/weights;
+                let t = sum / weights;
                 s += t;
                 self.energy.interpolate_towards(x, y, t, d);
             }
         }
         self.energy.swap();
-    
+
         // println!("{:?}", s)
     }
 

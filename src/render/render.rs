@@ -41,9 +41,12 @@ impl Renderer {
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, self.buffers.vertex.slice(..));
-        render_pass.set_vertex_buffer(1, self.buffers.instance.slice(..));
+        render_pass.set_vertex_buffer(1, self.instances.connex_number.buffer.slice(..));
+        render_pass.set_vertex_buffer(2, self.instances.conductivity.buffer.slice(..));
+        render_pass.set_vertex_buffer(3, self.instances.reactivity.buffer.slice(..));
+        render_pass.set_vertex_buffer(4, self.instances.energy.buffer.slice(..));
         render_pass.set_index_buffer(self.buffers.index.slice(..), wgpu::IndexFormat::Uint16);
 
-        render_pass.draw_indexed(0..6, 0, 0..self.instance_len as _);
+        render_pass.draw_indexed(0..6, 0, 0..self.instances.conductivity.data_len as _);
     }
 }

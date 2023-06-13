@@ -1,5 +1,10 @@
 use std::mem;
 
+use wgpu::{
+    util::{BufferInitDescriptor, DeviceExt},
+    BufferUsages, Device, Queue,
+};
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
@@ -20,31 +25,66 @@ impl Vertex {
     }
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Instance {
-    pub connex_number: u32,
-    pub stability: f32,
-    pub reactivity: f32,
-    pub energy: f32,
+pub struct Instance<T> {
+    pub label: String,
+    pub data_len: usize,
+    pub data: Vec<T>,
+    pub buffer: wgpu::Buffer,
 }
 
-impl Instance {
-    const ATTRIBS: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
-        1 => Uint32,
-        2 => Float32,
-        3 => Float32,
-        4 => Float32,
-    ];
-
-    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Instance>() as wgpu::BufferAddress,
-            // We need to switch from using a step mode of Vertex to Instance
-            // This means that our shaders will only change to use the next
-            // instance when the shader starts processing a new instance
-            step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &Self::ATTRIBS,
+impl<T: bytemuck::Pod> Instance<T> {
+    pub fn init(device: &Device, name: &str) -> Self {
+        Self {
+            label: name.to_owned(),
+            data_len: 0,
+            data: Vec::new(),
+            buffer: Self::init_buf(device, name, &[]),
         }
     }
+
+    pub fn write(&mut self, device: &Device, queue: &Queue, len: usize) {
+        if self.data_len != len {
+            self.data_len = len;
+            self.buffer = Self::init_buf(device, &self.label, &self.data[0..self.data_len]);
+        } else {
+            queue.write_buffer(
+                &self.buffer,
+                0,
+                bytemuck::cast_slice(&self.data[0..self.data_len]),
+            );
+        }
+    }
+
+    fn init_buf(device: &Device, label: &str, contents: &[T]) -> wgpu::Buffer {
+        device.create_buffer_init(&BufferInitDescriptor {
+            label: Some(&(label.to_owned() + "Instance Buffer")),
+            contents: bytemuck::cast_slice(contents),
+            usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+        })
+    }
+}
+
+pub fn instance_descs() -> Vec<wgpu::VertexBufferLayout<'static>> {
+    vec![
+        wgpu::VertexBufferLayout {
+            array_stride: 4 as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &wgpu::vertex_attr_array![1 => Uint32],
+        },
+        wgpu::VertexBufferLayout {
+            array_stride: 4 as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &wgpu::vertex_attr_array![2 => Float32],
+        },
+        wgpu::VertexBufferLayout {
+            array_stride: 4 as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &wgpu::vertex_attr_array![3 => Float32],
+        },
+        wgpu::VertexBufferLayout {
+            array_stride: 4 as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &wgpu::vertex_attr_array![4 => Float32],
+        },
+    ]
 }

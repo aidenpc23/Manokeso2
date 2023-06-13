@@ -6,12 +6,11 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use super::{buffer::Instance, init::*, uniform::TileViewUniform};
+use super::{init::*, uniform::TileViewUniform, buffer::Instance};
 
 pub struct Buffers {
     pub vertex: wgpu::Buffer,
     pub index: wgpu::Buffer,
-    pub instance: wgpu::Buffer,
     pub camera: wgpu::Buffer,
     pub tile_view: wgpu::Buffer,
 }
@@ -19,6 +18,13 @@ pub struct Buffers {
 pub struct Uniforms {
     pub camera: CameraUniform,
     pub tile_view: TileViewUniform,
+}
+
+pub struct Instances {
+    pub connex_number: Instance<u32>,
+    pub conductivity: Instance<f32>,
+    pub reactivity: Instance<f32>,
+    pub energy: Instance<f32>,
 }
 
 pub struct Renderer {
@@ -30,8 +36,7 @@ pub struct Renderer {
     pub(super) config: SurfaceConfiguration,
     // render stuff
     pub(super) render_pipeline: wgpu::RenderPipeline,
-    pub(super) instance_len: usize,
-    pub(super) instances: Vec<Instance>,
+    pub(super) instances: Instances,
     pub(super) buffers: Buffers,
     pub(super) uniforms: Uniforms,
     pub(super) camera_bind_group: wgpu::BindGroup,
@@ -58,7 +63,6 @@ impl Renderer {
             queue,
             config,
             render_pipeline,
-            instance_len: 0,
             instances,
             uniforms,
             buffers,

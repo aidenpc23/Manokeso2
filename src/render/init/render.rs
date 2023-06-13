@@ -1,8 +1,9 @@
 use crate::render::{
+    buffer::{Instance, instance_descs},
     rsc::square::{INDICES, VERTICES},
     state::Buffers,
     uniform::TileViewUniform,
-    Uniforms,
+    Instances, Uniforms,
 };
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
@@ -12,10 +13,7 @@ use winit::dpi::PhysicalSize;
 
 use crate::{
     camera::Camera,
-    render::{
-        buffer::{Instance, Vertex},
-        uniform::CameraUniform,
-    },
+    render::{buffer::Vertex, uniform::CameraUniform},
 };
 
 pub const SHADER: &str = concat!(include_str!("../shader/tile.wgsl"));
@@ -25,7 +23,7 @@ pub fn init_renderer(
     config: &SurfaceConfiguration,
     camera: &Camera,
     size: &PhysicalSize<u32>,
-) -> (RenderPipeline, Vec<Instance>, Buffers, Uniforms, BindGroup) {
+) -> (RenderPipeline, Instances, Buffers, Uniforms, BindGroup) {
     // shaders
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader"),
@@ -45,12 +43,12 @@ pub fn init_renderer(
         usage: BufferUsages::INDEX,
     });
 
-    let instances: Vec<Instance> = Vec::new();
-    let instance_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        label: Some("Instance Buffer"),
-        contents: bytemuck::cast_slice(&instances),
-        usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
-    });
+    let instances = Instances {
+        connex_number: Instance::init(device, "Connex Number"),
+        conductivity: Instance::init(device, "Conductivity Number"),
+        reactivity: Instance::init(device, "Reactivity Number"),
+        energy: Instance::init(device, "Energy Number"),
+    };
 
     let camera_uniform = CameraUniform::new(camera, size);
     let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -69,25 +67,28 @@ pub fn init_renderer(
     // bind groups
     let camera_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
                 },
-                count: None,
-            }, wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+            ],
             label: Some("camera_bind_group_layout"),
         });
 
@@ -113,13 +114,16 @@ pub fn init_renderer(
         push_constant_ranges: &[],
     });
 
+    let mut bufs = vec![];
+    bufs.push(Vertex::desc());
+    bufs.extend(instance_descs());
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
-            buffers: &[Vertex::desc(), Instance::desc()],
+            buffers: &bufs,
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
@@ -153,11 +157,10 @@ pub fn init_renderer(
 
     (
         render_pipeline,
-        instances.to_vec(),
+        instances,
         Buffers {
             vertex: vertex_buffer,
             index: index_buffer,
-            instance: instance_buffer,
             camera: camera_buffer,
             tile_view: tile_view_buffer,
         },
