@@ -18,10 +18,10 @@ impl Board {
         if instances.connex_number.data.len() >= size {
             let mut i = 0;
             for row in izip!(
-                self.connex_numbers.current()[ys..ye].iter(),
-                self.conductivity.current()[ys..ye].iter(),
-                self.reactivity.current()[ys..ye].iter(),
-                self.energy.current()[ys..ye].iter()
+                self.connex_numbers.rows(ys, ye),
+                self.conductivity.rows(ys, ye),
+                self.reactivity.rows(ys, ye),
+                self.energy.rows(ys, ye)
             ) {
                 let ds = i * width;
                 let de = ds + width;
@@ -37,13 +37,19 @@ impl Board {
             instances.reactivity.data.clear();
             instances.energy.data.clear();
             for row in izip!(
-                self.connex_numbers.current()[ys..ye].iter(),
-                self.conductivity.current()[ys..ye].iter(),
-                self.reactivity.current()[ys..ye].iter(),
-                self.energy.current()[ys..ye].iter()
+                self.connex_numbers.rows(ys, ye),
+                self.conductivity.rows(ys, ye),
+                self.reactivity.rows(ys, ye),
+                self.energy.rows(ys, ye)
             ) {
-                instances.connex_number.data.extend_from_slice(&row.0[xs..xe]);
-                instances.conductivity.data.extend_from_slice(&row.1[xs..xe]);
+                instances
+                    .connex_number
+                    .data
+                    .extend_from_slice(&row.0[xs..xe]);
+                instances
+                    .conductivity
+                    .data
+                    .extend_from_slice(&row.1[xs..xe]);
                 instances.reactivity.data.extend_from_slice(&row.2[xs..xe]);
                 instances.energy.data.extend_from_slice(&row.3[xs..xe]);
             }

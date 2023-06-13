@@ -1,5 +1,3 @@
-use wgpu::util::DeviceExt;
-
 use crate::state::GameState;
 
 use super::{

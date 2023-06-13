@@ -26,23 +26,25 @@ impl Board {
             width,
             height,
             connex_numbers: SwapBuffer::from_array(
-                (0..height)
-                    .map(|_| (0..width).map(|_| rng.gen_range(0..200)).collect())
-                    .collect(),
+                width,
+                (0..height * width).map(|_| rng.gen_range(0..200)).collect(),
             ),
             conductivity: SwapBuffer::from_array(
-                (0..height)
-                    .map(|_| (0..width).map(|_| rng.gen_range(0.0..1.0)).collect())
+                width,
+                (0..height * width)
+                    .map(|_| rng.gen_range(0.0..1.0))
                     .collect(),
             ),
             reactivity: SwapBuffer::from_array(
-                (0..height)
-                    .map(|_| (0..width).map(|_| rng.gen_range(-1.0..1.0)).collect())
+                width,
+                (0..height * width)
+                    .map(|_| rng.gen_range(-1.0..1.0))
                     .collect(),
             ),
             energy: SwapBuffer::from_array(
-                (0..height)
-                    .map(|_| (0..width).map(|_| rng.gen_range(0.0..150.0)).collect())
+                width,
+                (0..height * width)
+                    .map(|_| rng.gen_range(0.0..150.0))
                     .collect(),
             ),
         }
@@ -58,23 +60,36 @@ impl Board {
         let mut s = 0.0;
         let d = delta.as_secs_f32();
 
+        // for y in 0..self.height - 2 {
+        //     for x in 0..self.width - 2 {
+        //         let mut sum = 0.;
+        //         let mut weights = 0.;
+        //         for dy in 0..=2 {
+        //             for dx in 0..=2 {
+        //                 let cond = self.conductivity.get(x + dx, y + dy);
+        //                 let a = BASE_KERNEL[dx][dy] * cond;
+        //                 sum += a * self.energy.get(x + dx, y + dy);
+        //                 weights += a;
+        //             }
+        //         }
+        //         let t = sum / weights;
+        //         s += t;
+        //         self.energy.interpolate_towards(x + 1, y + 1, t, d);
+        //     }
+        // }
         for x in 0..self.width {
             for y in 0..self.height {
                 let mut sum = 0.;
                 let mut weights = 0.;
-                for dx in 0..=2 {
-                    for dy in 0..=2 {
-                        if x + dx >= 1
-                            && y + dy >= 1
-                            && x + dx - 1 < self.width
-                            && y + dy - 1 < self.height
-                        {
-                            let cond = (1. - self.conductivity.get(x + dx - 1, y + dy - 1))
-                                * (if !((dx == 0) & (dy == 0)) { 1. } else { 0. });
-                            sum += BASE_KERNEL[dx][dy]
-                                * self.energy.get(x + dx - 1, y + dy - 1)
-                                * cond;
-                            weights += BASE_KERNEL[dx][dy] * cond;
+                for dy in 0..=2 {
+                    if y + dy >= 1 && y + dy - 1 < self.height {
+                        for dx in 0..=2 {
+                            if x + dx >= 1 && x + dx - 1 < self.width && !((dx == 0) & (dy == 0)) {
+                                let cond = self.conductivity.get(x + dx - 1, y + dy - 1);
+                                let a = BASE_KERNEL[dx][dy] * cond;
+                                sum += a * self.energy.get(x + dx - 1, y + dy - 1);
+                                weights += a;
+                            }
                         }
                     }
                 }

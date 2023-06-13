@@ -29,6 +29,5 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
         state.camera_scroll += input.scroll_delta;
         camera.scale = (state.camera_scroll * 0.1).exp();
     }
-    state.board.update(delta);
     return false;
 }

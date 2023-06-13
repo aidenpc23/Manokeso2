@@ -61,6 +61,7 @@ async fn run() {
                 // render if it's time
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
+                    state.board.update(&delta);
                     renderer.update(&state, resized);
                     resized = false;
                     renderer.render();
