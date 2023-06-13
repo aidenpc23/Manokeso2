@@ -61,12 +61,12 @@ async fn run() {
                 // render if it's time
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
+                    last_frame = now;
                     state.board.update(&delta);
                     renderer.update(&state, resized);
                     resized = false;
                     renderer.render();
-                    last_frame = now;
-                    println!("{:?}", time::Instant::now() - now);
+                    // println!("{:?}", time::Instant::now() - now);
                 }
             }
             _ => {}
