@@ -84,7 +84,10 @@ impl Board {
                 for dy in 0..=2 {
                     if y + dy >= 1 && y + dy - 1 < self.height {
                         for dx in 0..=2 {
-                            if x + dx >= 1 && x + dx - 1 < self.width && !((dx == 0) & (dy == 0)) {
+                            if x + dx >= 1
+                                && x + dx - 1 < self.width
+                                && !((dx == 0) & (dy == 0))
+                            {
                                 let cond = self.conductivity.get(x + dx - 1, y + dy - 1);
                                 let a = BASE_KERNEL[dx][dy] * cond;
                                 sum += a * self.energy.get(x + dx - 1, y + dy - 1);
