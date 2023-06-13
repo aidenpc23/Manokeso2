@@ -16,6 +16,7 @@ mod rsc;
 mod state;
 mod update;
 mod world;
+mod timer;
 
 use render::Renderer;
 
@@ -62,11 +63,15 @@ async fn run() {
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
                     last_frame = now;
+                    let ustart = time::Instant::now();
                     state.board.update(&delta);
+                    let fstart = time::Instant::now();
                     renderer.update(&state, resized);
                     resized = false;
                     renderer.render();
-                    // println!("{:?}", time::Instant::now() - now);
+                    let fend = time::Instant::now();
+                    state.timers.update.push(fstart - ustart);
+                    state.timers.frame.push(fend - fstart);
                 }
             }
             _ => {}

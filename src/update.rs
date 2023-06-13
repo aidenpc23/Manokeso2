@@ -22,8 +22,12 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
     if input.pressed(Key::S) {
         camera.pos[0] += PLAYER_SPEED * delta_mult;
     }
-    if input.just_pressed(Key::T) {
+    if input.just_pressed(Key::M) {
         println!("{:?}", input.mouse_pos);
+    }
+    if input.just_pressed(Key::T) {
+        println!("frame: {:?}", state.timers.frame.avg());
+        println!("update: {:?}", state.timers.update.avg());
     }
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;

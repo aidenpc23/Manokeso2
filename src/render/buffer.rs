@@ -1,5 +1,6 @@
 use std::mem;
 
+use rayon::prelude::*;
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BufferUsages, Device, Queue,
@@ -32,7 +33,7 @@ pub struct Instance<T> {
     pub buffer: wgpu::Buffer,
 }
 
-impl<T: bytemuck::Pod> Instance<T> {
+impl<T: bytemuck::Pod + Send> Instance<T> {
     pub fn init(device: &Device, name: &str) -> Self {
         Self {
             label: name.to_owned(),
@@ -42,7 +43,7 @@ impl<T: bytemuck::Pod> Instance<T> {
         }
     }
 
-    pub fn write(&mut self, device: &Device, queue: &Queue, len: usize) {
+    pub fn write_buf(&mut self, device: &Device, queue: &Queue, len: usize) {
         if self.data_len != len {
             self.data_len = len;
             self.buffer = Self::init_buf(device, &self.label, &self.data[0..self.data_len]);
@@ -53,6 +54,24 @@ impl<T: bytemuck::Pod> Instance<T> {
                 bytemuck::cast_slice(&self.data[0..self.data_len]),
             );
         }
+    }
+
+    pub fn update_rows(
+        &mut self,
+        row_iter: rayon::slice::ChunksExact<T>,
+        size: usize,
+        xs: usize,
+        xe: usize,
+    ) where
+        T: Sync,
+    {
+        let width = xe - xs;
+        self.data[0..size]
+            .par_chunks_exact_mut(width)
+            .zip(row_iter)
+            .for_each(|(chunk, row)| {
+                chunk.copy_from_slice(&row[xs..xe]);
+            });
     }
 
     fn init_buf(device: &Device, label: &str, contents: &[T]) -> wgpu::Buffer {

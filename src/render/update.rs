@@ -18,10 +18,10 @@ impl Renderer {
             .update_instances(&mut self.instances, xs, xe, ys, ye);
         // let taken = time::Instant::now() - start;
         // println!("{:?}", taken);
-        self.instances.connex_number.write(&self.device, &self.queue, len);
-        self.instances.conductivity.write(&self.device, &self.queue, len);
-        self.instances.reactivity.write(&self.device, &self.queue, len);
-        self.instances.energy.write(&self.device, &self.queue, len);
+        self.instances.connex_number.write_buf(&self.device, &self.queue, len);
+        self.instances.conductivity.write_buf(&self.device, &self.queue, len);
+        self.instances.reactivity.write_buf(&self.device, &self.queue, len);
+        self.instances.energy.write_buf(&self.device, &self.queue, len);
 
         let [bx, by] = state.board.pos;
         let view = TileViewUniform::new([bx + xs as f32, by + ys as f32], (xe - xs) as u32);
