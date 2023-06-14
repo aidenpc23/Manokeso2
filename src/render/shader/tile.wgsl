@@ -63,9 +63,18 @@ fn vs_main(
 fn fs_main(
     in: VertexOutput
 ) -> @location(0) vec4<f32> {
-    var hsv = rgb_to_hsv(vec3<f32>(f32(in.connex_number) / 200.0, in.stability, (in.reactivity+1.0)/2.0));
-    hsv.z = min(in.energy / 150.0, 150.0);
+    var r = (in.reactivity+1.0)/2.0;
+    var s = in.stability;
+    var e = min(in.energy / 150.0, 1.0);
+    var hsv = vec3<f32>(
+        (f32(in.connex_number) / 200.0 + 0.236) % 1.0,
+        0.6 + 0.4 * e,
+        0.2 + 0.8 * s * e * 0.7
+        );
+    let hsv_reac = hue_shift_hsv(hsv, vec3<f32>(350./360., 0.0, 0.0), r * 0.5);
     let rgb = hsv_to_rgb(hsv);
+    let rgb_stab = color_shift(rgb, vec3<f32>(27.0/255.0, 28.0/255.0, 41.0/255.0), 0.1 * s);
+    let rgb_en = color_shift(rgb_stab, vec3<f32>(238./255., 1.0, 0.0), 0.2 * e);
     return vec4<f32>(rgb, 1.0);
 }
 
@@ -123,4 +132,41 @@ fn hsv_to_rgb(color: vec3<f32>) -> vec3<f32> {
     }
 
     return vec3(0.0, 0.0, 0.0);
+}
+
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    return a * (1.0 - t) + b * t;
+}
+
+fn color_shift(initial_color: vec3<f32>, end_color: vec3<f32>, step: f32) -> vec3<f32> {
+    let shifted_hsv = vec3<f32>(
+        lerp(initial_color.x, end_color.x, step),
+        lerp(initial_color.y, end_color.y, step),
+        lerp(initial_color.z, end_color.z, step),
+    );
+
+    return hsv_to_rgb(shifted_hsv);
+}
+
+fn hue_shift(initial_color: vec3<f32>, end_color: vec3<f32>, step: f32) -> vec3<f32> {
+    let initial_hsv = rgb_to_hsv(initial_color);
+    let end_hsv = rgb_to_hsv(end_color);
+
+    let shifted_hsv = vec3<f32>(
+        lerp(initial_hsv.x, end_hsv.x, step),
+        initial_hsv.y,
+        initial_hsv.z
+    );
+
+    return hsv_to_rgb(shifted_hsv);
+}
+
+fn hue_shift_hsv(initial_hsv: vec3<f32>, end_hsv: vec3<f32>, step: f32) -> vec3<f32> {
+    let shifted_hsv = vec3<f32>(
+        lerp(initial_hsv.x, end_hsv.x, step),
+        initial_hsv.y,
+        initial_hsv.z
+    );
+    
+    return shifted_hsv;
 }
