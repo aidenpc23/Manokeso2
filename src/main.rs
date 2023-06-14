@@ -3,7 +3,7 @@ use std::time;
 use input::Input;
 use rsc::FRAME_TIME;
 use state::GameState;
-use update::update;
+use update::handle_input;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -32,7 +32,6 @@ async fn run() {
     let mut renderer = Renderer::new(&event_loop, &state.camera).await;
     renderer.window.set_visible(true);
 
-    let mut last_update = time::Instant::now();
     let mut last_frame = time::Instant::now();
     let mut inputs = Input::new();
     let mut resized = false;
@@ -46,39 +45,39 @@ async fn run() {
                 match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(_) => resized = true,
-                    _ => inputs.update(event),
+                    _ => inputs.update(event, &renderer),
                 }
             }
             Event::RedrawRequested(_) => renderer.render(),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
-                // handle update
-                let delta = now - last_update;
-                last_update = now;
-                if update(&delta, &inputs, &mut state) {
-                    *control_flow = ControlFlow::Exit;
-                }
-                inputs.end();
-                // update board and render if it's time
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
                     last_frame = now;
 
+                    if handle_input(&delta, &inputs, &mut state) {
+                        *control_flow = ControlFlow::Exit;
+                    }
+                    inputs.end();
+
                     state.timers.total.start();
+
+                    state.timers.update.start();
+                    state.board.update(&delta);
+                    state.timers.update.end();
+
+                    state.timers.render_extract.start();
                     renderer.extract(&state);
-                    rayon::join(
-                        || {
-                            state.timers.frame.start();
-                            renderer.update(resized);
-                            renderer.render();
-                            state.timers.frame.end();
-                        },
-                        || {
-                            state.timers.update.start();
-                            state.board.update(&delta);
-                            state.timers.update.end();
-                        },
-                    );
+                    state.timers.render_extract.end();
+
+                    state.timers.render_write.start();
+                    renderer.update(resized);
+                    state.timers.render_write.end();
+
+                    state.timers.render_draw.start();
+                    renderer.render();
+                    state.timers.render_draw.end();
+
                     state.timers.total.end();
 
                     resized = false;

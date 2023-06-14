@@ -31,7 +31,7 @@ impl CameraUniform {
         [2.0 / self.proj[0], 2.0 / self.proj[1]]
     }
 
-    fn cam_to_world(&self, mut coords: [f32; 2]) -> [f32; 2] {
+    pub fn render_to_world(&self, mut coords: [f32; 2]) -> [f32; 2] {
         coords[0] /= self.proj[0];
         coords[1] /= self.proj[1];
         coords[0] += self.pos[0];

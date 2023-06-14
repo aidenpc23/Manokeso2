@@ -4,7 +4,7 @@ use winit::event::VirtualKeyCode as Key;
 
 use crate::{input::Input, state::GameState, rsc::PLAYER_SPEED};
 
-pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
+pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
     if input.pressed(Key::Escape) {
         return true;
     }
@@ -23,12 +23,27 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
         camera.pos[0] += PLAYER_SPEED * delta_mult;
     }
     if input.just_pressed(Key::M) {
-        println!("{:?}", input.mouse_pos);
+        println!("Pixel: {:?}", input.mouse_pixel_pos);
+        println!("World: {:?}", input.mouse_world_pos);
     }
     if input.just_pressed(Key::T) {
-        println!("frame: {:?}", state.timers.frame.avg());
-        println!("update: {:?}", state.timers.update.avg());
         println!("total: {:?}", state.timers.total.avg());
+        println!("1. update: {:?}", state.timers.update.avg());
+        println!("2. render:");
+        println!("   1. extract: {:?}", state.timers.render_extract.avg());
+        println!("   2. write: {:?}", state.timers.render_write.avg());
+        println!("   3. draw: {:?}", state.timers.render_draw.avg());
+    }
+    if input.just_pressed(Key::I) {
+        if let Some(pos) = state.board.tile_at(input.mouse_world_pos) {
+            let b = &state.board;
+            let i = pos[0] + pos[1] * b.width();
+            println!("tile pos: {:?}", pos);
+            println!("connex number: {:?}", b.connex_numbers.read()[i]);
+            println!("conductivity: {:?}", b.conductivity.read()[i]);
+            println!("reactivity: {:?}", b.reactivity.read()[i]);
+            println!("energy: {:?}", b.energy.read()[i]);
+        }
     }
     if input.just_pressed(Key::E) {
         println!("Total energy: {}", state.board.total_energy());

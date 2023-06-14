@@ -19,8 +19,10 @@ impl GameState {
 }
 
 pub struct Timers {
-    pub frame: Timer,
     pub update: Timer,
+    pub render_extract: Timer,
+    pub render_write: Timer,
+    pub render_draw: Timer,
     pub total: Timer,
 }
 
@@ -28,8 +30,10 @@ impl Timers {
     pub fn new() -> Self {
         let size = 60 * 5;
         Self {
-            frame: Timer::new(size),
             update: Timer::new(size),
+            render_extract: Timer::new(size),
+            render_write: Timer::new(size),
+            render_draw: Timer::new(size),
             total: Timer::new(size),
         }
     }

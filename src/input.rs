@@ -2,8 +2,11 @@ use std::collections::HashSet;
 
 use winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 
+use crate::render::Renderer;
+
 pub struct Input {
-    pub mouse_pos: [f32; 2],
+    pub mouse_world_pos: [f32; 2],
+    pub mouse_pixel_pos: [f32; 2],
     just_pressed: HashSet<VirtualKeyCode>,
     pressed: HashSet<VirtualKeyCode>,
     pub scroll_delta: f32,
@@ -12,13 +15,14 @@ pub struct Input {
 impl Input {
     pub fn new() -> Self {
         Self {
-            mouse_pos: [0.0, 0.0],
+            mouse_pixel_pos: [0.0, 0.0],
+            mouse_world_pos: [0.0, 0.0],
             just_pressed: HashSet::new(),
             pressed: HashSet::new(),
             scroll_delta: 0.,
         }
     }
-    pub fn update(&mut self, event: WindowEvent) {
+    pub fn update(&mut self, event: WindowEvent, renderer: &Renderer) {
         match event {
             WindowEvent::KeyboardInput { input, .. } => {
                 if let Some(code) = input.virtual_keycode {
@@ -43,7 +47,8 @@ impl Input {
                 self.pressed.clear();
             }
             WindowEvent::CursorMoved { position, .. } => {
-                self.mouse_pos = [position.x as f32, position.y as f32];
+                self.mouse_pixel_pos = [position.x as f32, position.y as f32];
+                self.mouse_world_pos = renderer.pixel_to_world(self.mouse_pixel_pos);
             }
             _ => (),
         }

@@ -92,4 +92,14 @@ impl Board {
     pub fn total_energy(&self) -> f32 {
         self.total_energy
     }
+
+    pub fn tile_at(&self, pos: [f32; 2]) -> Option<[usize; 2]> {
+        let x = pos[0] - self.pos[0] + 0.5;
+        let y = pos[1] - self.pos[1] + 0.5;
+        if x < 0.0 || y < 0.0 || x >= self.width as f32 || y >= self.height as f32 {
+            None
+        } else {
+            Some([ x as usize, y as usize ])
+        }
+    }
 }
