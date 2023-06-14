@@ -60,8 +60,6 @@ async fn run() {
                     }
                     inputs.end();
 
-                    state.timers.total.start();
-
                     state.timers.update.start();
                     state.board.update(&delta);
                     state.timers.update.end();
@@ -77,8 +75,6 @@ async fn run() {
                     state.timers.render_draw.start();
                     renderer.render();
                     state.timers.render_draw.end();
-
-                    state.timers.total.end();
 
                     resized = false;
                 }

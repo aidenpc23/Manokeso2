@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use winit::event::VirtualKeyCode as Key;
 
-use crate::{input::Input, state::GameState, rsc::PLAYER_SPEED};
+use crate::{input::Input, rsc::PLAYER_SPEED, state::GameState};
 
 pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
     if input.pressed(Key::Escape) {
@@ -27,12 +27,19 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
         println!("World: {:?}", input.mouse_world_pos);
     }
     if input.just_pressed(Key::T) {
-        println!("total: {:?}", state.timers.total.avg());
-        println!("1. update: {:?}", state.timers.update.avg());
-        println!("2. render:");
-        println!("   1. extract: {:?}", state.timers.render_extract.avg());
-        println!("   2. write: {:?}", state.timers.render_write.avg());
-        println!("   3. draw: {:?}", state.timers.render_draw.avg());
+        let t = &state.timers;
+        if t.update.ready() {
+            let render = t.render_extract.avg() + t.render_write.avg() + t.render_draw.avg();
+            let total = t.update.avg() + render;
+            println!("total: {:?}", total);
+            println!("1. update: {:?}", t.update.avg());
+            println!("2. render: {:?}", render);
+            println!("   1. extract: {:?}", t.render_extract.avg());
+            println!("   2. write: {:?}", t.render_write.avg());
+            println!("   3. draw: {:?}", t.render_draw.avg());
+        } else {
+            println!("Not enough time has passed");
+        }
     }
     if input.just_pressed(Key::I) {
         if let Some(pos) = state.board.tile_at(input.mouse_world_pos) {

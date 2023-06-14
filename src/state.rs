@@ -23,7 +23,6 @@ pub struct Timers {
     pub render_extract: Timer,
     pub render_write: Timer,
     pub render_draw: Timer,
-    pub total: Timer,
 }
 
 impl Timers {
@@ -34,7 +33,6 @@ impl Timers {
             render_extract: Timer::new(size),
             render_write: Timer::new(size),
             render_draw: Timer::new(size),
-            total: Timer::new(size),
         }
     }
 }
