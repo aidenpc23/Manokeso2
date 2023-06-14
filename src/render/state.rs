@@ -5,25 +5,28 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use super::{init::*, CameraUniform, Instance, TileViewUniform};
+use super::{init::*, CameraUniform, InstanceField, TileViewUniform, buffer::ConstsUniform};
 
 pub struct Buffers {
     pub vertex: wgpu::Buffer,
     pub index: wgpu::Buffer,
+
     pub camera: wgpu::Buffer,
     pub tile_view: wgpu::Buffer,
+    pub consts: wgpu::Buffer,
 }
 
 pub struct Uniforms {
     pub camera: CameraUniform,
     pub tile_view: TileViewUniform,
+    pub consts: ConstsUniform,
 }
 
 pub struct Instances {
-    pub connex_number: Instance<u32>,
-    pub conductivity: Instance<f32>,
-    pub reactivity: Instance<f32>,
-    pub energy: Instance<f32>,
+    pub connex_number: InstanceField<1, u32>,
+    pub conductivity: InstanceField<2, f32>,
+    pub reactivity: InstanceField<3, f32>,
+    pub energy: InstanceField<4, f32>,
 }
 
 pub struct Renderer {

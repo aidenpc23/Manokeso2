@@ -32,12 +32,12 @@ impl<T: Sync> SwapBuffer<T> {
 }
 
 impl<T : Copy> SwapBuffer<T> {
-    pub fn from_rand<R>(rng: &mut R, width: usize, height: usize, min: T, max: T) -> SwapBuffer<T>
+    pub fn from_rand<R>(rng: &mut R, width: usize, height: usize, range: [T; 2]) -> SwapBuffer<T>
     where
         T: SampleUniform,
         R: Rng,
     {
-        let range = Uniform::new_inclusive(min, max);
+        let range = Uniform::new_inclusive(range[0], range[1]);
         let arr: Vec<T> = (0..height * width).map(|_| rng.sample(&range)).collect();
         SwapBuffer {
             width,
@@ -48,12 +48,12 @@ impl<T : Copy> SwapBuffer<T> {
 }
 
 pub trait SwapBufferGen {
-    fn rand_swap_buf<T : SampleUniform + Copy>(&mut self, min: T, max: T) -> SwapBuffer<T>;
+    fn rand_swap_buf<T : SampleUniform + Copy>(&mut self, range: [T; 2]) -> SwapBuffer<T>;
 }
 
 impl<R: Rng> SwapBufferGen for (&mut R, usize, usize) {
-    fn rand_swap_buf<T : SampleUniform + Copy>(&mut self, min: T, max: T) -> SwapBuffer<T> {
-        SwapBuffer::from_rand(self.0, self.1, self.2, min, max)
+    fn rand_swap_buf<T : SampleUniform + Copy>(&mut self, range: [T; 2]) -> SwapBuffer<T> {
+        SwapBuffer::from_rand(self.0, self.1, self.2, range)
     }
 }
 

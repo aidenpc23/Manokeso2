@@ -4,6 +4,8 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 
+use crate::rsc::{CONNEX_NUMBER_RANGE, CONDUCTIVITY_RANGE, REACTIVITY_RANGE, ENERGY_RANGE};
+
 use super::swap_buffer::{SwapBuffer, SwapBufferGen};
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
@@ -24,10 +26,10 @@ impl Board {
         let mut rng = ChaCha8Rng::seed_from_u64(0);
         let mut gen = (&mut rng, width, height);
 
-        let connex_numbers = gen.rand_swap_buf(0, 200);
-        let conductivity = gen.rand_swap_buf(0.0, 1.0);
-        let reactivity = gen.rand_swap_buf(-1.0, 1.0);
-        let energy = gen.rand_swap_buf(0.0, 150.0);
+        let connex_numbers = gen.rand_swap_buf(CONNEX_NUMBER_RANGE);
+        let conductivity = gen.rand_swap_buf(CONDUCTIVITY_RANGE);
+        let reactivity = gen.rand_swap_buf(REACTIVITY_RANGE);
+        let energy = gen.rand_swap_buf(ENERGY_RANGE);
 
         let total_energy = energy.read().iter().sum();
 
