@@ -28,6 +28,7 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
     if input.just_pressed(Key::T) {
         println!("frame: {:?}", state.timers.frame.avg());
         println!("update: {:?}", state.timers.update.avg());
+        println!("total: {:?}", state.timers.total.avg());
     }
     if input.just_pressed(Key::E) {
         println!("Total energy: {}", state.board.total_energy());

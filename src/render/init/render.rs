@@ -1,7 +1,10 @@
 use crate::{
     camera::Camera,
     render::{
-        buffer::{SQUARE_INDICES, SQUARE_VERTICES, Instance, CameraUniform, TileViewUniform, Vertex, instance_descs},
+        buffer::{
+            CameraUniform, ConstsUniform, InstanceField, TileViewUniform, Vertex, SQUARE_INDICES,
+            SQUARE_VERTICES,
+        },
         state::Buffers,
         Instances, Uniforms,
     },
@@ -40,10 +43,10 @@ pub fn init_renderer(
     });
 
     let instances = Instances {
-        connex_number: Instance::init(device, 1, "Connex Number"),
-        conductivity: Instance::init(device, 2, "Conductivity Number"),
-        reactivity: Instance::init(device, 3, "Reactivity Number"),
-        energy: Instance::init(device, 4, "Energy Number"),
+        connex_number: InstanceField::init(device, "Connex Number"),
+        conductivity: InstanceField::init(device, "Conductivity Number"),
+        reactivity: InstanceField::init(device, "Reactivity Number"),
+        energy: InstanceField::init(device, "Energy Number"),
     };
 
     let camera_uniform = CameraUniform::new(camera, size);
@@ -58,6 +61,13 @@ pub fn init_renderer(
         label: Some("Tile View Buffer"),
         contents: bytemuck::cast_slice(&[tile_view_uniform]),
         usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+    });
+
+    let consts_uniform = ConstsUniform::new();
+    let consts_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        label: Some("Constants Buffer"),
+        contents: bytemuck::cast_slice(&[consts_uniform]),
+        usage: BufferUsages::UNIFORM,
     });
 
     // bind groups
@@ -84,6 +94,16 @@ pub fn init_renderer(
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
             ],
             label: Some("camera_bind_group_layout"),
         });
@@ -99,6 +119,10 @@ pub fn init_renderer(
                 binding: 1,
                 resource: tile_view_buffer.as_entire_binding(),
             },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: consts_buffer.as_entire_binding(),
+            },
         ],
         label: Some("camera_bind_group"),
     });
@@ -112,7 +136,12 @@ pub fn init_renderer(
 
     let mut bufs = vec![];
     bufs.push(Vertex::desc());
-    bufs.extend(instance_descs());
+    bufs.extend([
+        instances.connex_number.desc(),
+        instances.conductivity.desc(),
+        instances.reactivity.desc(),
+        instances.energy.desc(),
+    ]);
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("Render Pipeline"),
         layout: Some(&render_pipeline_layout),
@@ -159,10 +188,13 @@ pub fn init_renderer(
             index: index_buffer,
             camera: camera_buffer,
             tile_view: tile_view_buffer,
+            consts: consts_buffer,
         },
         Uniforms {
             camera: camera_uniform,
+            camera_next: camera_uniform,
             tile_view: tile_view_uniform,
+            consts: consts_uniform,
         },
         camera_bind_group,
     )

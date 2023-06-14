@@ -21,14 +21,16 @@ impl GameState {
 pub struct Timers {
     pub frame: Timer,
     pub update: Timer,
+    pub total: Timer,
 }
 
 impl Timers {
     pub fn new() -> Self {
-        let size = 60 * 1;
+        let size = 60 * 5;
         Self {
             frame: Timer::new(size),
             update: Timer::new(size),
+            total: Timer::new(size),
         }
     }
 }

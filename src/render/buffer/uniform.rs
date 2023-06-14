@@ -1,6 +1,6 @@
 use winit::dpi::PhysicalSize;
 
-use crate::camera::Camera;
+use crate::{camera::Camera, rsc::{CONNEX_NUMBER_RANGE, CONDUCTIVITY_RANGE, REACTIVITY_RANGE, ENERGY_RANGE}};
 
 const DEFAULT_SCALE: f32 = 0.05;
 
@@ -73,4 +73,24 @@ impl PartialEq for TileViewUniform {
 
 fn arr_eq<T: PartialEq, const N: usize>(arr1: [T; N], arr2: [T; N]) -> bool {
     arr1.iter().zip(arr2.iter()).all(|(x, y)| x == y)
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ConstsUniform {
+    pub connex_number_range: [u32; 2],
+    pub conductivity_range: [f32; 2],
+    pub reactivity_range: [f32; 2],
+    pub energy_range: [f32; 2],
+}
+
+impl ConstsUniform {
+    pub fn new() -> Self {
+        Self {
+            connex_number_range: CONNEX_NUMBER_RANGE,
+            conductivity_range: CONDUCTIVITY_RANGE,
+            reactivity_range: REACTIVITY_RANGE,
+            energy_range: ENERGY_RANGE,
+        }
+    }
 }

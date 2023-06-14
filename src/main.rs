@@ -14,9 +14,9 @@ mod input;
 mod render;
 mod rsc;
 mod state;
+mod timer;
 mod update;
 mod world;
-mod timer;
 
 use render::Renderer;
 
@@ -59,19 +59,29 @@ async fn run() {
                     *control_flow = ControlFlow::Exit;
                 }
                 inputs.end();
-                // render if it's time
+                // update board and render if it's time
                 let delta = now - last_frame;
                 if delta > FRAME_TIME {
                     last_frame = now;
-                    let ustart = time::Instant::now();
-                    state.board.update(&delta);
-                    let fstart = time::Instant::now();
-                    renderer.update(&state, resized);
+
+                    state.timers.total.start();
+                    renderer.extract(&state);
+                    rayon::join(
+                        || {
+                            state.timers.frame.start();
+                            renderer.update(resized);
+                            renderer.render();
+                            state.timers.frame.end();
+                        },
+                        || {
+                            state.timers.update.start();
+                            state.board.update(&delta);
+                            state.timers.update.end();
+                        },
+                    );
+                    state.timers.total.end();
+
                     resized = false;
-                    renderer.render();
-                    let fend = time::Instant::now();
-                    state.timers.update.push(fstart - ustart);
-                    state.timers.frame.push(fend - fstart);
                 }
             }
             _ => {}

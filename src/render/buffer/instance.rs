@@ -4,24 +4,24 @@ use wgpu::{
     BufferUsages, Device, Queue, RenderPass,
 };
 
-pub struct Instance<T> {
+pub struct InstanceField<const LOCATION: u32, T> {
     label: String,
     len: usize,
     data: Vec<T>,
     buffer: wgpu::Buffer,
-    location: u32,
     recreate_buf: bool,
 }
 
-impl<T: bytemuck::Pod + Send + Default> Instance<T> {
-    pub fn init(device: &Device, location: u32, name: &str) -> Self {
+impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default>
+    InstanceField<LOCATION, T>
+{
+    pub fn init(device: &Device, name: &str) -> Self {
         Self {
             label: name.to_owned(),
             len: 0,
             data: Vec::new(),
             buffer: Self::init_buf(device, name, &[]),
             recreate_buf: false,
-            location
         }
     }
 
@@ -47,7 +47,7 @@ impl<T: bytemuck::Pod + Send + Default> Instance<T> {
         T: Sync,
     {
         let width = xe - xs;
-        if size > self.data.len() {
+        if size != self.data.len() {
             self.data.resize(size, Default::default());
             self.len = size;
             self.recreate_buf = true;
@@ -61,7 +61,7 @@ impl<T: bytemuck::Pod + Send + Default> Instance<T> {
     }
 
     pub fn set_in<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
-        render_pass.set_vertex_buffer(self.location, self.buffer.slice(..));
+        render_pass.set_vertex_buffer(LOCATION, self.buffer.slice(..));
     }
 
     pub fn len(&self) -> usize {
@@ -77,27 +77,22 @@ impl<T: bytemuck::Pod + Send + Default> Instance<T> {
     }
 }
 
-pub fn instance_descs() -> Vec<wgpu::VertexBufferLayout<'static>> {
-    vec![
+impl<const LOCATION: u32> InstanceField<LOCATION, u32> {
+    pub fn desc(&self) -> wgpu::VertexBufferLayout {
         wgpu::VertexBufferLayout {
-            array_stride: 4 as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<u32>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![1 => Uint32],
-        },
+            attributes: &wgpu::vertex_attr_array![LOCATION => Uint32],
+        }
+    }
+}
+
+impl<const LOCATION: u32> InstanceField<LOCATION, f32> {
+    pub fn desc(&self) -> wgpu::VertexBufferLayout {
         wgpu::VertexBufferLayout {
-            array_stride: 4 as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<f32>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![2 => Float32],
-        },
-        wgpu::VertexBufferLayout {
-            array_stride: 4 as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![3 => Float32],
-        },
-        wgpu::VertexBufferLayout {
-            array_stride: 4 as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![4 => Float32],
-        },
-    ]
+            attributes: &wgpu::vertex_attr_array![LOCATION => Float32],
+        }
+    }
 }
