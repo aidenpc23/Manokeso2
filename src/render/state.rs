@@ -17,6 +17,7 @@ pub struct Buffers {
 }
 
 pub struct Uniforms {
+    pub camera_next: CameraUniform,
     pub camera: CameraUniform,
     pub tile_view: TileViewUniform,
     pub consts: ConstsUniform,
@@ -29,6 +30,21 @@ pub struct Instances {
     pub energy: InstanceField<4, f32>,
 }
 
+pub struct BoardView {
+    pub bx: f32,
+    pub by: f32,
+    pub xs: usize,
+    pub xe: usize,
+    pub ys: usize,
+    pub ye: usize,
+}
+
+impl Default for BoardView {
+    fn default() -> Self {
+        return Self { bx: 0.0, by: 0.0, xs: 0, xe: 0, ys: 0, ye: 0 }
+    }
+}
+
 pub struct Renderer {
     // window & device stuff
     pub window: Window,
@@ -38,6 +54,7 @@ pub struct Renderer {
     pub(super) config: SurfaceConfiguration,
     // render stuff
     pub(super) render_pipeline: wgpu::RenderPipeline,
+    pub(super) slice: BoardView,
     pub(super) instances: Instances,
     pub(super) buffers: Buffers,
     pub(super) uniforms: Uniforms,
@@ -65,6 +82,7 @@ impl Renderer {
             queue,
             config,
             render_pipeline,
+            slice: Default::default(),
             instances,
             uniforms,
             buffers,

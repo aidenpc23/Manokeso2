@@ -192,6 +192,7 @@ pub fn init_renderer(
         },
         Uniforms {
             camera: camera_uniform,
+            camera_next: camera_uniform,
             tile_view: tile_view_uniform,
             consts: consts_uniform,
         },
