@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 
-use super::swap_buffer::SwapBuffer;
+use super::swap_buffer::{SwapBuffer, SwapBufferGen};
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
 
@@ -16,124 +16,67 @@ pub struct Board {
     pub conductivity: SwapBuffer<f32>,
     pub reactivity: SwapBuffer<f32>,
     pub energy: SwapBuffer<f32>,
+    total_energy: f32,
 }
 
 impl Board {
     pub fn new(pos: [f32; 2], width: usize, height: usize) -> Board {
         let mut rng = ChaCha8Rng::seed_from_u64(0);
+        let mut gen = (&mut rng, width, height);
+
+        let connex_numbers = gen.rand_swap_buf(0, 200);
+        let conductivity = gen.rand_swap_buf(0.0, 1.0);
+        let reactivity = gen.rand_swap_buf(-1.0, 1.0);
+        let energy = gen.rand_swap_buf(0.0, 150.0);
+
+        let total_energy = energy.read().iter().sum();
 
         Board {
             pos,
             width,
             height,
-            connex_numbers: SwapBuffer::from_array(
-                width,
-                (0..height * width).map(|_| rng.gen_range(0..200)).collect(),
-            ),
-            conductivity: SwapBuffer::from_array(
-                width,
-                (0..height * width)
-                    .map(|_| rng.gen_range(0.0..1.0))
-                    .collect(),
-            ),
-            reactivity: SwapBuffer::from_array(
-                width,
-                (0..height * width)
-                    .map(|_| rng.gen_range(-1.0..1.0))
-                    .collect(),
-            ),
-            energy: SwapBuffer::from_array(
-                width,
-                (0..height * width)
-                    .map(|_| rng.gen_range(0.0..150.0))
-                    .collect(),
-            ),
+            connex_numbers,
+            conductivity,
+            reactivity,
+            energy,
+            total_energy,
         }
     }
 
     pub fn update(&mut self, delta: &Duration) {
-        // for x in 0..self.width {
-        //     for y in 0..self.height {
-
-        //     }
-        // }
-
-        let mut s = 0.0;
         let d = delta.as_secs_f32();
 
-        // for y in 0..self.height - 2 {
-        //     for x in 0..self.width - 2 {
-        //         let mut sum = 0.;
-        //         let mut weights = 0.;
-        //         for dy in 0..=2 {
-        //             for dx in 0..=2 {
-        //                 let cond = self.conductivity.get(x + dx, y + dy);
-        //                 let a = BASE_KERNEL[dx][dy] * cond;
-        //                 sum += a * self.energy.get(x + dx, y + dy);
-        //                 weights += a;
-        //             }
-        //         }
-        //         let t = sum / weights;
-        //         s += t;
-        //         self.energy.interpolate_towards(x + 1, y + 1, t, d);
-        //     }
-        // }
         let (er, ew) = self.energy.bufs();
-        let (cr, cw) = self.conductivity.bufs();
-        let total_energy: f32 = ew.par_iter_mut().enumerate().map(|(i, e)| {
-            let x = i % self.width;
-            let y = i / self.width;
-            let mut sum = 0.;
-            let mut weights = 0.;
-            for dy in 0..=2 {
-                if y + dy >= 1 && y + dy - 1 < self.height {
-                    for dx in 0..=2 {
-                        if x + dx >= 1
-                            && x + dx - 1 < self.width
-                            && !((dx == 0) & (dy == 0))
-                        {
-                            let i = (y + dy - 1) * self.width + x + dx - 1;
-                            let cond = cr[i];
-                            let a = BASE_KERNEL[dx][dy] * cond;
-                            sum += a * er[i];
-                            weights += a;
+        let (cr, ..) = self.conductivity.bufs();
+        self.total_energy = ew
+            .par_iter_mut()
+            .enumerate()
+            .map(|(i, e)| {
+                let x = i % self.width;
+                let y = i / self.width;
+                let mut sum = 0.;
+                let mut weights = 0.;
+                for dy in 0..=2 {
+                    if y + dy >= 1 && y + dy - 1 < self.height {
+                        for dx in 0..=2 {
+                            if x + dx >= 1 && x + dx - 1 < self.width && !((dx == 0) & (dy == 0)) {
+                                let i = (y + dy - 1) * self.width + x + dx - 1;
+                                let cond = cr[i];
+                                let a = BASE_KERNEL[dx][dy] * cond;
+                                sum += a * er[i];
+                                weights += a;
+                            }
                         }
                     }
                 }
-            }
-            let t = sum / weights;
-            let cur = er[i];
-            let new = cur + (t - cur) * d;
-            *e = new;
-            new
-        }).sum();
-        // for x in 0..self.width {
-        //     for y in 0..self.height {
-        //         let mut sum = 0.;
-        //         let mut weights = 0.;
-        //         for dy in 0..=2 {
-        //             if y + dy >= 1 && y + dy - 1 < self.height {
-        //                 for dx in 0..=2 {
-        //                     if x + dx >= 1
-        //                         && x + dx - 1 < self.width
-        //                         && !((dx == 0) & (dy == 0))
-        //                     {
-        //                         let cond = self.conductivity.get(x + dx - 1, y + dy - 1);
-        //                         let a = BASE_KERNEL[dx][dy] * cond;
-        //                         sum += a * self.energy.get(x + dx - 1, y + dy - 1);
-        //                         weights += a;
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //         let t = sum / weights;
-        //         s += t;
-        //         self.energy.interpolate_towards(x, y, t, d);
-        //     }
-        // }
+                let t = sum / weights;
+                let cur = er[i];
+                let new = cur + (t - cur) * d;
+                *e = new;
+                new
+            })
+            .sum();
         self.energy.swap();
-
-        // println!("{:?}", total_energy)
     }
 
     pub fn width(&self) -> usize {
@@ -142,5 +85,9 @@ impl Board {
 
     pub fn height(&self) -> usize {
         self.height
+    }
+
+    pub fn total_energy(&self) -> f32 {
+        self.total_energy
     }
 }

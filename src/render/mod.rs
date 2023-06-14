@@ -2,10 +2,8 @@ mod buffer;
 mod extract;
 mod init;
 mod render;
-mod rsc;
 mod state;
-mod uniform;
 mod update;
 
+use buffer::*;
 pub use state::*;
-

@@ -1,27 +1,21 @@
 use crate::state::GameState;
 
-use super::{
-    uniform::{CameraUniform, TileViewUniform},
-    Renderer,
-};
+use super::{CameraUniform, Renderer, TileViewUniform};
 
 impl Renderer {
     pub fn update(&mut self, state: &GameState, resize: bool) {
-        let camera = &state.camera;
-        let size = &self.window.inner_size();
-        let uniform = CameraUniform::new(camera, size);
-
         let (xs, xe, ys, ye) = self.calc_board_slice(state);
-        // let start = time::Instant::now();
-        let len = state
-            .board
-            .update_instances(&mut self.instances, xs, xe, ys, ye);
-        // let taken = time::Instant::now() - start;
-        // println!("{:?}", taken);
-        self.instances.connex_number.write_buf(&self.device, &self.queue, len);
-        self.instances.conductivity.write_buf(&self.device, &self.queue, len);
-        self.instances.reactivity.write_buf(&self.device, &self.queue, len);
-        self.instances.energy.write_buf(&self.device, &self.queue, len);
+        self.extract(&state.board, xs, xe, ys, ye);
+        self.instances
+            .connex_number
+            .write_buf(&self.device, &self.queue);
+        self.instances
+            .conductivity
+            .write_buf(&self.device, &self.queue);
+        self.instances
+            .reactivity
+            .write_buf(&self.device, &self.queue);
+        self.instances.energy.write_buf(&self.device, &self.queue);
 
         let [bx, by] = state.board.pos;
         let view = TileViewUniform::new([bx + xs as f32, by + ys as f32], (xe - xs) as u32);
@@ -34,6 +28,9 @@ impl Renderer {
             )
         }
 
+        let camera = &state.camera;
+        let size = &self.window.inner_size();
+        let uniform = CameraUniform::new(camera, size);
         if self.uniforms.camera != uniform {
             self.uniforms.camera = uniform;
             self.queue.write_buffer(

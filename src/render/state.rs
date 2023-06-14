@@ -1,12 +1,11 @@
 use crate::camera::Camera;
-use crate::render::uniform::CameraUniform;
 use wgpu::SurfaceConfiguration;
 use winit::{
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
 };
 
-use super::{init::*, uniform::TileViewUniform, buffer::Instance};
+use super::{init::*, CameraUniform, Instance, TileViewUniform};
 
 pub struct Buffers {
     pub vertex: wgpu::Buffer,

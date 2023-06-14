@@ -29,6 +29,9 @@ pub fn update(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
         println!("frame: {:?}", state.timers.frame.avg());
         println!("update: {:?}", state.timers.update.avg());
     }
+    if input.just_pressed(Key::E) {
+        println!("Total energy: {}", state.board.total_energy());
+    }
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
         camera.scale = (state.camera_scroll * 0.1).exp();

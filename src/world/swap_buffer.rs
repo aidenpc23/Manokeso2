@@ -1,5 +1,11 @@
+use rand::{
+    distributions::{
+        uniform::SampleUniform,
+        Uniform,
+    },
+    Rng,
+};
 use rayon::prelude::*;
-use std::ops::{Add, Sub};
 
 pub struct SwapBuffer<T> {
     width: usize,
@@ -20,14 +26,34 @@ impl<T: Sync> SwapBuffer<T> {
     pub fn bufs(&mut self) -> (&Vec<T>, &mut Vec<T>) {
         (&self.read, &mut self.write)
     }
+    pub fn read(&self) -> &Vec<T> {
+        &self.read
+    }
 }
 
-impl<T: Copy + Add<Output = T> + Sub<Output = T>> SwapBuffer<T> {
-    pub fn from_array(width: usize, default: Vec<T>) -> SwapBuffer<T> {
+impl<T : Copy> SwapBuffer<T> {
+    pub fn from_rand<R>(rng: &mut R, width: usize, height: usize, min: T, max: T) -> SwapBuffer<T>
+    where
+        T: SampleUniform,
+        R: Rng,
+    {
+        let range = Uniform::new_inclusive(min, max);
+        let arr: Vec<T> = (0..height * width).map(|_| rng.sample(&range)).collect();
         SwapBuffer {
             width,
-            read: default.clone(),
-            write: default,
+            read: arr.clone(),
+            write: arr,
         }
     }
 }
+
+pub trait SwapBufferGen {
+    fn rand_swap_buf<T : SampleUniform + Copy>(&mut self, min: T, max: T) -> SwapBuffer<T>;
+}
+
+impl<R: Rng> SwapBufferGen for (&mut R, usize, usize) {
+    fn rand_swap_buf<T : SampleUniform + Copy>(&mut self, min: T, max: T) -> SwapBuffer<T> {
+        SwapBuffer::from_rand(self.0, self.1, self.2, min, max)
+    }
+}
+

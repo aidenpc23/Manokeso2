@@ -1,20 +1,16 @@
-use crate::render::{
-    buffer::{Instance, instance_descs},
-    rsc::square::{INDICES, VERTICES},
-    state::Buffers,
-    uniform::TileViewUniform,
-    Instances, Uniforms,
+use crate::{
+    camera::Camera,
+    render::{
+        buffer::{SQUARE_INDICES, SQUARE_VERTICES, Instance, CameraUniform, TileViewUniform, Vertex, instance_descs},
+        state::Buffers,
+        Instances, Uniforms,
+    },
 };
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BindGroup, BufferUsages, Device, RenderPipeline, SurfaceConfiguration,
 };
 use winit::dpi::PhysicalSize;
-
-use crate::{
-    camera::Camera,
-    render::{buffer::Vertex, uniform::CameraUniform},
-};
 
 pub const SHADER: &str = concat!(include_str!("../shader/tile.wgsl"));
 
@@ -33,21 +29,21 @@ pub fn init_renderer(
     // buffers
     let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(VERTICES),
+        contents: bytemuck::cast_slice(SQUARE_VERTICES),
         usage: BufferUsages::VERTEX,
     });
 
     let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
         label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(INDICES),
+        contents: bytemuck::cast_slice(SQUARE_INDICES),
         usage: BufferUsages::INDEX,
     });
 
     let instances = Instances {
-        connex_number: Instance::init(device, "Connex Number"),
-        conductivity: Instance::init(device, "Conductivity Number"),
-        reactivity: Instance::init(device, "Reactivity Number"),
-        energy: Instance::init(device, "Energy Number"),
+        connex_number: Instance::init(device, 1, "Connex Number"),
+        conductivity: Instance::init(device, 2, "Conductivity Number"),
+        reactivity: Instance::init(device, 3, "Reactivity Number"),
+        energy: Instance::init(device, 4, "Energy Number"),
     };
 
     let camera_uniform = CameraUniform::new(camera, size);
