@@ -1,12 +1,10 @@
 use std::time::Duration;
 
-use rand::SeedableRng;
-use rand_chacha::ChaCha8Rng;
 use rayon::prelude::*;
 
 use crate::rsc::{CONNEX_NUMBER_RANGE, STABILITY_RANGE, REACTIVITY_RANGE, ENERGY_RANGE};
 
-use super::swap_buffer::{SwapBuffer, SwapBufferGen};
+use super::{swap_buffer::SwapBuffer, gen::SwapBufferGen};
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
 
@@ -25,10 +23,10 @@ impl Board {
     pub fn new(pos: [f32; 2], width: usize, height: usize) -> Board {
         let mut gen = (width, height);
 
-        let connex_numbers = gen.gen_map(CONNEX_NUMBER_RANGE[0], CONNEX_NUMBER_RANGE[1], 1.0);
-        let stability = gen.gen_map(STABILITY_RANGE[0], STABILITY_RANGE[1], 1.0);
-        let reactivity = gen.gen_map(REACTIVITY_RANGE[0], REACTIVITY_RANGE[1], 1.0);
-        let energy = gen.gen_map(ENERGY_RANGE[0], ENERGY_RANGE[1], 1.0);
+        let connex_numbers = gen.gen_map_cut(CONNEX_NUMBER_RANGE, [0.4, 0.2], 0.05);
+        let stability = gen.gen_map(STABILITY_RANGE, 0.05);
+        let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
+        let energy = gen.gen_map(ENERGY_RANGE, 0.01);
 
         let total_energy = energy.read().iter().sum();
 

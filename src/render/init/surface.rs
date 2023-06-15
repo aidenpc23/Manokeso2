@@ -15,7 +15,7 @@ pub async fn init_surface(
     // Setup backend, surface and render devce
     // ==============================================
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: Backends::GL,
+        backends: Backends::VULKAN,
         ..Default::default()
     });
 
