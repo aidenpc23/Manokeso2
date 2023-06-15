@@ -1,32 +1,27 @@
 use std::time::Duration;
 
-use winit::event::VirtualKeyCode as Key;
-
-use crate::{input::Input, rsc::PLAYER_SPEED, state::GameState};
+use crate::{input::Input, rsc::PLAYER_SPEED, state::GameState, keybinds::{Action, Keybinds}};
 
 pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
-    if input.pressed(Key::Escape) {
+    let ainput = (input, &state.keybinds);
+    if ainput.pressed(Action::Exit) {
         return true;
     }
     let camera = &mut state.camera;
     let delta_mult = delta.as_millis() as f32;
-    if input.pressed(Key::W) {
+    if ainput.pressed(Action::MoveUp) {
         camera.pos[1] += PLAYER_SPEED * delta_mult;
     }
-    if input.pressed(Key::A) {
+    if ainput.pressed(Action::MoveLeft) {
         camera.pos[0] -= PLAYER_SPEED * delta_mult;
     }
-    if input.pressed(Key::R) {
+    if ainput.pressed(Action::MoveDown) {
         camera.pos[1] -= PLAYER_SPEED * delta_mult;
     }
-    if input.pressed(Key::S) {
+    if ainput.pressed(Action::MoveRight) {
         camera.pos[0] += PLAYER_SPEED * delta_mult;
     }
-    if input.just_pressed(Key::M) {
-        println!("Pixel: {:?}", input.mouse_pixel_pos);
-        println!("World: {:?}", input.mouse_world_pos);
-    }
-    if input.just_pressed(Key::T) {
+    if ainput.just_pressed(Action::Timers) {
         let t = &state.timers;
         if t.update.ready() {
             let render = t.render_extract.avg() + t.render_write.avg() + t.render_draw.avg();
@@ -41,7 +36,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
             println!("Not enough time has passed");
         }
     }
-    if input.just_pressed(Key::I) {
+    if ainput.just_pressed(Action::TileInfo) {
         if let Some(pos) = state.board.tile_at(input.mouse_world_pos) {
             let b = &state.board;
             let i = pos[0] + pos[1] * b.width();
@@ -52,7 +47,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
             println!("energy: {:?}", b.energy.read()[i]);
         }
     }
-    if input.just_pressed(Key::E) {
+    if ainput.just_pressed(Action::TotalEnergy) {
         println!("Total energy: {}", state.board.total_energy());
     }
     if input.scroll_delta != 0.0 {
@@ -60,4 +55,26 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
         camera.scale = (state.camera_scroll * 0.1).exp();
     }
     return false;
+}
+
+trait ActionInput {
+    fn pressed(&self, action: Action) -> bool;
+    fn just_pressed(&self, action: Action) -> bool;
+}
+
+impl ActionInput for (&Input, &Keybinds) {
+    fn pressed(&self, action: Action) -> bool {
+        if let Some(key) = self.1.get(&action) {
+            self.0.pressed(*key)
+        } else {
+            false
+        }
+    }
+    fn just_pressed(&self, action: Action) -> bool {
+        if let Some(key) = self.1.get(&action) {
+            self.0.just_pressed(*key)
+        } else {
+            false
+        }
+    }
 }

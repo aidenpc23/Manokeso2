@@ -1,22 +1,24 @@
 use std::time;
 
+use config::Config;
+use handle_input::handle_input;
 use input::Input;
-use rsc::FRAME_TIME;
 use state::GameState;
-use update::handle_input;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
 };
 
 mod camera;
+mod config;
+mod handle_input;
 mod input;
 mod render;
 mod rsc;
 mod state;
 mod timer;
-mod update;
 mod world;
+mod keybinds;
 
 use render::Renderer;
 
@@ -25,13 +27,15 @@ fn main() {
 }
 
 async fn run() {
-    // Setup logger, event loop, and window
+    // Setup
     env_logger::init();
+    let mut state = GameState::new(Config::load());
+
     let event_loop = EventLoop::new();
-    let mut state = GameState::new();
     let mut renderer = Renderer::new(&event_loop, &state.camera).await;
     renderer.window.set_visible(true);
 
+    let mut last_update = time::Instant::now();
     let mut last_frame = time::Instant::now();
     let mut inputs = Input::new();
     let mut resized = false;
@@ -51,18 +55,21 @@ async fn run() {
             Event::RedrawRequested(_) => renderer.render(),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
-                let delta = now - last_frame;
-                if delta > FRAME_TIME {
+                let udelta = now - last_update;
+                let fdelta = now - last_frame;
+                if udelta > state.update_time {
+                    last_update = now;
+                    state.timers.update.start();
+                    state.board.update(&fdelta);
+                    state.timers.update.end();
+                }
+                if fdelta > state.frame_time {
                     last_frame = now;
 
-                    if handle_input(&delta, &inputs, &mut state) {
+                    if handle_input(&fdelta, &inputs, &mut state) {
                         *control_flow = ControlFlow::Exit;
                     }
                     inputs.end();
-
-                    state.timers.update.start();
-                    state.board.update(&delta);
-                    state.timers.update.end();
 
                     state.timers.render_extract.start();
                     renderer.extract(&state);
