@@ -27,7 +27,7 @@ pub trait SwapBufferGen<T> {
 
 impl<T: NoiseNum> SwapBufferGen<T> for (usize, usize) {
     fn gen_map(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T> {
-        SwapBuffer::from_arr(simplex_noise(self.0, self.1, range, [0.0, 1.0], frequency), self.0)
+        SwapBuffer::from_arr(simplex_noise(self.0, self.1, range, [0.0, 0.0], frequency), self.0)
     }
     fn gen_map_cut(&mut self, range: [T; 2], cut: [f64; 2], frequency: f64) -> SwapBuffer<T> {
         SwapBuffer::from_arr(simplex_noise(self.0, self.1, range, cut, frequency), self.0)
