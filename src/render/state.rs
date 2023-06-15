@@ -5,7 +5,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use super::{init::*, CameraUniform, InstanceField, TileViewUniform, buffer::ConstsUniform};
+use super::{buffer::ConstsUniform, init::*, CameraUniform, InstanceField, TileViewUniform};
 
 pub struct Buffers {
     pub vertex: wgpu::Buffer,
@@ -25,7 +25,7 @@ pub struct Uniforms {
 
 pub struct Instances {
     pub connex_number: InstanceField<1, u32>,
-    pub conductivity: InstanceField<2, f32>,
+    pub stability: InstanceField<2, f32>,
     pub reactivity: InstanceField<3, f32>,
     pub energy: InstanceField<4, f32>,
 }
@@ -41,7 +41,14 @@ pub struct BoardView {
 
 impl Default for BoardView {
     fn default() -> Self {
-        return Self { bx: 0.0, by: 0.0, xs: 0, xe: 0, ys: 0, ye: 0 }
+        return Self {
+            bx: 0.0,
+            by: 0.0,
+            xs: 0,
+            xe: 0,
+            ys: 0,
+            ye: 0,
+        };
     }
 }
 
@@ -88,5 +95,17 @@ impl Renderer {
             buffers,
             camera_bind_group,
         }
+    }
+
+    pub fn pixel_to_render(&self, pos: [f32; 2]) -> [f32; 2] {
+        let size = self.window.inner_size();
+        return [
+            pos[0] * 2.0 / size.width as f32 - 1.0,
+            -pos[1] * 2.0 / size.height as f32 + 1.0,
+        ];
+    }
+
+    pub fn pixel_to_world(&self, pos: [f32; 2]) -> [f32; 2] {
+        self.uniforms.camera.render_to_world(self.pixel_to_render(pos))
     }
 }

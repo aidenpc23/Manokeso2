@@ -44,7 +44,7 @@ impl Renderer {
 
         render_pass.set_vertex_buffer(0, self.buffers.vertex.slice(..));
         self.instances.connex_number.set_in(render_pass);
-        self.instances.conductivity.set_in(render_pass);
+        self.instances.stability.set_in(render_pass);
         self.instances.reactivity.set_in(render_pass);
         self.instances.energy.set_in(render_pass);
         render_pass.set_index_buffer(self.buffers.index.slice(..), wgpu::IndexFormat::Uint16);

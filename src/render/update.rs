@@ -1,6 +1,4 @@
-use crate::state::GameState;
-
-use super::{BoardView, CameraUniform, Renderer, TileViewUniform};
+use super::{BoardView, Renderer, TileViewUniform};
 
 impl Renderer {
     pub fn update(&mut self, resize: bool) {
@@ -9,7 +7,7 @@ impl Renderer {
             .connex_number
             .write_buf(&self.device, &self.queue);
         self.instances
-            .conductivity
+            .stability
             .write_buf(&self.device, &self.queue);
         self.instances
             .reactivity

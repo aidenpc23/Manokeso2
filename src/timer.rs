@@ -28,11 +28,10 @@ impl Timer {
             self.push(end - start);
         }
     }
-    pub fn avg(&self) -> Option<Duration> {
-        if self.durs.last().unwrap_or(&Duration::ZERO).is_zero() {
-            None
-        } else {
-            Some(self.durs.iter().sum::<Duration>() / self.durs.len() as u32)
-        }
+    pub fn ready(&self) -> bool {
+        !self.durs.last().unwrap_or(&Duration::ZERO).is_zero()
+    }
+    pub fn avg(&self) -> Duration {
+        self.durs.iter().sum::<Duration>() / self.durs.len() as u32
     }
 }

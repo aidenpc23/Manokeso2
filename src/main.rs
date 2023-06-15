@@ -1,22 +1,24 @@
 use std::time;
 
+use config::Config;
+use handle_input::handle_input;
 use input::Input;
-use rsc::FRAME_TIME;
 use state::GameState;
-use update::update;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
 };
 
 mod camera;
+mod config;
+mod handle_input;
 mod input;
 mod render;
 mod rsc;
 mod state;
 mod timer;
-mod update;
 mod world;
+mod keybinds;
 
 use render::Renderer;
 
@@ -25,10 +27,11 @@ fn main() {
 }
 
 async fn run() {
-    // Setup logger, event loop, and window
+    // Setup
     env_logger::init();
+    let mut state = GameState::new(Config::load());
+
     let event_loop = EventLoop::new();
-    let mut state = GameState::new();
     let mut renderer = Renderer::new(&event_loop, &state.camera).await;
     renderer.window.set_visible(true);
 
@@ -46,40 +49,39 @@ async fn run() {
                 match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(_) => resized = true,
-                    _ => inputs.update(event),
+                    _ => inputs.update(event, &renderer),
                 }
             }
             Event::RedrawRequested(_) => renderer.render(),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
-                // handle update
-                let delta = now - last_update;
-                last_update = now;
-                if update(&delta, &inputs, &mut state) {
-                    *control_flow = ControlFlow::Exit;
+                let udelta = now - last_update;
+                let fdelta = now - last_frame;
+                if udelta > state.update_time {
+                    last_update = now;
+                    state.timers.update.start();
+                    state.board.update(&fdelta);
+                    state.timers.update.end();
                 }
-                inputs.end();
-                // update board and render if it's time
-                let delta = now - last_frame;
-                if delta > FRAME_TIME {
+                if fdelta > state.frame_time {
                     last_frame = now;
 
-                    state.timers.total.start();
+                    if handle_input(&fdelta, &inputs, &mut state) {
+                        *control_flow = ControlFlow::Exit;
+                    }
+                    inputs.end();
+
+                    state.timers.render_extract.start();
                     renderer.extract(&state);
-                    rayon::join(
-                        || {
-                            state.timers.frame.start();
-                            renderer.update(resized);
-                            renderer.render();
-                            state.timers.frame.end();
-                        },
-                        || {
-                            state.timers.update.start();
-                            state.board.update(&delta);
-                            state.timers.update.end();
-                        },
-                    );
-                    state.timers.total.end();
+                    state.timers.render_extract.end();
+
+                    state.timers.render_write.start();
+                    renderer.update(resized);
+                    state.timers.render_write.end();
+
+                    state.timers.render_draw.start();
+                    renderer.render();
+                    state.timers.render_draw.end();
 
                     resized = false;
                 }

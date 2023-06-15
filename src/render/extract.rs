@@ -15,7 +15,7 @@ impl Renderer {
             .connex_number
             .update_rows(board.connex_numbers.par_rows(ys, ye), size, xs, xe);
         insts
-            .conductivity
+            .stability
             .update_rows(board.stability.par_rows(ys, ye), size, xs, xe);
         insts
             .reactivity

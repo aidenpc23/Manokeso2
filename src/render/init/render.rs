@@ -44,9 +44,9 @@ pub fn init_renderer(
 
     let instances = Instances {
         connex_number: InstanceField::init(device, "Connex Number"),
-        conductivity: InstanceField::init(device, "Conductivity Number"),
-        reactivity: InstanceField::init(device, "Reactivity Number"),
-        energy: InstanceField::init(device, "Energy Number"),
+        stability: InstanceField::init(device, "Stability"),
+        reactivity: InstanceField::init(device, "Reactivity"),
+        energy: InstanceField::init(device, "Energy"),
     };
 
     let camera_uniform = CameraUniform::new(camera, size);
@@ -138,7 +138,7 @@ pub fn init_renderer(
     bufs.push(Vertex::desc());
     bufs.extend([
         instances.connex_number.desc(),
-        instances.conductivity.desc(),
+        instances.stability.desc(),
         instances.reactivity.desc(),
         instances.energy.desc(),
     ]);
