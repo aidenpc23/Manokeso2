@@ -2,7 +2,7 @@ use crate::{
     camera::Camera,
     render::{
         buffer::{
-            CameraUniform, ConstsUniform, InstanceField, TileViewUniform, Vertex, SQUARE_INDICES,
+            CameraUniform, ConstsUniform, InstanceField, TileViewUniform, Vertex,
             SQUARE_VERTICES,
         },
         state::Buffers,
@@ -34,12 +34,6 @@ pub fn init_renderer(
         label: Some("Vertex Buffer"),
         contents: bytemuck::cast_slice(SQUARE_VERTICES),
         usage: BufferUsages::VERTEX,
-    });
-
-    let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(SQUARE_INDICES),
-        usage: BufferUsages::INDEX,
     });
 
     let instances = Instances {
@@ -185,7 +179,6 @@ pub fn init_renderer(
         instances,
         Buffers {
             vertex: vertex_buffer,
-            index: index_buffer,
             camera: camera_buffer,
             tile_view: tile_view_buffer,
             consts: consts_buffer,

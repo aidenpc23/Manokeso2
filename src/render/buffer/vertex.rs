@@ -34,8 +34,12 @@ pub const SQUARE_VERTICES: &[Vertex] = &[
         position: [DIST, DIST],
     },
     Vertex {
+        position: [-DIST, -DIST],
+    },
+    Vertex {
+        position: [DIST, DIST],
+    },
+    Vertex {
         position: [-DIST, DIST],
     },
 ];
-
-pub const SQUARE_INDICES: &[u16] = &[0, 1, 2, 0, 2, 3];

@@ -9,7 +9,6 @@ use super::{buffer::ConstsUniform, init::*, CameraUniform, InstanceField, TileVi
 
 pub struct Buffers {
     pub vertex: wgpu::Buffer,
-    pub index: wgpu::Buffer,
 
     pub camera: wgpu::Buffer,
     pub tile_view: wgpu::Buffer,
