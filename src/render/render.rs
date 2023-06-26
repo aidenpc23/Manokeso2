@@ -1,8 +1,10 @@
 use wgpu::{CommandEncoder, TextureView};
 
-use super::{state::GameWindow, rsc::CLEAR_COLOR};
+use crate::rsc::CLEAR_COLOR;
 
-impl GameWindow {
+use super::state::Renderer;
+
+impl Renderer {
     pub fn render(&mut self) {
         let output = self.surface.get_current_texture().unwrap();
         let view = output
@@ -23,7 +25,7 @@ impl GameWindow {
 
     /// Uses the encoder to send commands to the GPU; this draws to the screen
     fn draw(&mut self, encoder: &mut CommandEncoder, view: &TextureView) {
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let render_pass = &mut encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
@@ -40,10 +42,13 @@ impl GameWindow {
 
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
-        render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
-        render_pass.set_vertex_buffer(1, self.buffer.instance.slice(..));
-        render_pass.set_index_buffer(self.buffer.index.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.set_vertex_buffer(0, self.buffers.vertex.slice(..));
+        self.instances.connex_number.set_in(render_pass);
+        self.instances.stability.set_in(render_pass);
+        self.instances.reactivity.set_in(render_pass);
+        self.instances.energy.set_in(render_pass);
+        render_pass.set_index_buffer(self.buffers.index.slice(..), wgpu::IndexFormat::Uint16);
 
-        render_pass.draw_indexed(0..6, 0, 0..self.instances.len() as _);
+        render_pass.draw_indexed(0..6, 0, 0..self.instances.connex_number.len() as _);
     }
 }
