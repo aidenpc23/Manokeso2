@@ -1,9 +1,5 @@
 // Vertex shader
 
-struct VertexInput {
-    @location(0) position: vec2<f32>,
-};
-
 struct VertexOutput {
     @location(0) i: u32,
     @location(1) rgb: vec3<f32>,
@@ -11,10 +7,10 @@ struct VertexOutput {
 };
 
 struct InstanceInput {
-    @location(1) connex_number: u32,
-    @location(2) stability: f32,
-    @location(3) reactivity: f32,
-    @location(4) energy: f32,
+    @location(0) connex_number: u32,
+    @location(1) stability: f32,
+    @location(2) reactivity: f32,
+    @location(3) energy: f32,
 };
 
 struct CameraUniform {
@@ -35,14 +31,14 @@ var<uniform> tile_view: TileViewUniform;
 
 @vertex
 fn vs_main(
+    @builtin(vertex_index) vi: u32,
     @builtin(instance_index) i: u32,
-    vertex: VertexInput,
     in: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
     out.i = i;
 
-    var pos = vertex.position;
+    var pos = vec2<f32>(f32(vi % u32(2)), f32(vi / u32(2)));
     pos -= camera.pos;
     pos.x += f32(i % tile_view.width);
     pos.y += f32(i / tile_view.width);

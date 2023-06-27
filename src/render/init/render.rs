@@ -2,8 +2,7 @@ use crate::{
     camera::Camera,
     render::{
         buffer::{
-            CameraUniform, ConstsUniform, InstanceField, TileViewUniform, Vertex,
-            SQUARE_VERTICES,
+            CameraUniform, ConstsUniform, InstanceField, TileViewUniform, Vertex, SQUARE_VERTICES,
         },
         state::Buffers,
         Instances, Uniforms,
@@ -27,13 +26,6 @@ pub fn init_renderer(
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Shader"),
         source: wgpu::ShaderSource::Wgsl(SHADER.into()),
-    });
-
-    // buffers
-    let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(SQUARE_VERTICES),
-        usage: BufferUsages::VERTEX,
     });
 
     let instances = Instances {
@@ -129,7 +121,6 @@ pub fn init_renderer(
     });
 
     let mut bufs = vec![];
-    bufs.push(Vertex::desc());
     bufs.extend([
         instances.connex_number.desc(),
         instances.stability.desc(),
@@ -154,7 +145,7 @@ pub fn init_renderer(
             })],
         }),
         primitive: wgpu::PrimitiveState {
-            topology: wgpu::PrimitiveTopology::TriangleList,
+            topology: wgpu::PrimitiveTopology::TriangleStrip,
             strip_index_format: None,
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: Some(wgpu::Face::Back),
@@ -178,7 +169,10 @@ pub fn init_renderer(
         render_pipeline,
         instances,
         Buffers {
+<<<<<<< HEAD
             vertex: vertex_buffer,
+=======
+>>>>>>> 679c75f (remove vertex buffer)
             camera: camera_buffer,
             tile_view: tile_view_buffer,
             consts: consts_buffer,

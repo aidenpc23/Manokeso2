@@ -8,8 +8,6 @@ use winit::{
 use super::{buffer::ConstsUniform, init::*, CameraUniform, InstanceField, TileViewUniform};
 
 pub struct Buffers {
-    pub vertex: wgpu::Buffer,
-
     pub camera: wgpu::Buffer,
     pub tile_view: wgpu::Buffer,
     pub consts: wgpu::Buffer,
@@ -23,10 +21,10 @@ pub struct Uniforms {
 }
 
 pub struct Instances {
-    pub connex_number: InstanceField<1, u32>,
-    pub stability: InstanceField<2, f32>,
-    pub reactivity: InstanceField<3, f32>,
-    pub energy: InstanceField<4, f32>,
+    pub connex_number: InstanceField<0, u32>,
+    pub stability: InstanceField<1, f32>,
+    pub reactivity: InstanceField<2, f32>,
+    pub energy: InstanceField<3, f32>,
 }
 
 pub struct BoardView {
