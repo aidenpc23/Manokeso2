@@ -169,10 +169,6 @@ pub fn init_renderer(
         render_pipeline,
         instances,
         Buffers {
-<<<<<<< HEAD
-            vertex: vertex_buffer,
-=======
->>>>>>> 679c75f (remove vertex buffer)
             camera: camera_buffer,
             tile_view: tile_view_buffer,
             consts: consts_buffer,
