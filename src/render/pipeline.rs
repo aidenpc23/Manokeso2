@@ -4,7 +4,6 @@ use crate::{
         buffer::{
             CameraUniform, ConstsUniform, InstanceField, TileViewUniform, Vertex, SQUARE_VERTICES,
         },
-        state::Buffers,
         Instances, Uniforms,
     },
 };
@@ -14,9 +13,11 @@ use wgpu::{
 };
 use winit::dpi::PhysicalSize;
 
-pub const SHADER: &str = concat!(include_str!("../shader/tile.wgsl"));
+use super::Buffers;
 
-pub fn init_renderer(
+pub const SHADER: &str = concat!(include_str!("./tile.wgsl"));
+
+pub fn init_pipeline(
     device: &Device,
     config: &SurfaceConfiguration,
     camera: &Camera,

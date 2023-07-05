@@ -5,7 +5,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use super::{buffer::ConstsUniform, init::*, CameraUniform, InstanceField, TileViewUniform};
+use super::{buffer::ConstsUniform, CameraUniform, InstanceField, TileViewUniform, surface::init_surface, pipeline::init_pipeline};
 
 pub struct Buffers {
     pub camera: wgpu::Buffer,
@@ -77,7 +77,7 @@ impl Renderer {
         let (surface, device, queue, config) = init_surface(&window).await;
 
         let (render_pipeline, instances, buffers, uniforms, camera_bind_group) =
-            init_renderer(&device, &config, &camera, &size);
+            init_pipeline(&device, &config, &camera, &size);
 
         Self {
             window,

@@ -2,7 +2,7 @@ use wgpu::{CommandEncoder, TextureView};
 
 use crate::rsc::CLEAR_COLOR;
 
-use super::state::Renderer;
+use super::Renderer;
 
 impl Renderer {
     pub fn render(&mut self) {
