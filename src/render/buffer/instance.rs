@@ -50,7 +50,7 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
             self.len = size;
             self.recreate_buf = true;
         }
-        if width == 0 {
+        if size == 0 {
             return;
         }
         self.data[0..size]
