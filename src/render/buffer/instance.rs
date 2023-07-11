@@ -12,9 +12,7 @@ pub struct InstanceField<const LOCATION: u32, T> {
     recreate_buf: bool,
 }
 
-impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default>
-    InstanceField<LOCATION, T>
-{
+impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCATION, T> {
     pub fn init(device: &Device, name: &str) -> Self {
         Self {
             label: name.to_owned(),
@@ -51,6 +49,9 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default>
             self.data.resize(size, Default::default());
             self.len = size;
             self.recreate_buf = true;
+        }
+        if width == 0 {
+            return;
         }
         self.data[0..size]
             .par_chunks_exact_mut(width)
