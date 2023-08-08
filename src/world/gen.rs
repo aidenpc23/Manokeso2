@@ -20,17 +20,27 @@ impl<T: Copy> SwapBuffer<T> {
     }
 }
 
-pub trait SwapBufferGen<T> {
-    fn gen_map(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T>;
-    fn gen_map_cut(&mut self, range: [T; 2], cut: [f64; 2], frequency: f64) -> SwapBuffer<T>;
+pub trait SwapBufferGen {
+    fn gen_map<T: NoiseNum>(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T>;
+    fn gen_map_cut<T: NoiseNum>(&mut self, range: [T; 2], cut: [f64; 2], frequency: f64) -> SwapBuffer<T>;
+    fn gen_map_base(&mut self, cut: [f64; 2], freq1: f64, freq2: f64) -> SwapBuffer<f32>;
 }
 
-impl<T: NoiseNum> SwapBufferGen<T> for (usize, usize) {
-    fn gen_map(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T> {
+impl SwapBufferGen for (usize, usize) {
+    fn gen_map<T: NoiseNum>(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T> {
         SwapBuffer::from_arr(simplex_noise(self.0, self.1, range, [0.0, 0.0], frequency), self.0)
     }
-    fn gen_map_cut(&mut self, range: [T; 2], cut: [f64; 2], frequency: f64) -> SwapBuffer<T> {
+    fn gen_map_cut<T: NoiseNum>(&mut self, range: [T; 2], cut: [f64; 2], frequency: f64) -> SwapBuffer<T> {
         SwapBuffer::from_arr(simplex_noise(self.0, self.1, range, cut, frequency), self.0)
+    }
+    fn gen_map_base(&mut self, cut: [f64; 2], freq1: f64, freq2: f64) -> SwapBuffer<f32> {
+        SwapBuffer::from_arr(
+            simplex_noise(self.0, self.1, [0.0, 1.0], cut, freq1)
+            .iter()
+            .zip(simplex_noise(self.0, self.1, [0., 0.25], [0.4, 0.0], freq2).iter())
+            .map(|(&a, &b)| a.max(b))
+            .collect()
+            , self.0)
     }
 }
 

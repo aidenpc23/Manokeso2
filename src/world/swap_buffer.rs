@@ -22,6 +22,9 @@ impl<T: Sync> SwapBuffer<T> {
     pub fn read(&self) -> &Vec<T> {
         &self.read
     }
+    pub fn swap_cell(&mut self, pos1: usize, pos2: usize) {
+        self.read.swap(pos1, pos2);
+    }
 }
 
 impl<T : Copy> SwapBuffer<T> {

@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use winit::event::MouseButton;
+
 use crate::{input::Input, rsc::PLAYER_SPEED, state::GameState, keybinds::{Action, Keybinds}};
 
 pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> bool {
@@ -9,17 +11,30 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
     }
     let camera = &mut state.camera;
     let delta_mult = delta.as_millis() as f32;
+    let move_mult = 1.0 / camera.scale;
+    let move_dist = PLAYER_SPEED * delta_mult * move_mult;
+    if input.mouse_just_pressed(MouseButton::Left) {
+        state.selected_tile = state.board.tile_at(input.mouse_world_pos);
+    }
+    if input.mouse_just_released(MouseButton::Left) {
+        if let Some(pos1) = state.selected_tile {
+            if let Some(pos2) = state.board.tile_at(input.mouse_world_pos) {
+                state.board.swap(pos1, pos2);
+            }
+        }
+        state.selected_tile = None;
+    }
     if ainput.pressed(Action::MoveUp) {
-        camera.pos[1] += PLAYER_SPEED * delta_mult;
+        camera.pos[1] += move_dist;
     }
     if ainput.pressed(Action::MoveLeft) {
-        camera.pos[0] -= PLAYER_SPEED * delta_mult;
+        camera.pos[0] -= move_dist;
     }
     if ainput.pressed(Action::MoveDown) {
-        camera.pos[1] -= PLAYER_SPEED * delta_mult;
+        camera.pos[1] -= move_dist;
     }
     if ainput.pressed(Action::MoveRight) {
-        camera.pos[0] += PLAYER_SPEED * delta_mult;
+        camera.pos[0] += move_dist;
     }
     if ainput.just_pressed(Action::Timers) {
         let t = &state.timers;

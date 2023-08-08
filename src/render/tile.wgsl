@@ -48,16 +48,19 @@ fn vs_main(
 
     var r = (in.reactivity+1.0) * 0.5;
     var s = in.stability;
-    var e = min(in.energy * 0.0066, 1.0);
+    var e = min(in.energy * 0.005, 1.0);
+    var stable = 1.0;
+    if s > 0.80 && in.connex_number >= u32(10) {
+        stable = 0.2;
+    }
     var hsv = vec3<f32>(
-        (f32(in.connex_number) * 0.005 + 0.236) % 1.0,
+        (f32(in.connex_number) * 0.035 + 0.236) % 1.0,
         0.6 + 0.4 * e,
-        0.2 + 0.8 * s * e * 0.7
+        (0.2 + 0.8 * e) * stable
         );
-    let hsv_reac = hue_shift_hsv(hsv, vec3<f32>(0.972, 0.0, 0.0), r * 0.5);
-    // let rgb_stab = color_shift(rgb, vec3<f32>(27.0/255.0, 28.0/255.0, 41.0/255.0), 0.1 * s);
-    // let rgb_en = color_shift(rgb_stab, vec3<f32>(238./255., 1.0, 0.0), 0.2 * e);
-    out.rgb = hsv_to_rgb(hsv_reac);
+    let hsv_reac = hue_shift_hsv(hsv, vec3<f32>(0.972, 0.0, 0.0), r * 0.65);
+    
+    out.rgb = hsv_to_rgb(hsv);
 
     return out;
 }
@@ -150,11 +153,29 @@ fn hue_shift(initial_color: vec3<f32>, end_color: vec3<f32>, step: f32) -> vec3<
 }
 
 fn hue_shift_hsv(initial_hsv: vec3<f32>, end_hsv: vec3<f32>, step: f32) -> vec3<f32> {
-    let shifted_hsv = vec3<f32>(
-        lerp(initial_hsv.x, end_hsv.x, step),
+    let diff = end_hsv.x - initial_hsv.x;
+    
+    var adjusted_diff = diff;
+    if diff > 0.5 {
+        adjusted_diff -= 1.0;
+    } else if diff < -0.5 {
+        adjusted_diff += 1.0;
+    };
+    
+    let shifted_hue = initial_hsv.x + adjusted_diff * step;
+    
+    var wrapped_hue = shifted_hue;
+    
+    if shifted_hue < 0.0 {
+        wrapped_hue += 1.0;
+    } else if shifted_hue > 1.0 {
+        wrapped_hue -= 1.0;
+    };
+    
+    return vec3<f32>(
+        wrapped_hue,
         initial_hsv.y,
         initial_hsv.z
     );
-    
-    return shifted_hsv;
 }
+

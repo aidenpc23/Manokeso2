@@ -60,7 +60,7 @@ async fn run() {
                 if udelta > state.update_time {
                     last_update = now;
                     state.timers.update.start();
-                    // state.board.update(&fdelta);
+                    state.board.update(&fdelta);
                     state.timers.update.end();
                 }
                 if fdelta > state.frame_time {
