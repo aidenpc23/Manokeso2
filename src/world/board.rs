@@ -2,11 +2,12 @@ use std::time::Duration;
 
 use rayon::prelude::*;
 
-use crate::rsc::{CONNEX_NUMBER_RANGE, STABILITY_RANGE, REACTIVITY_RANGE, ENERGY_RANGE};
+use crate::rsc::{CONNEX_NUMBER_RANGE, STABILITY_RANGE, REACTIVITY_RANGE, ENERGY_RANGE, UPS};
 
 use super::{swap_buffer::SwapBuffer, gen::SwapBufferGen};
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
+const ENERGY_FLOW_RATE: f32 = 1.0 / 100.0;
 
 pub struct Board {
     pub pos: [f32; 2],
@@ -23,7 +24,7 @@ impl Board {
     pub fn new(pos: [f32; 2], width: usize, height: usize) -> Board {
         let mut gen = (width, height);
 
-        let mut stability = gen.gen_map_base([0.4, 0.2], 0.038, 0.01);
+        let stability = gen.gen_map_base([0.4, 0.2], 0.038, 0.01);
         let connex_numbers = SwapBuffer::from_arr(stability.read().iter().map(|a| (a * 20.0) as u32).collect(), width);
         let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
         let energy = gen.gen_map(ENERGY_RANGE, 0.01);
@@ -44,10 +45,9 @@ impl Board {
     }
 
     pub fn update(&mut self, delta: &Duration) {
-        let d = delta.as_secs_f32();
-
+        let (sr, sw) = self.stability.bufs();
         let (er, ew) = self.energy.bufs();
-        let (sr, ..) = self.stability.bufs();
+        
         self.total_energy = ew
             .par_iter_mut()
             .enumerate()
@@ -69,12 +69,129 @@ impl Board {
                     }
                 }
 
-                let new = cur + sum * d;
+                let new = cur + sum * ENERGY_FLOW_RATE;
                 *e = new;
                 new
-                // println!("{:?}", er[i]);
-            })
-            .sum();
+            }).sum();
+        self.energy.swap();
+        
+        let (cr, cw) = self.connex_numbers.bufs();
+        let (rr, rw) = self.reactivity.bufs();
+        let (er, ew) = self.energy.bufs();
+
+        for i in 0..(self.width * self.height) {
+            cw[i] = cr[i];
+            sw[i] = sr[i];
+            ew[i] = er[i];
+            rw[i] = rr[i];
+        }
+
+        for i in 0..(self.width * self.height) {
+
+            let x = i % self.width;
+            let y = i / self.width;
+
+            match cr[i] {
+                1 => {
+                    if er[i] > 20.0 {
+                        let i2 = ((y + 2)%self.height) * self.width + x;
+                        rw[i2] = rw[i2] + 0.10 * rr[i];
+                        ew[i] -= 20.0;
+                    }
+                }
+                2 => {
+                    if er[i] > 20.0 {
+                        let i2 = ((self.height + y - 2)%self.height) * self.width + x;
+                        rw[i2] = rw[i2] + 0.10 * rr[i];
+                        ew[i] -= 10.0;
+                    }
+                }
+                3 => {
+                    if er[i] > 20.0 {
+                        let i2 = y * self.width + ((self.width + x - 2) % self.width);
+                        rw[i2] = rw[i2] + 0.10 * rr[i];
+                        ew[i] -= 20.0;
+                    }
+                }
+                4 => {
+                    if er[i] > 20.0 {
+                        let i2 = y * self.width + ((x + 2) % self.width);
+                        rw[i2] = rw[i2] + 0.10 * rr[i];
+                        ew[i] -= 20.0;
+                    }
+                }
+                5 => {
+                    if er[i] > 1.0 {
+                        let i2 = ((y + 2)%self.height) * self.width + x;
+                        ew[i2] += 1.0;
+                        ew[i] -= 1.0;
+                    }
+                }
+                6 => {
+                    if er[i] > 1.0 {
+                        let i2 = ((self.height + y - 2)%self.height) * self.width + x;
+                        ew[i2] += 1.0;
+                        ew[i] -= 1.0;
+                    }
+                }
+                7 => {
+                    if er[i] > 1.0 {
+                        let i2 = y * self.width + ((self.width + x - 2) % self.width);
+                        ew[i2] += 1.0;
+                        ew[i] -= 1.0;
+                    }
+                }
+                8 => {
+                    if er[i] > 1.0 {
+                        let i2 = y * self.width + ((x + 2) % self.width);
+                        ew[i2] += 1.0;
+                        ew[i] -= 1.0;
+                    }
+                }
+                9 => {
+                    if er[i] > 10.0 {
+                        let i2 = ((y + 2)%self.height) * self.width + x;
+                        sw[i2] = sw[i2] + 0.10 * sr[i];
+                        ew[i] -= 10.0;
+                    }
+                }
+                10 => {
+                    if er[i] > 10.0 {
+                        let i2 = ((self.height + y - 2)%self.height) * self.width + x;
+                        sw[i2] = sw[i2] + 0.10 * sr[i];
+                        ew[i] -= 10.0;
+                    }
+                }
+                11 => {
+                    if er[i] > 10.0 {
+                        let i2 = y * self.width + ((self.width + x - 2) % self.width);
+                        sw[i2] = sw[i2] + 0.10 * sr[i];
+                        ew[i] -= 10.0;
+                    }
+                }
+                12 => {
+                    if er[i] > 10.0 {
+                        let i2 = y * self.width + ((x + 2) % self.width);
+                        sw[i2] = sw[i2] + 0.10 * sr[i];
+                        ew[i] -= 10.0;
+                    }
+                }
+                _ => {
+                    
+                }
+            }
+        }
+
+        for i in 0..(self.width * self.height) {
+            cw[i] = cw[i].clamp(CONNEX_NUMBER_RANGE[0], CONNEX_NUMBER_RANGE[1]);
+            sw[i] = sw[i].clamp(STABILITY_RANGE[0], STABILITY_RANGE[1]);
+            rw[i] = rw[i].clamp(REACTIVITY_RANGE[0], REACTIVITY_RANGE[1]);
+            ew[i] = ew[i].max(0.0);
+        }
+
+        self.connex_numbers.swap();
+        self.stability.swap();
+        self.reactivity.swap();
         self.energy.swap();
     }
 
@@ -89,6 +206,7 @@ impl Board {
     pub fn total_energy(&self) -> f32 {
         self.total_energy
     }
+
     pub fn tile_at(&self, pos: [f32; 2]) -> Option<[usize; 2]> {
         let x = pos[0] - self.pos[0];
         let y = pos[1] - self.pos[1];
@@ -98,6 +216,7 @@ impl Board {
             Some([ x as usize, y as usize ])
         }
     }
+
     pub fn swap(&mut self, pos1: [usize; 2], pos2: [usize; 2]) {
         let pos1 = pos1[1] * self.width + pos1[0];
         let pos2 = pos2[1] * self.width + pos2[0];

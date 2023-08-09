@@ -46,7 +46,7 @@ fn vs_main(
     pos *= camera.proj;
     out.clip_position = vec4<f32>(pos.x, pos.y, 0.0, 1.0);
 
-    var r = (in.reactivity+1.0) * 0.5;
+    var r = abs(in.reactivity);
     var s = in.stability;
     var e = min(in.energy * 0.005, 1.0);
     var stable = 1.0;
@@ -58,9 +58,10 @@ fn vs_main(
         0.6 + 0.4 * e,
         (0.2 + 0.8 * e) * stable
         );
-    let hsv_reac = hue_shift_hsv(hsv, vec3<f32>(0.972, 0.0, 0.0), r * 0.65);
     
     out.rgb = hsv_to_rgb(hsv);
+
+    out.rgb = color_shift(out.rgb, vec3<f32>(235.0/255.0, 89.0/255.0, 63.0/255.0), 0.15 * r);
 
     return out;
 }
@@ -130,13 +131,13 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
 }
 
 fn color_shift(initial_color: vec3<f32>, end_color: vec3<f32>, step: f32) -> vec3<f32> {
-    let shifted_hsv = vec3<f32>(
+    let shifted_color = vec3<f32>(
         lerp(initial_color.x, end_color.x, step),
         lerp(initial_color.y, end_color.y, step),
         lerp(initial_color.z, end_color.z, step),
     );
 
-    return hsv_to_rgb(shifted_hsv);
+    return shifted_color;
 }
 
 fn hue_shift(initial_color: vec3<f32>, end_color: vec3<f32>, step: f32) -> vec3<f32> {

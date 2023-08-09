@@ -15,6 +15,8 @@ pub struct GameState {
     pub camera_scroll: f32,
     pub board: Board,
     pub selected_tile: Option<[usize; 2]>,
+    pub paused: bool,
+    pub step: bool,
     pub timers: Timers,
 }
 
@@ -32,6 +34,8 @@ impl GameState {
             camera_scroll: 0.0,
             board: Board::new([-500., -500.], 1000, 1000),
             selected_tile: None,
+            paused: false,
+            step: false,
             timers: Timers::new(),
         }
     }

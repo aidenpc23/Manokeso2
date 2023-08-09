@@ -65,6 +65,18 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
     if ainput.just_pressed(Action::TotalEnergy) {
         println!("Total energy: {}", state.board.total_energy());
     }
+    if ainput.just_pressed(Action::Pause) {
+        state.paused = !state.paused;
+    }
+    if ainput.just_pressed(Action::AddEnergy) {
+        if let Some(pos) = state.board.tile_at(input.mouse_world_pos) {
+            let i = pos[1] * state.board.width() + pos[0];
+            state.board.energy.god_set(i, state.board.energy.god_get(i) + 10.0);
+        }
+    }
+    if ainput.just_pressed(Action::Step) {
+        state.step = true;
+    }
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
         camera.scale = (state.camera_scroll * 0.1).exp();

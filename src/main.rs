@@ -59,9 +59,12 @@ async fn run() {
                 let fdelta = now - last_frame;
                 if udelta > state.update_time {
                     last_update = now;
-                    state.timers.update.start();
-                    state.board.update(&fdelta);
-                    state.timers.update.end();
+                    if !state.paused || state.step {
+                        state.timers.update.start();
+                        state.board.update(&fdelta);
+                        state.timers.update.end();
+                        state.step = false;
+                    }
                 }
                 if fdelta > state.frame_time {
                     last_frame = now;

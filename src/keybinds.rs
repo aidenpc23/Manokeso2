@@ -13,6 +13,9 @@ pub enum Action {
     Timers,
     TileInfo,
     TotalEnergy,
+    Pause,
+    AddEnergy,
+    Step,
 }
 
 pub type Keybinds = HashMap<Action, Key>;
@@ -27,6 +30,9 @@ pub fn default_keybinds() -> Keybinds {
         (Action::Timers, Key::T),
         (Action::TileInfo, Key::I),
         (Action::TotalEnergy, Key::E),
+        (Action::Pause, Key::Space),
+        (Action::AddEnergy, Key::B),
+        (Action::Step, Key::X),
     ])
 }
 
