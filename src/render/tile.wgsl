@@ -48,7 +48,7 @@ fn vs_main(
 
     var r = abs(in.reactivity);
     var s = in.stability;
-    var e = min(in.energy * 0.005, 1.0);
+    var e = min(in.energy * 0.011, 1.0);
     var stable = 1.0;
     if s > 0.80 && in.connex_number >= u32(10) {
         stable = 0.2;
@@ -56,7 +56,7 @@ fn vs_main(
     var hsv = vec3<f32>(
         (f32(in.connex_number) * 0.035 + 0.236) % 1.0,
         0.6 + 0.4 * e,
-        (0.2 + 0.8 * e) * stable
+        (0.1 + 0.9 * e) * stable
         );
     
     out.rgb = hsv_to_rgb(hsv);

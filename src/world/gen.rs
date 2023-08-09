@@ -23,7 +23,7 @@ impl<T: Copy> SwapBuffer<T> {
 pub trait SwapBufferGen {
     fn gen_map<T: NoiseNum>(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T>;
     fn gen_map_cut<T: NoiseNum>(&mut self, range: [T; 2], cut: [f64; 2], frequency: f64) -> SwapBuffer<T>;
-    fn gen_map_base(&mut self, cut: [f64; 2], freq1: f64, freq2: f64) -> SwapBuffer<f32>;
+    fn gen_map_base(&mut self, cut1: [f64; 2], cut: [f64; 2], freq1: f64, freq2: f64, freqfreq: f64) -> SwapBuffer<f32>;
 }
 
 impl SwapBufferGen for (usize, usize) {
@@ -33,11 +33,11 @@ impl SwapBufferGen for (usize, usize) {
     fn gen_map_cut<T: NoiseNum>(&mut self, range: [T; 2], cut: [f64; 2], frequency: f64) -> SwapBuffer<T> {
         SwapBuffer::from_arr(simplex_noise(self.0, self.1, range, cut, frequency), self.0)
     }
-    fn gen_map_base(&mut self, cut: [f64; 2], freq1: f64, freq2: f64) -> SwapBuffer<f32> {
+    fn gen_map_base(&mut self, cut1: [f64; 2], cut2: [f64; 2], freq1: f64, freq2: f64, freqfreq: f64) -> SwapBuffer<f32> {
         SwapBuffer::from_arr(
-            simplex_noise(self.0, self.1, [0.0, 1.0], cut, freq1)
+            simplex_simplex_noise(self.0, self.1, [0.0, 1.0], cut1, freq1, freqfreq)
             .iter()
-            .zip(simplex_noise(self.0, self.1, [0., 0.25], [0.4, 0.0], freq2).iter())
+            .zip(simplex_noise(self.0, self.1, [0., 0.5], cut2, freq2).iter())
             .map(|(&a, &b)| a.max(b))
             .collect()
             , self.0)
@@ -76,6 +76,20 @@ pub fn simplex_noise<T: NoiseNum>(
         .iter()
         .map(|x| T::from_f64(((x - smin) * mult - cut[0]).clamp(0.0, 1.0) * rrange) + range[0])
         .collect()
+}
+
+pub fn simplex_simplex_noise(
+    width: usize,
+    height: usize,
+    range: [f32; 2],
+    cut: [f64; 2],
+    frequency: f64,
+    freqfreq: f64,
+) -> Vec<f32> {
+    let noise1 = simplex_noise(width, height, range, cut, frequency);
+    let noise2 = simplex_noise(width, height, [0.1, 1.0], [0.0, 0.7], freqfreq);
+    
+    noise1.iter().zip(noise2).into_iter().map(|(a, b)| a * b).collect()
 }
 
 pub trait NoiseNum:
