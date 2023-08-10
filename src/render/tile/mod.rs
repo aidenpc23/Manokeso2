@@ -1,7 +1,9 @@
 mod instance;
 mod uniform;
-mod vertex;
+mod view;
+pub(super) mod pipeline;
+pub mod init;
 
 pub(super) use instance::*;
 pub(super) use uniform::*;
-pub(super) use vertex::*;
+

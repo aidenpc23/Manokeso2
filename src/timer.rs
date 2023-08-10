@@ -7,13 +7,6 @@ pub struct Timer {
     enabled: bool,
 }
 
-pub struct CounterTimer {
-    start: Option<Instant>,
-    durs: Vec<Duration>,
-    i: usize,
-    enabled: bool,
-}
-
 impl Timer {
     pub fn new(size: usize) -> Self {
         Self {

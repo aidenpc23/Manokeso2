@@ -52,19 +52,19 @@ async fn run() {
                     _ => inputs.update(event, &renderer),
                 }
             }
-            Event::RedrawRequested(_) => renderer.render(),
+            Event::RedrawRequested(_) => renderer.render(&state, false),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
                 let udelta = now - last_update;
                 let fdelta = now - last_frame;
                 if udelta > state.update_time {
                     last_update = now;
+                    state.timers.update.start();
                     if !state.paused || state.step {
-                        state.timers.update.start();
-                        state.board.update(&fdelta);
-                        state.timers.update.end();
+                        state.board.update();
                         state.step = false;
                     }
+                    state.timers.update.end();
                 }
                 if fdelta > state.frame_time {
                     last_frame = now;
@@ -75,15 +75,13 @@ async fn run() {
                     inputs.end();
 
                     state.timers.render_extract.start();
-                    renderer.extract(&state);
                     state.timers.render_extract.end();
 
                     state.timers.render_write.start();
-                    renderer.update(resized);
                     state.timers.render_write.end();
 
                     state.timers.render_draw.start();
-                    renderer.render();
+                    renderer.render(&state, resized);
                     state.timers.render_draw.end();
 
                     resized = false;

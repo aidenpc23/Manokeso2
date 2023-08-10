@@ -5,7 +5,7 @@ use winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode, WindowEvent, 
 use crate::render::Renderer;
 
 pub struct Input {
-    pub mouse_world_pos: [f32; 2],
+    pub mouse_tile_pos: [f32; 2],
     pub mouse_pixel_pos: [f32; 2],
 
     pressed: HashSet<VirtualKeyCode>,
@@ -22,7 +22,7 @@ impl Input {
     pub fn new() -> Self {
         Self {
             mouse_pixel_pos: [0.0, 0.0],
-            mouse_world_pos: [0.0, 0.0],
+            mouse_tile_pos: [0.0, 0.0],
             pressed: HashSet::new(),
             just_pressed: HashSet::new(),
             mouse_pressed: HashSet::new(),
@@ -57,7 +57,7 @@ impl Input {
             }
             WindowEvent::CursorMoved { position, .. } => {
                 self.mouse_pixel_pos = [position.x as f32, position.y as f32];
-                self.mouse_world_pos = renderer.pixel_to_world(self.mouse_pixel_pos);
+                self.mouse_tile_pos = renderer.pixel_to_tile(self.mouse_pixel_pos);
             }
             WindowEvent::MouseInput { button, state, .. } => {
                 match state {

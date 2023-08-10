@@ -14,11 +14,11 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
     let move_mult = 1.0 / camera.scale;
     let move_dist = PLAYER_SPEED * delta_mult * move_mult;
     if input.mouse_just_pressed(MouseButton::Left) {
-        state.selected_tile = state.board.tile_at(input.mouse_world_pos);
+        state.selected_tile = state.board.tile_at(input.mouse_tile_pos);
     }
     if input.mouse_just_released(MouseButton::Left) {
         if let Some(pos1) = state.selected_tile {
-            if let Some(pos2) = state.board.tile_at(input.mouse_world_pos) {
+            if let Some(pos2) = state.board.tile_at(input.mouse_tile_pos) {
                 state.board.player_swap(pos1, pos2);
             }
         }
@@ -52,7 +52,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
         }
     }
     if ainput.just_pressed(Action::TileInfo) {
-        if let Some(pos) = state.board.tile_at(input.mouse_world_pos) {
+        if let Some(pos) = state.board.tile_at(input.mouse_tile_pos) {
             let b = &state.board;
             let i = pos[0] + pos[1] * b.width();
             println!("tile pos: {:?}", pos);
@@ -69,7 +69,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
         state.paused = !state.paused;
     }
     if ainput.just_pressed(Action::AddEnergy) {
-        if let Some(pos) = state.board.tile_at(input.mouse_world_pos) {
+        if let Some(pos) = state.board.tile_at(input.mouse_tile_pos) {
             let i = pos[1] * state.board.width() + pos[0];
             state.board.energy.god_set(i, state.board.energy.god_get(i) + 10.0);
         }

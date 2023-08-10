@@ -1,68 +1,21 @@
-use crate::camera::Camera;
-use wgpu::SurfaceConfiguration;
+use crate::{camera::Camera, rsc::CLEAR_COLOR, state::GameState};
+use wgpu::util::StagingBelt;
 use winit::{
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
 };
 
-use super::{buffer::ConstsUniform, CameraUniform, InstanceField, TileViewUniform, surface::init_surface, pipeline::init_pipeline};
-
-pub struct Buffers {
-    pub camera: wgpu::Buffer,
-    pub tile_view: wgpu::Buffer,
-    pub consts: wgpu::Buffer,
-}
-
-pub struct Uniforms {
-    pub camera_next: CameraUniform,
-    pub camera: CameraUniform,
-    pub tile_view: TileViewUniform,
-    pub consts: ConstsUniform,
-}
-
-pub struct Instances {
-    pub connex_number: InstanceField<0, u32>,
-    pub stability: InstanceField<1, f32>,
-    pub reactivity: InstanceField<2, f32>,
-    pub energy: InstanceField<3, f32>,
-}
-
-pub struct BoardView {
-    pub bx: f32,
-    pub by: f32,
-    pub xs: usize,
-    pub xe: usize,
-    pub ys: usize,
-    pub ye: usize,
-}
-
-impl Default for BoardView {
-    fn default() -> Self {
-        return Self {
-            bx: 0.0,
-            by: 0.0,
-            xs: 0,
-            xe: 0,
-            ys: 0,
-            ye: 0,
-        };
-    }
-}
+use super::{
+    surface::RenderSurface, tile::pipeline::TilePipeline, ui::pipeline::UIPipeline,
+    writer::StagingBufWriter,
+};
 
 pub struct Renderer {
-    // window & device stuff
     pub window: Window,
-    pub(super) surface: wgpu::Surface,
-    pub(super) device: wgpu::Device,
-    pub(super) queue: wgpu::Queue,
-    pub(super) config: SurfaceConfiguration,
-    // render stuff
-    pub(super) render_pipeline: wgpu::RenderPipeline,
-    pub(super) slice: BoardView,
-    pub(super) instances: Instances,
-    pub(super) buffers: Buffers,
-    pub(super) uniforms: Uniforms,
-    pub(super) camera_bind_group: wgpu::BindGroup,
+    pub(super) render_surface: RenderSurface,
+    pub(super) tile_pipeline: TilePipeline,
+    pub(super) ui_pipeline: UIPipeline,
+    pub(super) staging_belt: StagingBelt,
 }
 
 impl Renderer {
@@ -73,25 +26,67 @@ impl Renderer {
             .unwrap();
 
         let size = window.inner_size();
-
-        let (surface, device, queue, config) = init_surface(&window).await;
-
-        let (render_pipeline, instances, buffers, uniforms, camera_bind_group) =
-            init_pipeline(&device, &config, &camera, &size);
+        let render_surface = RenderSurface::init(&window).await;
+        let tile_pipeline = TilePipeline::new(&render_surface, &camera, &size);
+        let ui_pipeline = UIPipeline::new(&render_surface);
+        // not exactly sure what this number should be,
+        // doesn't affect performance much and depends on "normal" zoom
+        let staging_belt = StagingBelt::new(4096 * 4);
 
         Self {
             window,
-            surface,
-            device,
-            queue,
-            config,
-            render_pipeline,
-            slice: Default::default(),
-            instances,
-            uniforms,
-            buffers,
-            camera_bind_group,
+            render_surface,
+            tile_pipeline,
+            ui_pipeline,
+            staging_belt,
         }
+    }
+
+    pub fn render(&mut self, state: &GameState, resize: bool) {
+        if resize {
+            self.render_surface.resize(&self.window.inner_size());
+        }
+
+        let output = self.render_surface.surface.get_current_texture().unwrap();
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder =
+            self.render_surface
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
+
+        self.tile_pipeline.update(&mut StagingBufWriter {
+            device: &self.render_surface.device,
+            belt: &mut self.staging_belt,
+            encoder: &mut encoder,
+        }, state, &self.window.inner_size());
+
+        {
+            let render_pass = &mut encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(CLEAR_COLOR),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
+            self.ui_pipeline.draw(render_pass);
+            self.tile_pipeline.draw(render_pass);
+        }
+
+        self.staging_belt.finish();
+        self.render_surface
+            .queue
+            .submit(std::iter::once(encoder.finish()));
+        output.present();
+        self.staging_belt.recall();
     }
 
     pub fn pixel_to_render(&self, pos: [f32; 2]) -> [f32; 2] {
@@ -102,7 +97,10 @@ impl Renderer {
         ];
     }
 
-    pub fn pixel_to_world(&self, pos: [f32; 2]) -> [f32; 2] {
-        self.uniforms.camera.render_to_world(self.pixel_to_render(pos))
+    pub fn pixel_to_tile(&self, pos: [f32; 2]) -> [f32; 2] {
+        self.tile_pipeline
+            .uniforms
+            .camera
+            .render_to_tile(self.pixel_to_render(pos))
     }
 }

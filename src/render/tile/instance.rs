@@ -1,15 +1,15 @@
+use std::marker::PhantomData;
+
 use rayon::prelude::*;
-use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BufferUsages, Device, Queue, RenderPass,
-};
+use wgpu::{BufferDescriptor, BufferUsages, Device, RenderPass};
+
+use crate::render::writer::StagingBufWriter;
 
 pub struct InstanceField<const LOCATION: u32, T> {
+    buffer: wgpu::Buffer,
     label: String,
     len: usize,
-    data: Vec<T>,
-    buffer: wgpu::Buffer,
-    recreate_buf: bool,
+    typ: PhantomData<T>,
 }
 
 impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCATION, T> {
@@ -17,26 +17,14 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
         Self {
             label: name.to_owned(),
             len: 0,
-            data: Vec::new(),
-            buffer: Self::init_buf(device, name, &[]),
-            recreate_buf: false,
-        }
-    }
-
-    pub fn write_buf(&mut self, device: &Device, queue: &Queue) {
-        if self.recreate_buf {
-            self.buffer = Self::init_buf(device, &self.label, &self.data[0..self.len]);
-        } else {
-            queue.write_buffer(
-                &self.buffer,
-                0,
-                bytemuck::cast_slice(&self.data[0..self.len]),
-            );
+            buffer: Self::init_buf(device, name, 0),
+            typ: PhantomData {},
         }
     }
 
     pub fn update_rows(
         &mut self,
+        writer: &mut StagingBufWriter,
         row_chunks: rayon::slice::ChunksExact<T>,
         size: usize,
         xs: usize,
@@ -45,19 +33,19 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
         T: Sync,
     {
         let width = xe - xs;
-        if size != self.data.len() {
-            self.data.resize(size, Default::default());
+        if size != self.len {
             self.len = size;
-            self.recreate_buf = true;
+            self.buffer = Self::init_buf(writer.device, &self.label, self.len);
         }
         if size == 0 {
             return;
         }
-        self.data[0..size]
-            .par_chunks_exact_mut(width)
+        writer
+            .mut_view::<T>(&self.buffer, size)
+            .par_chunks_exact_mut(width * std::mem::size_of::<T>())
             .zip(row_chunks)
             .for_each(|(data, row)| {
-                data.copy_from_slice(&row[xs..xe]);
+                data.copy_from_slice(bytemuck::cast_slice(&row[xs..xe]));
             });
     }
 
@@ -69,11 +57,12 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
         self.len
     }
 
-    fn init_buf(device: &Device, label: &str, contents: &[T]) -> wgpu::Buffer {
-        device.create_buffer_init(&BufferInitDescriptor {
+    fn init_buf(device: &Device, label: &str, size: usize) -> wgpu::Buffer {
+        device.create_buffer(&BufferDescriptor {
             label: Some(&(label.to_owned() + "Instance Buffer")),
-            contents: bytemuck::cast_slice(contents),
             usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
+            size: (size * std::mem::size_of::<T>()) as u64,
+            mapped_at_creation: false,
         })
     }
 }

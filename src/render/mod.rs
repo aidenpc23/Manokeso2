@@ -1,11 +1,7 @@
-mod buffer;
-mod draw;
-mod extract;
-mod pipeline;
 mod renderer;
 mod surface;
-mod update;
+mod tile;
+mod ui;
+mod writer;
 
-use buffer::*;
 pub use renderer::*;
-
