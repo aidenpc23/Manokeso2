@@ -29,12 +29,12 @@ impl Board {
     pub fn new(pos: [f32; 2], width: usize, height: usize) -> Board {
         let mut gen = (width, height);
 
-        let stability = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.025);
+        let stability = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.06);
         let connex_numbers = SwapBuffer::from_arr(stability.read().iter().map(|a| (a * 20.0) as u32).collect(), width);
         let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
         let energy = gen.gen_map(ENERGY_RANGE, 0.01);
-        let alpha = SwapBuffer::from_arr(vec![0.0; width*height], width);
-        let beta = SwapBuffer::from_arr(vec![0.0; width*height], width);
+        let alpha = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.025);
+        let beta = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.025);
         let gamma = SwapBuffer::from_arr(vec![0.0; width*height], width);
         let delta = SwapBuffer::from_arr(vec![0.0; width*height], width);
         let omega = SwapBuffer::from_arr(vec![0.0; width*height], width);
@@ -61,7 +61,7 @@ impl Board {
     pub fn update(&mut self, delta: &Duration) {
         let mut s = self.stability.bufs();
         let mut e = self.energy.bufs();
-        let (cr, cw) = self.connex_numbers.bufs();
+        let mut c = self.connex_numbers.bufs();
         let mut r = self.reactivity.bufs();
         let (ar, aw) = self.alpha.bufs();
         let (br, bw) = self.beta.bufs();
@@ -99,7 +99,7 @@ impl Board {
         let mut e = self.energy.bufs();
 
         for i in 0..(self.width * self.height) {
-            cw[i] = cr[i];
+            c.1[i] = c.0[i];
             s.1[i] = s.0[i];
             e.1[i] = e.0[i];
             r.1[i] = r.0[i];
@@ -114,126 +114,176 @@ impl Board {
 
             let x = i % self.width;
             let y = i / self.width;
-
-            let g1 = cr[i] % 5;
-            let g2 = (cr[i] / 5) % 5;
-            let g3 = (cr[i] / 25) % 8 + 1;
             
-            if e.0[i] > g3 as f32 * g2 as f32 * 5.0 {
-                let j: [i32; 2] = match g1 {
-                    0 => [0, 0],
-                    2 => [0, 2],
+
+            // if ar[i].abs() > br[i].abs() {
+                
+            // } else {
+                
+            // }
+            
+            if i > 0 {
+                let g1 = (c.0[i] - 1) % 5;
+                let g2 = ((c.0[i] - 1) / 5) % 5;
+                let g3 = ((c.0[i] - 1) / 25) % 8 + 1;
+                let dir: [i32; 2] = match g1 {
+                    0 => [0, 2],
                     1 => [0, -2],
-                    3 => [-2, 0],
-                    _ => [2, 0]
+                    2 => [-2, 0],
+                    3 => [2, 0],
+                    _ => [0, 0]
                 };
-                let attr = match g2 {
-                    0 => &mut r,
-                    1 => &mut e,
-                    _ => &mut s,
-                };
-                let i2 = (((y as i32 + j[1]) as usize)%self.height) * self.width + (((x as i32 + j[0]) as usize)%self.width);
-                let the = if g2 == 1 {g2 as f32 * 5.0} else {0.1 * attr.0[i]};
-                attr.1[i2] = attr.1[i2] + g3 as f32 * the;
-                e.1[i] -= g2 as f32 * 5.0;
+                let gfactor = g3 as f32 + (1.0 - 0.04 * g3 as f32);
+
+                if g2 != 3 && e.0[i] > gfactor * g2 as f32 * 5.0 {
+                    
+                    let attr = match g2 {
+                        0 => &mut r,
+                        1 => &mut e,
+                        _ => &mut s,
+                    };
+                    let bounds = match g2 {
+                        0 => REACTIVITY_RANGE,
+                        1 => [ENERGY_RANGE[0], f32::MAX],
+                        _ => STABILITY_RANGE,
+                    };
+                    let i2 = (((y as i32 + dir[1]) as usize)%self.height) * self.width + (((x as i32 + dir[0]) as usize)%self.width);
+
+                    let mult = if g2 == 1 {
+                        g2 as f32 * 5.0
+                    } else if g2 == 2 {
+                        0.1 * (10.0/(c.0[i2] as f32).powf(1.05 - 0.01 * gfactor)).min(1.0) * attr.0[i]
+                    } else {
+                        0.1 * attr.0[i]
+                    };
+                    
+                    if bounds[0] < attr.1[i2] && attr.1[i2] < bounds[1] {
+                        attr.1[i2] = attr.1[i2] + gfactor * mult;
+                        e.1[i] -= gfactor * g2 as f32 * 5.0;
+                    }
+                } else if g2 == 3 {
+                    if g1 == 4 {
+                        for x2 in -(g3 as i32)..=g3 as i32 {
+                            for y2 in -(g3 as i32)..=g3 as i32 {
+                                if x2 == 0 && y2 == 0 {
+                                    continue;
+                                }
+                                let i2 = (((y as i32 + y2) as usize)%self.height) * self.width + (((x as i32 + x2) as usize)%self.width);
+                                e.1[i] += r.1[i2].abs().min(0.01) * 7.0 * g3 as f32;
+                                r.1[i2] = r.1[i2] - r.1[i2].signum() * r.1[i2].abs().min(0.01);
+                            }
+                        }
+                    } else {
+                        let i2 = (((y as i32 + dir[1]) as usize)%self.height) * self.width + (((x as i32 + dir[0]) as usize)%self.width);
+    
+                        let cost = (c.0[i2] as f32 * gfactor).powf(2.305865); // COST GROWTH CONSTANT
+                        if e.0[i] > cost && c.1[i2] > 0 {
+                            c.1[i2] = (c.1[i2] as i32 + (g3 as i32 * r.0[i].signum() as i32)) as u32;
+                            e.1[i] -= cost;
+                        }
+                    }
+                }
             }
 
-            // match cr[i] {
-            //     1 => {
-            //         if er[i] > 20.0 {
-            //             let i2 = ((y + 2)%self.height) * self.width + x;
-            //             rw[i2] = rw[i2] + 0.10 * rr[i];
-            //             ew[i] -= 20.0;
-            //         }
-            //     }
-            //     2 => {
-            //         if er[i] > 20.0 {
-            //             let i2 = ((self.height + y - 2)%self.height) * self.width + x;
-            //             rw[i2] = rw[i2] + 0.10 * rr[i];
-            //             ew[i] -= 10.0;
-            //         }
-            //     }
-            //     3 => {
-            //         if er[i] > 20.0 {
-            //             let i2 = y * self.width + ((self.width + x - 2) % self.width);
-            //             rw[i2] = rw[i2] + 0.10 * rr[i];
-            //             ew[i] -= 20.0;
-            //         }
-            //     }
-            //     4 => {
-            //         if er[i] > 20.0 {
-            //             let i2 = y * self.width + ((x + 2) % self.width);
-            //             rw[i2] = rw[i2] + 0.10 * rr[i];
-            //             ew[i] -= 20.0;
-            //         }
-            //     }
-            //     5 => {
-            //         if er[i] > 1.0 {
-            //             let i2 = ((y + 2)%self.height) * self.width + x;
-            //             ew[i2] += 1.0;
-            //             ew[i] -= 1.0;
-            //         }
-            //     }
-            //     6 => {
-            //         if er[i] > 1.0 {
-            //             let i2 = ((self.height + y - 2)%self.height) * self.width + x;
-            //             ew[i2] += 1.0;
-            //             ew[i] -= 1.0;
-            //         }
-            //     }
-            //     7 => {
-            //         if er[i] > 1.0 {
-            //             let i2 = y * self.width + ((self.width + x - 2) % self.width);
-            //             ew[i2] += 1.0;
-            //             ew[i] -= 1.0;
-            //         }
-            //     }
-            //     8 => {
-            //         if er[i] > 1.0 {
-            //             let i2 = y * self.width + ((x + 2) % self.width);
-            //             ew[i2] += 1.0;
-            //             ew[i] -= 1.0;
-            //         }
-            //     }
-            //     9 => {
-            //         if er[i] > 10.0 {
-            //             let i2 = ((y + 2)%self.height) * self.width + x;
-            //             sw[i2] = sw[i2] + 0.10 * sr[i];
-            //             ew[i] -= 10.0;
-            //         }
-            //     }
-            //     10 => {
-            //         if er[i] > 10.0 {
-            //             let i2 = ((self.height + y - 2)%self.height) * self.width + x;
-            //             sw[i2] = sw[i2] + 0.10 * sr[i];
-            //             ew[i] -= 10.0;
-            //         }
-            //     }
-            //     11 => {
-            //         if er[i] > 10.0 {
-            //             let i2 = y * self.width + ((self.width + x - 2) % self.width);
-            //             sw[i2] = sw[i2] + 0.10 * sr[i];
-            //             ew[i] -= 10.0;
-            //         }
-            //     }
-            //     12 => {
-            //         if er[i] > 10.0 {
-            //             let i2 = y * self.width + ((x + 2) % self.width);
-            //             sw[i2] = sw[i2] + 0.10 * sr[i];
-            //             ew[i] -= 10.0;
-            //         }
-            //     }
-            //     _ => {
+        //     match cr[i] {
+        //         1 => {
+        //             if er[i] > 20.0 {
+        //                 let i2 = ((y + 2)%self.height) * self.width + x;
+        //                 rw[i2] = rw[i2] + 0.10 * rr[i];
+        //                 ew[i] -= 20.0;
+        //             }
+        //         }
+        //         2 => {
+        //             if er[i] > 20.0 {
+        //                 let i2 = ((self.height + y - 2)%self.height) * self.width + x;
+        //                 rw[i2] = rw[i2] + 0.10 * rr[i];
+        //                 ew[i] -= 10.0;
+        //             }
+        //         }
+        //         3 => {
+        //             if er[i] > 20.0 {
+        //                 let i2 = y * self.width + ((self.width + x - 2) % self.width);
+        //                 rw[i2] = rw[i2] + 0.10 * rr[i];
+        //                 ew[i] -= 20.0;
+        //             }
+        //         }
+        //         4 => {
+        //             if er[i] > 20.0 {
+        //                 let i2 = y * self.width + ((x + 2) % self.width);
+        //                 rw[i2] = rw[i2] + 0.10 * rr[i];
+        //                 ew[i] -= 20.0;
+        //             }
+        //         }
+        //         5 => {
+        //             if er[i] > 1.0 {
+        //                 let i2 = ((y + 2)%self.height) * self.width + x;
+        //                 ew[i2] += 1.0;
+        //                 ew[i] -= 1.0;
+        //             }
+        //         }
+        //         6 => {
+        //             if er[i] > 1.0 {
+        //                 let i2 = ((self.height + y - 2)%self.height) * self.width + x;
+        //                 ew[i2] += 1.0;
+        //                 ew[i] -= 1.0;
+        //             }
+        //         }
+        //         7 => {
+        //             if er[i] > 1.0 {
+        //                 let i2 = y * self.width + ((self.width + x - 2) % self.width);
+        //                 ew[i2] += 1.0;
+        //                 ew[i] -= 1.0;
+        //             }
+        //         }
+        //         8 => {
+        //             if er[i] > 1.0 {
+        //                 let i2 = y * self.width + ((x + 2) % self.width);
+        //                 ew[i2] += 1.0;
+        //                 ew[i] -= 1.0;
+        //             }
+        //         }
+        //         9 => {
+        //             if er[i] > 10.0 {
+        //                 let i2 = ((y + 2)%self.height) * self.width + x;
+        //                 sw[i2] = sw[i2] + 0.10 * sr[i];
+        //                 ew[i] -= 10.0;
+        //             }
+        //         }
+        //         10 => {
+        //             if er[i] > 10.0 {
+        //                 let i2 = ((self.height + y - 2)%self.height) * self.width + x;
+        //                 sw[i2] = sw[i2] + 0.10 * sr[i];
+        //                 ew[i] -= 10.0;
+        //             }
+        //         }
+        //         11 => {
+        //             if er[i] > 10.0 {
+        //                 let i2 = y * self.width + ((self.width + x - 2) % self.width);
+        //                 sw[i2] = sw[i2] + 0.10 * sr[i];
+        //                 ew[i] -= 10.0;
+        //             }
+        //         }
+        //         12 => {
+        //             if er[i] > 10.0 {
+        //                 let i2 = y * self.width + ((x + 2) % self.width);
+        //                 sw[i2] = sw[i2] + 0.10 * sr[i];
+        //                 ew[i] -= 10.0;
+        //             }
+        //         }
+        //         _ => {
                     
-            //     }
-            // }
+        //         }
+        //     }
         }
 
         for i in 0..(self.width * self.height) {
-            cw[i] = cw[i].clamp(CONNEX_NUMBER_RANGE[0], CONNEX_NUMBER_RANGE[1]);
+            c.1[i] = c.1[i].clamp(CONNEX_NUMBER_RANGE[0], CONNEX_NUMBER_RANGE[1]);
             s.1[i] = s.1[i].clamp(STABILITY_RANGE[0], STABILITY_RANGE[1]);
             r.1[i] = r.1[i].clamp(REACTIVITY_RANGE[0], REACTIVITY_RANGE[1]);
             e.1[i] = e.1[i].max(0.0);
+            
+            // s.1[i] = ar[i];
+            // r.1[i] = br[i];
         }
 
         self.connex_numbers.swap();
@@ -262,6 +312,21 @@ impl Board {
         } else {
             Some([ x as usize, y as usize ])
         }
+    }
+
+    pub fn player_swap(&mut self, pos1: [usize; 2], pos2: [usize; 2]) {
+        let pos1 = pos1[1] * self.width + pos1[0];
+        let pos2 = pos2[1] * self.width + pos2[0];
+
+        if (self.connex_numbers.bufs().0[pos1] > 20 && self.stability.bufs().0[pos1] > 0.8) ||
+        (self.connex_numbers.bufs().0[pos2] > 20 && self.stability.bufs().0[pos2] > 0.8) {
+            return;
+        }
+
+        self.connex_numbers.swap_cell(pos1, pos2);
+        self.stability.swap_cell(pos1, pos2);
+        self.reactivity.swap_cell(pos1, pos2);
+        self.energy.swap_cell(pos1, pos2);
     }
 
     pub fn swap(&mut self, pos1: [usize; 2], pos2: [usize; 2]) {

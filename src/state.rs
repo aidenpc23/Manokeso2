@@ -32,7 +32,7 @@ impl GameState {
             update_time: UPDATE_TIME,
             camera: Camera::default(),
             camera_scroll: 0.0,
-            board: Board::new([-500., -500.], 708, 708),
+            board: Board::new([-500., -500.], 1000, 1000),
             selected_tile: None,
             paused: false,
             step: false,

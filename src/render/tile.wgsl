@@ -53,18 +53,46 @@ fn vs_main(
     if s > 0.80 && in.connex_number >= u32(10) {
         stable = 0.2;
     }
+    var con0 = 1.0;
+    if in.connex_number == u32(0) {
+        con0 = 0.7;
+    }
     var hsv = vec3<f32>(
         (f32(in.connex_number) * 0.035 + 0.236) % 1.0,
-        0.6 + 0.4 * e,
-        (0.1 + 0.9 * e) * stable
+        (0.6 + 0.4 * e) * con0,
+        (0.1 * (1.0 - s) + 0.8 * e + 0.1) * stable * con0
         );
     
     out.rgb = hsv_to_rgb(hsv);
 
-    out.rgb = color_shift(out.rgb, vec3<f32>(235.0/255.0, 89.0/255.0, 63.0/255.0), 0.15 * r);
+    out.rgb = color_shift(out.rgb, vec3<f32>(235.0/255.0, 89.0/255.0, 63.0/255.0), 0.15 * r * con0);
 
     return out;
 }
+
+// @vertex
+// fn vs_main(
+//     @builtin(vertex_index) vi: u32,
+//     @builtin(instance_index) i: u32,
+//     in: InstanceInput,
+// ) -> VertexOutput {
+//     var out: VertexOutput;
+//     out.i = i;
+
+//     var pos = vec2<f32>(f32(vi % u32(2)), f32(vi / u32(2)));
+//     pos -= camera.pos;
+//     pos.x += f32(i % tile_view.width);
+//     pos.y += f32(i / tile_view.width);
+//     pos += tile_view.pos;
+//     pos *= camera.proj;
+//     out.clip_position = vec4<f32>(pos.x, pos.y, 0.0, 1.0);
+
+//     var r = (min(max(in.reactivity, -1.0), 1.0) + 1.0) / 2.0;
+//     var s = (min(max(in.stability, -1.0), 1.0) + 1.0) / 2.0;
+//     out.rgb = vec3<f32>(r, s, 0.0);
+
+//     return out;
+// }
 
 // Fragment shader
 

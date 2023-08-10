@@ -19,7 +19,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
     if input.mouse_just_released(MouseButton::Left) {
         if let Some(pos1) = state.selected_tile {
             if let Some(pos2) = state.board.tile_at(input.mouse_world_pos) {
-                state.board.swap(pos1, pos2);
+                state.board.player_swap(pos1, pos2);
             }
         }
         state.selected_tile = None;
