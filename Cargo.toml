@@ -17,4 +17,5 @@ rayon = "1.7.0"
 ron = "0.8.0"
 serde = "1.0.164"
 wgpu = "0.16.1"
+wgpu_glyph = "0.20.0"
 winit = {version="0.28.6", features=["serde"]}

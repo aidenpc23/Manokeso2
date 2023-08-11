@@ -1,4 +1,4 @@
-use crate::{camera::Camera, rsc::CLEAR_COLOR, state::GameState};
+use crate::{camera::Camera, rsc::CLEAR_COLOR, state::GameState, input::Input};
 use wgpu::util::StagingBelt;
 use winit::{
     event_loop::EventLoop,
@@ -28,7 +28,7 @@ impl Renderer {
         let size = window.inner_size();
         let render_surface = RenderSurface::init(&window).await;
         let tile_pipeline = TilePipeline::new(&render_surface, &camera, &size);
-        let ui_pipeline = UIPipeline::new(&render_surface);
+        let ui_pipeline = UIPipeline::new(&render_surface, &size);
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom
         let staging_belt = StagingBelt::new(4096 * 4);
@@ -42,9 +42,10 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, state: &GameState, resize: bool) {
+    pub fn render(&mut self, state: &GameState, input: &Input, resize: bool) {
+        let size = &self.window.inner_size();
         if resize {
-            self.render_surface.resize(&self.window.inner_size());
+            self.render_surface.resize(size);
         }
 
         let output = self.render_surface.surface.get_current_texture().unwrap();
@@ -58,14 +59,17 @@ impl Renderer {
                     label: Some("Render Encoder"),
                 });
 
-        self.tile_pipeline.update(&mut StagingBufWriter {
+        let writer = &mut StagingBufWriter {
             device: &self.render_surface.device,
             belt: &mut self.staging_belt,
             encoder: &mut encoder,
-        }, state, &self.window.inner_size());
+        };
+        self.tile_pipeline
+            .update(writer, state, size);
+        self.ui_pipeline.update(state, input, size);
 
         {
-            let render_pass = &mut encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let render_pass = &mut writer.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -80,6 +84,8 @@ impl Renderer {
             self.ui_pipeline.draw(render_pass);
             self.tile_pipeline.draw(render_pass);
         }
+
+        self.ui_pipeline.draw_text(writer, &view, size);
 
         self.staging_belt.finish();
         self.render_surface

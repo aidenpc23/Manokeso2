@@ -37,7 +37,7 @@ async fn run() {
 
     let mut last_update = time::Instant::now();
     let mut last_frame = time::Instant::now();
-    let mut inputs = Input::new();
+    let mut input = Input::new();
     let mut resized = false;
 
     // Game loop
@@ -49,10 +49,10 @@ async fn run() {
                 match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(_) => resized = true,
-                    _ => inputs.update(event, &renderer),
+                    _ => input.update(event, &renderer),
                 }
             }
-            Event::RedrawRequested(_) => renderer.render(&state, false),
+            Event::RedrawRequested(_) => renderer.render(&state, &input, false),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
                 let udelta = now - last_update;
@@ -69,13 +69,13 @@ async fn run() {
                 if fdelta > state.frame_time {
                     last_frame = now;
 
-                    if handle_input(&fdelta, &inputs, &mut state) {
+                    if handle_input(&fdelta, &input, &mut state) {
                         *control_flow = ControlFlow::Exit;
                     }
-                    inputs.end();
+                    input.end();
 
                     state.timers.render.start();
-                    renderer.render(&state, resized);
+                    renderer.render(&state, &input, resized);
                     state.timers.render.end();
 
                     resized = false;

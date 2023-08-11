@@ -48,7 +48,7 @@ pub struct Timers {
 
 impl Timers {
     pub fn new() -> Self {
-        let size = 60 * 5;
+        let size = 60;
         Self {
             update: Timer::new(size),
             render: Timer::new(size),

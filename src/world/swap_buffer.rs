@@ -6,7 +6,7 @@ pub struct SwapBuffer<T> {
     write: Vec<T>,
 }
 
-impl<T: Sync> SwapBuffer<T> {
+impl<T: Sync + Send + Copy> SwapBuffer<T> {
     pub fn swap(&mut self) {
         std::mem::swap(&mut self.read, &mut self.write);
     }
@@ -30,6 +30,9 @@ impl<T: Sync> SwapBuffer<T> {
     }
     pub fn god_set(&mut self, pos: usize, val: T) {
         self.read[pos] = val;
+    }
+    pub fn sync_write(&mut self) {
+        self.write.copy_from_slice(&self.read);
     }
 }
 

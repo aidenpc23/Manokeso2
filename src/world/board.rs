@@ -15,11 +15,6 @@ pub struct Board {
     pub stability: SwapBuffer<f32>,
     pub reactivity: SwapBuffer<f32>,
     pub energy: SwapBuffer<f32>,
-    pub alpha: SwapBuffer<f32>,
-    pub beta: SwapBuffer<f32>,
-    pub gamma: SwapBuffer<f32>,
-    pub delta: SwapBuffer<f32>,
-    pub omega: SwapBuffer<f32>,
     total_energy: f32,
 }
 
@@ -34,11 +29,6 @@ impl Board {
         );
         let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
         let energy = gen.gen_map(ENERGY_RANGE, 0.01);
-        let alpha = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.025);
-        let beta = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.025);
-        let gamma = SwapBuffer::from_arr(vec![0.0; width * height], width);
-        let delta = SwapBuffer::from_arr(vec![0.0; width * height], width);
-        let omega = SwapBuffer::from_arr(vec![0.0; width * height], width);
 
         let total_energy = energy.read().iter().sum();
 
@@ -50,25 +40,13 @@ impl Board {
             stability,
             reactivity,
             energy,
-            alpha,
-            beta,
-            gamma,
-            delta,
-            omega,
             total_energy,
         }
     }
 
     pub fn update(&mut self) {
-        let mut s = self.stability.bufs();
         let e = self.energy.bufs();
-        let c = self.connex_numbers.bufs();
-        let mut r = self.reactivity.bufs();
-        let (ar, aw) = self.alpha.bufs();
-        let (br, bw) = self.beta.bufs();
-        let (gr, gw) = self.gamma.bufs();
-        let (dr, dw) = self.delta.bufs();
-        let (or, ow) = self.omega.bufs();
+        let s = self.stability.bufs();
 
         self.total_energy =
             e.1.par_iter_mut()
@@ -98,19 +76,15 @@ impl Board {
                 .sum();
         self.energy.swap();
 
-        let mut e = self.energy.bufs();
+        self.connex_numbers.sync_write();
+        self.stability.sync_write();
+        self.reactivity.sync_write();
+        self.energy.sync_write();
 
-        for i in 0..(self.width * self.height) {
-            c.1[i] = c.0[i];
-            s.1[i] = s.0[i];
-            e.1[i] = e.0[i];
-            r.1[i] = r.0[i];
-            aw[i] = ar[i];
-            bw[i] = br[i];
-            gw[i] = gr[i];
-            dw[i] = dr[i];
-            ow[i] = or[i];
-        }
+        let c = self.connex_numbers.bufs();
+        let mut s = self.stability.bufs();
+        let mut e = self.energy.bufs();
+        let mut r = self.reactivity.bufs();
 
         for i in 0..(self.width * self.height) {
             let x = i % self.width;
@@ -122,10 +96,10 @@ impl Board {
 
             // }
 
-            if i > 0 {
-                let g1 = (c.0[i] + 5 - 1) % 5;
-                let g2 = ((c.0[i] + 5 - 1) / 5) % 5;
-                let g3 = ((c.0[i] + 5 - 1) / 25) % 8 + 1;
+            if i > 0 && c.0[i] > 0 {
+                let g1 = (c.0[i] - 1) % 5;
+                let g2 = ((c.0[i] - 1) / 5) % 5;
+                let g3 = ((c.0[i] - 1) / 25) % 8 + 1;
                 let dir: [i32; 2] = match g1 {
                     0 => [0, 2],
                     1 => [0, -2],
@@ -195,9 +169,6 @@ impl Board {
             s.1[i] = s.1[i].clamp(STABILITY_RANGE[0], STABILITY_RANGE[1]);
             r.1[i] = r.1[i].clamp(REACTIVITY_RANGE[0], REACTIVITY_RANGE[1]);
             e.1[i] = e.1[i].max(0.0);
-
-            // s.1[i] = ar[i];
-            // r.1[i] = br[i];
         }
 
         self.connex_numbers.swap();

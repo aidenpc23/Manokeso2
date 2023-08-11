@@ -1,12 +1,11 @@
 use crate::{
     render::{
-        surface::RenderSurface,
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
     },
     state::GameState,
 };
-use wgpu::{util::StagingBelt, BindGroup, CommandEncoder, Device, RenderPass, RenderPipeline};
+use wgpu::{BindGroup, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
 use super::view::BoardView;
