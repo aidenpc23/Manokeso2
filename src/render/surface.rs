@@ -35,7 +35,8 @@ impl RenderSurface {
             .await
             .expect("Could not get adapter!");
 
-        println!("Loaded backend: {:?}", adapter.get_info().backend);
+        println!("Adapter: {:?}", adapter.get_info().name);
+        println!("Backend: {:?}", adapter.get_info().backend);
 
         let (device, queue) = adapter
             .request_device(

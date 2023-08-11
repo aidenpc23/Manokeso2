@@ -74,15 +74,9 @@ async fn run() {
                     }
                     inputs.end();
 
-                    state.timers.render_extract.start();
-                    state.timers.render_extract.end();
-
-                    state.timers.render_write.start();
-                    state.timers.render_write.end();
-
-                    state.timers.render_draw.start();
+                    state.timers.render.start();
                     renderer.render(&state, resized);
-                    state.timers.render_draw.end();
+                    state.timers.render.end();
 
                     resized = false;
                 }

@@ -39,14 +39,12 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
     if ainput.just_pressed(Action::Timers) {
         let t = &state.timers;
         if t.update.ready() {
-            let render = t.render_extract.avg() + t.render_write.avg() + t.render_draw.avg();
-            let total = t.update.avg() + render;
+            let render = t.render.avg();
+            let update = t.update.avg();
+            let total = update + render;
             println!("total: {:?}", total);
-            println!("1. update: {:?}", t.update.avg());
+            println!("1. update: {:?}", update);
             println!("2. render: {:?}", render);
-            println!("   1. extract: {:?}", t.render_extract.avg());
-            println!("   2. write: {:?}", t.render_write.avg());
-            println!("   3. draw: {:?}", t.render_draw.avg());
         } else {
             println!("Not enough time has passed");
         }

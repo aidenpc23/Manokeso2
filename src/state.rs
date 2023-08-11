@@ -43,9 +43,7 @@ impl GameState {
 
 pub struct Timers {
     pub update: Timer,
-    pub render_extract: Timer,
-    pub render_write: Timer,
-    pub render_draw: Timer,
+    pub render: Timer,
 }
 
 impl Timers {
@@ -53,9 +51,7 @@ impl Timers {
         let size = 60 * 5;
         Self {
             update: Timer::new(size),
-            render_extract: Timer::new(size),
-            render_write: Timer::new(size),
-            render_draw: Timer::new(size),
+            render: Timer::new(size),
         }
     }
 }
