@@ -1,3 +1,6 @@
+use std::time::Duration;
+
+use rand::Rng;
 use rayon::prelude::*;
 
 use crate::rsc::{CONNEX_NUMBER_RANGE, ENERGY_RANGE, REACTIVITY_RANGE, STABILITY_RANGE};
@@ -5,7 +8,9 @@ use crate::rsc::{CONNEX_NUMBER_RANGE, ENERGY_RANGE, REACTIVITY_RANGE, STABILITY_
 use super::{gen::SwapBufferGen, swap_buffer::SwapBuffer};
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
+const GAMMA_KERNEL: [[f32; 3]; 3] = [[0.1, 1.0, 0.1], [1.0, 0.0, 1.0], [0.1, 1.0, 0.1]];
 const ENERGY_FLOW_RATE: f32 = 1.0 / 100.0;
+const GAMMA_FLOW_RATE: f32 = 1.0 / 8.0;
 
 pub struct Board {
     pub pos: [f32; 2],
@@ -15,6 +20,11 @@ pub struct Board {
     pub stability: SwapBuffer<f32>,
     pub reactivity: SwapBuffer<f32>,
     pub energy: SwapBuffer<f32>,
+    pub alpha: SwapBuffer<f32>,
+    pub beta: SwapBuffer<f32>,
+    pub gamma: SwapBuffer<f32>,
+    pub delta: SwapBuffer<f32>,
+    pub omega: SwapBuffer<f32>,
     total_energy: f32,
 }
 
@@ -29,6 +39,11 @@ impl Board {
         );
         let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
         let energy = gen.gen_map(ENERGY_RANGE, 0.01);
+        let alpha = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.025);
+        let beta = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.025);
+        let gamma = SwapBuffer::from_arr(vec![0.0; width * height], width);
+        let delta = SwapBuffer::from_arr(vec![0.0; width * height], width);
+        let omega = SwapBuffer::from_arr(vec![0.0; width * height], width);
 
         let total_energy = energy.read().iter().sum();
 
@@ -40,13 +55,25 @@ impl Board {
             stability,
             reactivity,
             energy,
+            alpha,
+            beta,
+            gamma,
+            delta,
+            omega,
             total_energy,
         }
     }
 
     pub fn update(&mut self) {
+        let mut s = self.stability.bufs();
         let e = self.energy.bufs();
-        let s = self.stability.bufs();
+        let c = self.connex_numbers.bufs();
+        let mut r = self.reactivity.bufs();
+        let (ar, aw) = self.alpha.bufs();
+        let (br, bw) = self.beta.bufs();
+        let (gr, gw) = self.gamma.bufs();
+        let (dr, dw) = self.delta.bufs();
+        let (or, ow) = self.omega.bufs();
 
         self.total_energy =
             e.1.par_iter_mut()
@@ -62,7 +89,7 @@ impl Board {
                                 if x + dx >= 1 && x + dx - 1 < self.width {
                                     let i2 = (y + dy - 1) * self.width + x + dx - 1;
                                     let cond = (1.0 - s.0[i]) * (1.0 - s.0[i2]);
-                                    let a = BASE_KERNEL[dx][dy] * cond;
+                                    let a = BASE_KERNEL[dx][dy] * cond; //* gr[i2] * gr[i];
                                     sum += a * (e.0[i2] - cur);
                                 }
                             }
@@ -76,30 +103,81 @@ impl Board {
                 .sum();
         self.energy.swap();
 
-        self.connex_numbers.sync_write();
-        self.stability.sync_write();
-        self.reactivity.sync_write();
-        self.energy.sync_write();
+        gw.par_iter_mut().enumerate().for_each(|(i, gn)| {
+            let x = i % self.width;
+            let y = i / self.width;
+            let mut sum = 0.;
+            let cur = gr[i];
+            for dy in -1..=1 {
+                if y as i32 + dy >= 0 && y as i32 + dy < self.height as i32 {
+                    for dx in -1..=1 {
+                        if x as i32 + dx >= 0 && x as i32 + dx < self.width as i32 {
+                            let i2 = (y as i32 + dy) * self.width as i32 + x as i32 + dx;
+                            let a = GAMMA_KERNEL[(dx + 1) as usize][(dy + 1) as usize];
+                            sum += a * (gr[i2 as usize] - cur);
+                        }
+                    }
+                }
+            }
 
-        let c = self.connex_numbers.bufs();
-        let mut s = self.stability.bufs();
+            let new = cur + sum * GAMMA_FLOW_RATE; //.powf(1.0 + 0.0001 * cur).max(0.1);
+            *gn = new * (0.999 - 0.000001 * cur).min(1.0);
+        });
+        self.gamma.swap();
+
         let mut e = self.energy.bufs();
-        let mut r = self.reactivity.bufs();
+        let (gr, gw) = self.gamma.bufs();
+
+        for i in 0..(self.width * self.height) {
+            c.1[i] = c.0[i];
+            s.1[i] = s.0[i];
+            e.1[i] = e.0[i];
+            r.1[i] = r.0[i];
+            aw[i] = ar[i];
+            bw[i] = br[i];
+            gw[i] = gr[i];
+            dw[i] = dr[i];
+            ow[i] = or[i];
+        }
 
         for i in 0..(self.width * self.height) {
             let x = i % self.width;
             let y = i / self.width;
 
-            // if ar[i].abs() > br[i].abs() {
+            let cost_mult = (c.0[i] as f32 * 0.35) + 1.0;
+            let gamma_cost = cost_mult * cost_mult;
 
-            // } else {
+            if c.0[i] <= 20 && gr[i] < gamma_cost * 0.9 {
+                gw[i] += (1.0002 as f32).powf(c.0[i] as f32) - 1.0;
+            } else if gr[i] < (1.23 as f32).powf(c.0[i] as f32) {
+                gw[i] += (1.02 as f32).powf(c.0[i] as f32) - 1.0;
+            }
 
-            // }
+            let g1 = (c.0[i] - 1) % 5;
+            let g2 = ((c.0[i] - 1) / 5) % 5;
+            let g3 = ((c.0[i] - 1) / 25) % 8 + 1;
 
-            if i > 0 && c.0[i] > 0 {
-                let g1 = (c.0[i] - 1) % 5;
-                let g2 = ((c.0[i] - 1) / 5) % 5;
-                let g3 = ((c.0[i] - 1) / 25) % 8 + 1;
+            if gw[i] > gamma_cost {
+                if r.0[i] > 0.0 {
+                    c.1[i] = (c.1[i] as i32 + 1) as u32;
+                } else if r.0[i] < 0.0 {
+                    c.1[i] = (c.1[i] as i32 - 1).max(0) as u32;
+                }
+
+                let adjustments = [-0.25, -0.125, 0.0, 0.125, 0.25];
+                s.1[i] += adjustments[g2 as usize] * r.0[i];
+
+                let step = 100.0 / 200.0;
+                let sign = if g1 % 2 == 0 { -1.0 } else { 1.0 };
+                e.1[i] += (step * ((g3 + 1) * (g2 + 1)) as f32 * sign * r.0[i].abs()).max(0.0);
+
+                let r_adjustments = [-0.5, -0.25, 0.0, 0.25, 0.5];
+                r.1[i] += r_adjustments[g2 as usize] * (1.0 - s.0[i]);
+
+                gw[i] -= gamma_cost;
+            }
+
+            if i > 0 {
                 let dir: [i32; 2] = match g1 {
                     0 => [0, 2],
                     1 => [0, -2],
@@ -108,8 +186,9 @@ impl Board {
                     _ => [0, 0],
                 };
                 let gfactor = g3 as f32 + (1.0 - 0.04 * g3 as f32);
+                let en_move = gfactor * g2 as f32 * 2.0 * (0.25 + 0.75 * (1.0 - r.0[i].abs()));
 
-                if g2 != 3 && e.0[i] > gfactor * g2 as f32 * 5.0 {
+                if g2 != 3 && g2 != 1 && e.0[i] > gfactor * g2 as f32 * 5.0 {
                     let attr = match g2 {
                         0 => &mut r,
                         1 => &mut e,
@@ -123,9 +202,7 @@ impl Board {
                     let i2 = (((y as i32 + dir[1]) as usize) % self.height) * self.width
                         + (((x as i32 + dir[0]) as usize) % self.width);
 
-                    let mult = if g2 == 1 {
-                        g2 as f32 * 5.0
-                    } else if g2 == 2 {
+                    let mult = if g2 == 2 {
                         0.1 * (10.0 / (c.0[i2] as f32).powf(1.05 - 0.01 * gfactor)).min(1.0)
                             * attr.0[i]
                     } else {
@@ -136,6 +213,11 @@ impl Board {
                         attr.1[i2] = attr.1[i2] + gfactor * mult;
                         e.1[i] -= gfactor * g2 as f32 * 5.0;
                     }
+                } else if g2 == 1 && e.0[i] > en_move {
+                    let i2 = (((y as i32 + dir[1]) as usize) % self.height) * self.width
+                        + (((x as i32 + dir[0]) as usize) % self.width);
+                    e.1[i2] += en_move;
+                    e.1[i] -= en_move;
                 } else if g2 == 3 {
                     if g1 == 4 {
                         for x2 in -(g3 as i32)..=g3 as i32 {
@@ -169,12 +251,16 @@ impl Board {
             s.1[i] = s.1[i].clamp(STABILITY_RANGE[0], STABILITY_RANGE[1]);
             r.1[i] = r.1[i].clamp(REACTIVITY_RANGE[0], REACTIVITY_RANGE[1]);
             e.1[i] = e.1[i].max(0.0);
+
+            // e.1[i] = gw[i];
+            // r.1[i] = br[i];
         }
 
         self.connex_numbers.swap();
         self.stability.swap();
         self.reactivity.swap();
         self.energy.swap();
+        self.gamma.swap();
     }
 
     pub fn width(&self) -> usize {
@@ -203,11 +289,10 @@ impl Board {
         let pos1 = pos1[1] * self.width + pos1[0];
         let pos2 = pos2[1] * self.width + pos2[0];
 
-        if (self.connex_numbers.bufs().0[pos1] > 20 && self.stability.bufs().0[pos1] > 0.8)
-            || (self.connex_numbers.bufs().0[pos2] > 20 && self.stability.bufs().0[pos2] > 0.8)
-        {
-            return;
-        }
+        // if (self.connex_numbers.bufs().0[pos1] > 20 && self.stability.bufs().0[pos1] > 0.8) ||
+        // (self.connex_numbers.bufs().0[pos2] > 20 && self.stability.bufs().0[pos2] > 0.8) {
+        //     return;
+        // }
 
         self.connex_numbers.swap_cell(pos1, pos2);
         self.stability.swap_cell(pos1, pos2);

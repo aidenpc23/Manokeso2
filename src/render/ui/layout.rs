@@ -26,9 +26,7 @@ pub fn create_sections<'a>(
         state.timers.render.avg(),
         state.timers.update.avg()
     );
-    text.total_energy = format!(
-        "total energy: {:?}", state.board.total_energy()
-    );
+    text.total_energy = format!("total energy: {:?}", state.board.total_energy());
     if let Some(pos) = state.board.tile_at(input.mouse_tile_pos) {
         let b = &state.board;
         let i = pos[0] + pos[1] * b.width();
@@ -38,13 +36,23 @@ pub fn create_sections<'a>(
                 "connex number: {:?}\n",
                 "stability: {:?}\n",
                 "reactivity: {:?}\n",
-                "energy: {:?}"
+                "energy: {:?}\n",
+                "alpha: {:?}\n",
+                "beta: {:?}\n",
+                "gamma: {:?}\n",
+                "delta: {:?}\n",
+                "omega: {:?}\n",
             ),
             pos,
             b.connex_numbers.read()[i],
             b.stability.read()[i],
             b.reactivity.read()[i],
-            b.energy.read()[i]
+            b.energy.read()[i],
+            b.alpha.read()[i],
+            b.beta.read()[i],
+            b.gamma.read()[i],
+            b.delta.read()[i],
+            b.omega.read()[i],
         );
     }
 
