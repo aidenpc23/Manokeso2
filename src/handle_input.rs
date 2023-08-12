@@ -60,6 +60,8 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
             println!("stability: {:?}", b.stability.read()[i]);
             println!("reactivity: {:?}", b.reactivity.read()[i]);
             println!("energy: {:?}", b.energy.read()[i]);
+            println!("alpha: {:?}", b.alpha.read()[i]);
+            println!("gamma: {:?}", b.gamma.read()[i]);
         }
     }
     if ainput.just_pressed(Action::TotalEnergy) {

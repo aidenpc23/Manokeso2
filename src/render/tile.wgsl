@@ -58,7 +58,7 @@ fn vs_main(
         con0 = 0.7;
     }
     var hsv = vec3<f32>(
-        (f32(in.connex_number) * 0.035 + 0.236) % 1.0,
+        (f32(in.connex_number) * 0.027 + (0.236)) % 1.0,  // Should be multiplied by 0.035
         (0.6 + 0.4 * e) * con0,
         (0.1 * (1.0 - s) + 0.8 * e + 0.1) * stable * con0
         );

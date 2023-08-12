@@ -10,7 +10,7 @@ pub const UPDATE_TIME: Duration = Duration::from_millis(1000 / UPS as u64);
 pub const CONNEX_NUMBER_RANGE: [u32; 2] = [0, 200];
 pub const STABILITY_RANGE: [f32; 2] = [0.0, 1.0];
 pub const REACTIVITY_RANGE: [f32; 2] = [-1.0, 1.0];
-pub const ENERGY_RANGE: [f32; 2] = [0.0, 25.0];
+pub const ENERGY_RANGE: [f32; 2] = [0.0, 10.0];
 
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     r: 0.1,
