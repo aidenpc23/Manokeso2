@@ -28,7 +28,7 @@ impl Renderer {
         let size = window.inner_size();
         let render_surface = RenderSurface::init(&window).await;
         let tile_pipeline = TilePipeline::new(&render_surface, &camera, &size);
-        let ui_pipeline = UIPipeline::new(&render_surface, &size);
+        let ui_pipeline = UIPipeline::new(&render_surface);
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom
         let staging_belt = StagingBelt::new(4096 * 4);

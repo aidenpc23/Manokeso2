@@ -1,10 +1,11 @@
-use wgpu_glyph::{Section, Text};
+use wgpu_glyph::{BuiltInLineBreaker, HorizontalAlign, Section, Text, VerticalAlign};
 
 use crate::{input::Input, state::GameState};
 
 #[derive(Default)]
 pub struct UIText {
     pub performance_stats: String,
+    pub total_energy: String,
     pub tile_info: String,
 }
 
@@ -25,6 +26,9 @@ pub fn create_sections<'a>(
         state.timers.render.avg(),
         state.timers.update.avg()
     );
+    text.total_energy = format!(
+        "total energy: {:?}", state.board.total_energy()
+    );
     if let Some(pos) = state.board.tile_at(input.mouse_tile_pos) {
         let b = &state.board;
         let i = pos[0] + pos[1] * b.width();
@@ -43,22 +47,39 @@ pub fn create_sections<'a>(
             b.energy.read()[i]
         );
     }
-    vec![
-        Section {
-            screen_position: (300.0, 10.0),
-            bounds,
-            text: vec![Text::new(&text.performance_stats)
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(30.0)],
-            ..Section::default()
+
+    let perf = Section {
+        screen_position: (bounds.0 - 10.0, 10.0),
+        bounds,
+        text: vec![Text::new(&text.performance_stats)
+            .with_color([1.0, 1.0, 1.0, 1.0])
+            .with_scale(30.0)],
+        layout: wgpu_glyph::Layout::SingleLine {
+            line_breaker: BuiltInLineBreaker::default(),
+            h_align: HorizontalAlign::Right,
+            v_align: VerticalAlign::Top,
         },
-        Section {
-            screen_position: (10.0, 10.0),
-            bounds,
-            text: vec![Text::new(&text.tile_info)
-                .with_color([0.0, 0.0, 0.0, 1.0])
-                .with_scale(30.0)],
-            ..Section::default()
+    };
+    let total_energy = Section {
+        screen_position: (bounds.0 / 2.0, 10.0),
+        bounds,
+        text: vec![Text::new(&text.total_energy)
+            .with_color([1.0, 1.0, 1.0, 1.0])
+            .with_scale(30.0)],
+        layout: wgpu_glyph::Layout::SingleLine {
+            line_breaker: BuiltInLineBreaker::default(),
+            h_align: HorizontalAlign::Center,
+            v_align: VerticalAlign::Top,
         },
-    ]
+    };
+    let tile_info = Section {
+        screen_position: (10.0, 10.0),
+        bounds,
+        text: vec![Text::new(&text.tile_info)
+            .with_color([1.0, 1.0, 1.0, 1.0])
+            .with_scale(30.0)],
+        ..Section::default()
+    };
+
+    vec![perf, total_energy, tile_info]
 }

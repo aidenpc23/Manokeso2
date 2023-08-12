@@ -1,12 +1,11 @@
 use wgpu_glyph::{ab_glyph, GlyphBrushBuilder};
-use winit::dpi::PhysicalSize;
 
 use crate::render::surface::RenderSurface;
 
 use super::{pipeline::{UIPipeline, SHADER}, layout::UIText};
 
 impl UIPipeline {
-    pub fn new(surface: &RenderSurface, size: &PhysicalSize<u32>) -> Self {
+    pub fn new(surface: &RenderSurface) -> Self {
         let RenderSurface { device, config, .. } = surface;
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("UI Shader"),

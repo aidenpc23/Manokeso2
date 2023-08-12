@@ -16,7 +16,7 @@ impl RenderSurface {
         // Setup backend, surface and render devce
         // ==============================================
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: Backends::VULKAN,
+            backends: Backends::PRIMARY,
             ..Default::default()
         });
 
@@ -34,6 +34,10 @@ impl RenderSurface {
             })
             .await
             .expect("Could not get adapter!");
+
+        for a in instance.enumerate_adapters(Backends::PRIMARY) {
+            println!("A: {:?}", a.get_info().name);
+        }
 
         println!("Adapter: {:?}", adapter.get_info().name);
         println!("Backend: {:?}", adapter.get_info().backend);
