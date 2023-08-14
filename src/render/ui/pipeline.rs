@@ -12,12 +12,14 @@ pub struct UIPipeline {
     pub(super) pipeline: RenderPipeline,
     pub brush: GlyphBrush<()>,
     pub text: UIText,
+    pub diffuse_bind_group: wgpu::BindGroup,
 }
 
 impl UIPipeline {
     pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         render_pass.set_pipeline(&self.pipeline);
-        render_pass.draw(0..3, 0..1);
+        render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+        render_pass.draw(0..4, 0..1);
     }
 
     pub fn update(&mut self, state: &GameState, input: &Input, size: &PhysicalSize<u32>) {

@@ -1,12 +1,24 @@
+use wgpu::{Queue, Device, BindGroup, BindGroupLayout};
 use wgpu_glyph::{ab_glyph, GlyphBrushBuilder};
 
-use crate::render::surface::RenderSurface;
+use crate::render::{surface::RenderSurface, ui::texture::GameTexture};
 
-use super::{pipeline::{UIPipeline, SHADER}, layout::UIText};
+use super::{
+    layout::UIText,
+    pipeline::{UIPipeline, SHADER},
+};
 
 impl UIPipeline {
     pub fn new(surface: &RenderSurface) -> Self {
-        let RenderSurface { device, config, .. } = surface;
+        let RenderSurface {
+            device,
+            config,
+            queue,
+            ..
+        } = surface;
+
+        let (bind_group_layout, diffuse_bind_group) = Self::init_textures(device, queue);
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("UI Shader"),
             source: wgpu::ShaderSource::Wgsl(SHADER.into()),
@@ -15,7 +27,7 @@ impl UIPipeline {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("UI Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -36,7 +48,7 @@ impl UIPipeline {
                 })],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
@@ -57,6 +69,58 @@ impl UIPipeline {
             ab_glyph::FontArc::try_from_slice(include_bytes!("./fonts/NotoSerif-Regular.ttf"))
                 .expect("Failed to load font");
         let brush = GlyphBrushBuilder::using_font(font).build(device, config.format);
-        Self { pipeline, brush, text: UIText::new() }
+        Self {
+            pipeline,
+            brush,
+            text: UIText::new(),
+            diffuse_bind_group,
+        }
+    }
+
+    fn init_textures(device: &Device, queue: &Queue) -> (BindGroupLayout, BindGroup) {
+        let diffuse_bytes = include_bytes!("./textures/happy-tree.png");
+        let diffuse_texture = GameTexture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
+
+        let texture_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            });
+
+        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
+                },
+            ],
+            label: Some("diffuse_bind_group"),
+        });
+
+        (texture_bind_group_layout, diffuse_bind_group)
     }
 }

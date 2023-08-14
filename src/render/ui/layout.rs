@@ -15,6 +15,10 @@ impl UIText {
     }
 }
 
+const PADDING: f32 = 10.0;
+const SIZE: f32 = 30.0;
+const COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+
 pub fn create_sections<'a>(
     state: &GameState,
     input: &Input,
@@ -22,7 +26,10 @@ pub fn create_sections<'a>(
     bounds: (f32, f32),
 ) -> Vec<Section<'a>> {
     text.performance_stats = format!(
-        "frame time: {:?}\nupdate time: {:?}",
+        concat!(
+            "frame time: {:?}\n",
+            "update time: {:?}",
+        ),
         state.timers.render.avg(),
         state.timers.update.avg()
     );
@@ -57,23 +64,23 @@ pub fn create_sections<'a>(
     }
 
     let perf = Section {
-        screen_position: (bounds.0 - 10.0, 10.0),
+        screen_position: (bounds.0 - PADDING, PADDING),
         bounds,
         text: vec![Text::new(&text.performance_stats)
-            .with_color([1.0, 1.0, 1.0, 1.0])
-            .with_scale(30.0)],
-        layout: wgpu_glyph::Layout::SingleLine {
+            .with_color(COLOR)
+            .with_scale(SIZE)],
+        layout: wgpu_glyph::Layout::Wrap {
             line_breaker: BuiltInLineBreaker::default(),
             h_align: HorizontalAlign::Right,
             v_align: VerticalAlign::Top,
         },
     };
     let total_energy = Section {
-        screen_position: (bounds.0 / 2.0, 10.0),
+        screen_position: (bounds.0 / 2.0, PADDING),
         bounds,
         text: vec![Text::new(&text.total_energy)
-            .with_color([1.0, 1.0, 1.0, 1.0])
-            .with_scale(30.0)],
+            .with_color(COLOR)
+            .with_scale(SIZE)],
         layout: wgpu_glyph::Layout::SingleLine {
             line_breaker: BuiltInLineBreaker::default(),
             h_align: HorizontalAlign::Center,
@@ -81,11 +88,11 @@ pub fn create_sections<'a>(
         },
     };
     let tile_info = Section {
-        screen_position: (10.0, 10.0),
+        screen_position: (PADDING, PADDING),
         bounds,
         text: vec![Text::new(&text.tile_info)
-            .with_color([1.0, 1.0, 1.0, 1.0])
-            .with_scale(30.0)],
+            .with_color(COLOR)
+            .with_scale(SIZE)],
         ..Section::default()
     };
 
