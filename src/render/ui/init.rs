@@ -1,4 +1,4 @@
-use wgpu::{Queue, Device, BindGroup, BindGroupLayout};
+use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Device, Queue};
 use wgpu_glyph::{ab_glyph, GlyphBrushBuilder};
 
 use crate::render::{surface::RenderSurface, ui::texture::GameTexture};
@@ -6,6 +6,7 @@ use crate::render::{surface::RenderSurface, ui::texture::GameTexture};
 use super::{
     layout::UIText,
     pipeline::{UIPipeline, SHADER},
+    vertex::{Vertex, VERTICES},
 };
 
 impl UIPipeline {
@@ -24,6 +25,12 @@ impl UIPipeline {
             source: wgpu::ShaderSource::Wgsl(SHADER.into()),
         });
 
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("UI Pipeline Layout"),
@@ -36,7 +43,7 @@ impl UIPipeline {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[],
+                buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -73,13 +80,15 @@ impl UIPipeline {
             pipeline,
             brush,
             text: UIText::new(),
+            vertex_buffer,
             diffuse_bind_group,
         }
     }
 
     fn init_textures(device: &Device, queue: &Queue) -> (BindGroupLayout, BindGroup) {
         let diffuse_bytes = include_bytes!("./textures/happy-tree.png");
-        let diffuse_texture = GameTexture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
+        let diffuse_texture =
+            GameTexture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
 
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

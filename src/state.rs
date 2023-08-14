@@ -34,7 +34,7 @@ impl GameState {
             camera_scroll: 0.0,
             board: Board::new([-350., -350.], 708, 708),
             selected_tile: None,
-            paused: false,
+            paused: true,
             step: false,
             timers: Timers::new(),
         }
