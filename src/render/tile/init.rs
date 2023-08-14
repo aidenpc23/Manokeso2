@@ -165,12 +165,10 @@ impl TilePipeline {
             },
             uniforms: Uniforms {
                 camera: camera_uniform,
-                camera_next: camera_uniform,
                 tile_view: tile_view_uniform,
                 consts: consts_uniform,
             },
             camera_bind_group,
-            slice: Default::default(),
         }
     }
 }

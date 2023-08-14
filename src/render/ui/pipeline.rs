@@ -2,7 +2,7 @@ use wgpu::{RenderPass, RenderPipeline, TextureView};
 use wgpu_glyph::GlyphBrush;
 use winit::dpi::PhysicalSize;
 
-use crate::{render::writer::StagingBufWriter, state::GameState, input::Input};
+use crate::{render::writer::StagingBufWriter, state::GameState};
 
 use super::layout::{create_sections, UIText};
 
@@ -24,8 +24,8 @@ impl UIPipeline {
         render_pass.draw(0..4, 0..1);
     }
 
-    pub fn update(&mut self, state: &GameState, input: &Input, size: &PhysicalSize<u32>) {
-        for section in create_sections(state, input, &mut self.text, (size.width as f32, size.height as f32)) {
+    pub fn update(&mut self, state: &GameState, size: &PhysicalSize<u32>) {
+        for section in create_sections(state, &mut self.text, (size.width as f32, size.height as f32)) {
             self.brush.queue(section);
         }
     }

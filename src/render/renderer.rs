@@ -1,4 +1,4 @@
-use crate::{camera::Camera, rsc::CLEAR_COLOR, state::GameState, input::Input};
+use crate::{camera::Camera, rsc::CLEAR_COLOR, state::GameState, util::point::Point};
 use wgpu::util::StagingBelt;
 use winit::{
     event_loop::EventLoop,
@@ -42,7 +42,7 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, state: &GameState, input: &Input, resize: bool) {
+    pub fn render(&mut self, state: &GameState, resize: bool) {
         let size = &self.window.inner_size();
         if resize {
             self.render_surface.resize(size);
@@ -66,7 +66,7 @@ impl Renderer {
         };
         self.tile_pipeline
             .update(writer, state, size);
-        self.ui_pipeline.update(state, input, size);
+        self.ui_pipeline.update(state, size);
 
         {
             let render_pass = &mut writer.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -95,15 +95,15 @@ impl Renderer {
         self.staging_belt.recall();
     }
 
-    pub fn pixel_to_render(&self, pos: [f32; 2]) -> [f32; 2] {
+    pub fn pixel_to_render(&self, pos: Point<f32>) -> Point<f32> {
         let size = self.window.inner_size();
-        return [
-            pos[0] * 2.0 / size.width as f32 - 1.0,
-            -pos[1] * 2.0 / size.height as f32 + 1.0,
-        ];
+        return Point::new(
+            pos.x * 2.0 / size.width as f32 - 1.0,
+            -pos.y * 2.0 / size.height as f32 + 1.0,
+        );
     }
 
-    pub fn pixel_to_tile(&self, pos: [f32; 2]) -> [f32; 2] {
+    pub fn pixel_to_tile(&self, pos: Point<f32>) -> Point<f32> {
         self.tile_pipeline
             .uniforms
             .camera

@@ -1,6 +1,6 @@
 use wgpu_glyph::{BuiltInLineBreaker, HorizontalAlign, Section, Text, VerticalAlign};
 
-use crate::{input::Input, state::GameState};
+use crate::state::GameState;
 
 #[derive(Default)]
 pub struct UIText {
@@ -21,7 +21,6 @@ const COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
 pub fn create_sections<'a>(
     state: &GameState,
-    input: &Input,
     text: &'a mut UIText,
     bounds: (f32, f32),
 ) -> Vec<Section<'a>> {
@@ -34,10 +33,10 @@ pub fn create_sections<'a>(
         state.timers.update.avg()
     );
     text.total_energy = format!("total energy: {:?}", state.board.total_energy());
-    if let Some(pos) = state.board.tile_at(input.mouse_tile_pos) {
+    text.tile_info = if let Some(pos) = state.hovered_tile {
         let b = &state.board;
         let i = pos[0] + pos[1] * b.width();
-        text.tile_info = format!(
+        format!(
             concat!(
                 "tile pos: {:?}\n",
                 "connex number: {:?}\n",
@@ -60,8 +59,10 @@ pub fn create_sections<'a>(
             b.gamma.read()[i],
             b.delta.read()[i],
             b.omega.read()[i],
-        );
-    }
+        )
+    } else {
+        "no tile selected".to_string()
+    };
 
     let perf = Section {
         screen_position: (bounds.0 - PADDING, PADDING),

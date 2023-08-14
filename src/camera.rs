@@ -1,7 +1,9 @@
+use crate::util::point::Point;
+
 const DEFAULT_ASPECT_RATIO: f32 = 16. / 9.;
 
 pub struct Camera {
-    pub pos: [f32; 2],
+    pub pos: Point<f32>,
     pub aspect: f32,
     pub scale: f32,
 }
@@ -9,7 +11,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            pos: [0., 0.],
+            pos: Point::new(0., 0.),
             aspect: DEFAULT_ASPECT_RATIO,
             scale: 1.0,
         }

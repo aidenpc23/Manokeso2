@@ -1,9 +1,6 @@
-use std::time::Duration;
-
-use rand::Rng;
 use rayon::prelude::*;
 
-use crate::rsc::{CONNEX_NUMBER_RANGE, ENERGY_RANGE, REACTIVITY_RANGE, STABILITY_RANGE};
+use crate::{rsc::{CONNEX_NUMBER_RANGE, ENERGY_RANGE, REACTIVITY_RANGE, STABILITY_RANGE}, util::point::Point};
 
 use super::{gen::SwapBufferGen, swap_buffer::SwapBuffer};
 
@@ -13,7 +10,7 @@ const ENERGY_FLOW_RATE: f32 = 1.0 / 100.0;
 const GAMMA_FLOW_RATE: f32 = 1.0 / 8.0;
 
 pub struct Board {
-    pub pos: [f32; 2],
+    pub pos: Point<f32>,
     width: usize,
     height: usize,
     pub connex_numbers: SwapBuffer<u32>,
@@ -25,11 +22,12 @@ pub struct Board {
     pub gamma: SwapBuffer<f32>,
     pub delta: SwapBuffer<f32>,
     pub omega: SwapBuffer<f32>,
+    pub dirty: bool,
     total_energy: f32,
 }
 
 impl Board {
-    pub fn new(pos: [f32; 2], width: usize, height: usize) -> Board {
+    pub fn new(pos: Point<f32>, width: usize, height: usize) -> Board {
         let mut gen = (width, height);
 
         let stability = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.06);
@@ -61,6 +59,7 @@ impl Board {
             delta,
             omega,
             total_energy,
+            dirty: true
         }
     }
 
@@ -261,6 +260,8 @@ impl Board {
         self.reactivity.swap();
         self.energy.swap();
         self.gamma.swap();
+
+        self.dirty = true;
     }
 
     pub fn width(&self) -> usize {
@@ -275,9 +276,8 @@ impl Board {
         self.total_energy
     }
 
-    pub fn tile_at(&self, pos: [f32; 2]) -> Option<[usize; 2]> {
-        let x = pos[0] - self.pos[0];
-        let y = pos[1] - self.pos[1];
+    pub fn tile_at(&self, pos: Point<f32>) -> Option<[usize; 2]> {
+        let Point {x, y} = pos - self.pos;
         if x < 0.0 || y < 0.0 || x >= self.width as f32 || y >= self.height as f32 {
             None
         } else {
@@ -298,14 +298,19 @@ impl Board {
         self.stability.swap_cell(pos1, pos2);
         self.reactivity.swap_cell(pos1, pos2);
         self.energy.swap_cell(pos1, pos2);
+
+        self.dirty = true;
     }
 
     pub fn swap(&mut self, pos1: [usize; 2], pos2: [usize; 2]) {
         let pos1 = pos1[1] * self.width + pos1[0];
         let pos2 = pos2[1] * self.width + pos2[0];
+
         self.connex_numbers.swap_cell(pos1, pos2);
         self.stability.swap_cell(pos1, pos2);
         self.reactivity.swap_cell(pos1, pos2);
         self.energy.swap_cell(pos1, pos2);
+
+        self.dirty = true;
     }
 }

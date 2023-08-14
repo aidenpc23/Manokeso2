@@ -1,48 +1,65 @@
 use winit::dpi::PhysicalSize;
 
-use crate::{camera::Camera, rsc::{CONNEX_NUMBER_RANGE, STABILITY_RANGE, REACTIVITY_RANGE, ENERGY_RANGE}};
+use crate::{
+    camera::Camera,
+    rsc::{CONNEX_NUMBER_RANGE, ENERGY_RANGE, REACTIVITY_RANGE, STABILITY_RANGE},
+    util::point::Point,
+};
 
 const DEFAULT_SCALE: f32 = 0.05;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
-    pos: [f32; 2],
-    proj: [f32; 2],
+    pos: Point<f32>,
+    proj: Point<f32>,
 }
 
 impl CameraUniform {
     pub fn new(camera: &Camera, size: &PhysicalSize<u32>) -> Self {
-        let win_aspect = size.width as f32 / size.height as f32;
-        let mut proj = if win_aspect > camera.aspect {
-            [1.0, win_aspect]
-        } else {
-            [camera.aspect / win_aspect, camera.aspect]
-        };
-        proj[0] *= camera.scale * DEFAULT_SCALE;
-        proj[1] *= camera.scale * DEFAULT_SCALE;
         Self {
             pos: camera.pos,
-            proj,
+            proj: Self::calc_proj(camera, size),
         }
     }
 
-    pub fn world_dimensions(&self) -> [f32; 2] {
-        [2.0 / self.proj[0], 2.0 / self.proj[1]]
+    pub fn update(&mut self, camera: &Camera, size: &PhysicalSize<u32>) -> bool {
+        let new_pos = camera.pos;
+        let new_proj = Self::calc_proj(camera, size);
+        if self.proj == new_proj && self.pos == new_pos {
+            return false;
+        }
+        self.proj = new_proj;
+        self.pos = new_pos;
+        true
     }
 
-    pub fn render_to_tile(&self, mut coords: [f32; 2]) -> [f32; 2] {
-        coords[0] /= self.proj[0];
-        coords[1] /= self.proj[1];
-        coords[0] += self.pos[0];
-        coords[1] += self.pos[1];
+    pub fn world_dimensions(&self) -> (f32, f32) {
+        (2.0 / self.proj.x, 2.0 / self.proj.y)
+    }
+
+    pub fn render_to_tile(&self, coords: Point<f32>) -> Point<f32> {
+        let mut coords = coords;
+        coords /= self.proj;
+        coords += self.pos;
         coords
     }
-}
 
-impl PartialEq for CameraUniform {
-    fn eq(&self, other: &Self) -> bool {
-        arr_eq(self.proj, other.proj) && arr_eq(self.pos, other.pos)
+    pub fn tile_to_view(&self, pos: Point<f32>) -> Point<f32> {
+        let mut pos = pos;
+        pos -= self.pos;
+        pos
+    }
+
+    fn calc_proj(camera: &Camera, size: &PhysicalSize<u32>) -> Point<f32> {
+        let win_aspect = size.width as f32 / size.height as f32;
+        let mut proj = if win_aspect > camera.aspect {
+            Point::new(1.0, win_aspect)
+        } else {
+            Point::new(camera.aspect / win_aspect, camera.aspect)
+        };
+        proj *= camera.scale * DEFAULT_SCALE;
+        proj
     }
 }
 

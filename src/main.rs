@@ -13,12 +13,13 @@ mod camera;
 mod config;
 mod handle_input;
 mod input;
+mod keybinds;
 mod render;
 mod rsc;
 mod state;
 mod timer;
+mod util;
 mod world;
-mod keybinds;
 
 use render::Renderer;
 
@@ -49,10 +50,10 @@ async fn run() {
                 match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(_) => resized = true,
-                    _ => input.update(event, &renderer),
+                    _ => input.update(event),
                 }
             }
-            Event::RedrawRequested(_) => renderer.render(&state, &input, false),
+            Event::RedrawRequested(_) => renderer.render(&state, false),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
                 let udelta = now - last_update;
@@ -69,13 +70,14 @@ async fn run() {
                 if fdelta > state.frame_time {
                     last_frame = now;
 
-                    if handle_input(&fdelta, &input, &mut state) {
+                    if handle_input(&fdelta, &input, &mut state, &renderer) {
                         *control_flow = ControlFlow::Exit;
                     }
                     input.end();
 
                     state.timers.render.start();
-                    renderer.render(&state, &input, resized);
+                    renderer.render(&state, resized);
+                    state.board.dirty = false;
                     state.timers.render.end();
 
                     resized = false;
