@@ -1,5 +1,4 @@
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Device, Queue};
-use winit::dpi::PhysicalSize;
 
 use crate::render::{surface::RenderSurface, ui::texture::GameTexture};
 
@@ -9,7 +8,7 @@ use super::{
 };
 
 impl UIPipeline {
-    pub fn new(surface: &RenderSurface, size: &PhysicalSize<u32>, scale: f64) -> Self {
+    pub fn new(surface: &RenderSurface) -> Self {
         let RenderSurface {
             device,
             config,
@@ -75,7 +74,7 @@ impl UIPipeline {
             pipeline,
             vertex_buffer,
             diffuse_bind_group,
-            text: UIText::init(device, queue, config, size, scale)
+            text: UIText::init(device, queue, config)
         }
     }
 
