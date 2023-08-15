@@ -171,6 +171,15 @@ impl UIText {
             bounds,
             default_color: color,
         };
+        let w = measure(&buffers.total_energy).0;
+        let total_energy = TextArea {
+            buffer: &buffers.total_energy,
+            left: sbounds.0 / 2.0 - w / 2.0,
+            top: padding,
+            scale: 1.0,
+            bounds,
+            default_color: color,
+        };
         let w = measure(&buffers.performance_stats).0;
         let performance = TextArea {
             buffer: &buffers.performance_stats,
@@ -180,7 +189,7 @@ impl UIText {
             bounds,
             default_color: color,
         };
-        vec![tile_info, performance]
+        vec![tile_info, total_energy, performance]
     }
 }
 
