@@ -26,13 +26,11 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
         &mut self,
         writer: &mut StagingBufWriter,
         row_chunks: rayon::slice::ChunksExact<T>,
+        width: usize,
         size: usize,
-        xs: usize,
-        xe: usize,
     ) where
         T: Sync,
     {
-        let width = xe - xs;
         if size != self.len {
             self.len = size;
             self.buffer = Self::init_buf(writer.device, &self.label, self.len);
@@ -45,7 +43,7 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
             .par_chunks_exact_mut(width * std::mem::size_of::<T>())
             .zip(row_chunks)
             .for_each(|(data, row)| {
-                data.copy_from_slice(bytemuck::cast_slice(&row[xs..xe]));
+                data.copy_from_slice(bytemuck::cast_slice(&row));
             });
     }
 

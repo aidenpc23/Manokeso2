@@ -4,6 +4,7 @@ use config::Config;
 use handle_input::handle_input;
 use input::Input;
 use state::GameState;
+use tile_view::ClientView;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
@@ -17,11 +18,13 @@ mod keybinds;
 mod render;
 mod rsc;
 mod state;
+mod tile_view;
 mod timer;
 mod util;
 mod world;
 
 use render::Renderer;
+use world::Server;
 
 fn main() {
     pollster::block_on(run());
@@ -41,6 +44,9 @@ async fn run() {
     let mut input = Input::new();
     let mut resized = false;
 
+    let client_view = ClientView::new();
+    let mut server = Server::new();
+
     // Game loop
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -56,17 +62,7 @@ async fn run() {
             Event::RedrawRequested(_) => renderer.render(&state, false),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
-                let udelta = now - last_update;
                 let fdelta = now - last_frame;
-                if udelta > state.update_time {
-                    last_update = now;
-                    state.timers.update.start();
-                    if !state.paused || state.step {
-                        state.board.update();
-                        state.step = false;
-                    }
-                    state.timers.update.end();
-                }
                 if fdelta > state.frame_time {
                     last_frame = now;
 
@@ -77,7 +73,6 @@ async fn run() {
 
                     state.timers.render.start();
                     renderer.render(&state, resized);
-                    state.board.dirty = false;
                     state.timers.render.end();
 
                     resized = false;

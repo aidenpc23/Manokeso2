@@ -11,8 +11,8 @@ const GAMMA_FLOW_RATE: f32 = 1.0 / 8.0;
 
 pub struct Board {
     pub pos: Point<f32>,
-    width: usize,
-    height: usize,
+    pub width: usize,
+    pub height: usize,
     pub connex_numbers: SwapBuffer<u32>,
     pub stability: SwapBuffer<f32>,
     pub reactivity: SwapBuffer<f32>,
@@ -23,7 +23,7 @@ pub struct Board {
     pub delta: SwapBuffer<f32>,
     pub omega: SwapBuffer<f32>,
     pub dirty: bool,
-    total_energy: f32,
+    pub total_energy: f32,
 }
 
 impl Board {
@@ -262,18 +262,6 @@ impl Board {
         self.gamma.swap();
 
         self.dirty = true;
-    }
-
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn height(&self) -> usize {
-        self.height
-    }
-
-    pub fn total_energy(&self) -> f32 {
-        self.total_energy
     }
 
     pub fn tile_at(&self, pos: Point<f32>) -> Option<Point<usize>> {

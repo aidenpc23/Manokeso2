@@ -3,12 +3,11 @@ use crate::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
     },
-    state::GameState, util::point::Point,
+    state::GameState,
 };
+use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
-
-use super::view::BoardView;
 
 pub const SHADER: &str = concat!(include_str!("./shader.wgsl"));
 
@@ -59,45 +58,42 @@ impl TilePipeline {
         state: &GameState,
         window_size: &PhysicalSize<u32>,
     ) {
-        let BoardView {
-            bx,
-            by,
-            xs,
-            xe,
-            ys,
-            ye,
-        } = self.calc_board_slice(state);
+        let view = state.tile_view;
 
-        let view = TileViewUniform::new(Point::new(bx + xs as f32, by + ys as f32), (xe - xs) as u32);
-        let tile_view_changed = self.uniforms.tile_view != view;
+        let view_uniform = TileViewUniform::new(state.tile_view.pos, state.tile_view.width as u32);
+        let tile_view_changed = self.uniforms.tile_view != view_uniform;
 
         // don't update tile buffers if paused and board section hasn't changed
-        if state.board.dirty || tile_view_changed {
-            let board = &state.board;
-            let width = xe - xs;
-            let size = width * (ye - ys);
+        if state.tile_view.dirty || tile_view_changed {
+            let width = state.tile_view.width;
+            let size = width * state.tile_view.height;
 
             let insts = &mut self.instances;
             insts.connex_number.update_rows(
                 writer,
-                board.connex_numbers.par_rows(ys, ye),
+                view.connex_numbers.par_chunks_exact(width),
+                width,
                 size,
-                xs,
-                xe,
+            );
+            insts.stability.update_rows(
+                writer,
+                view.stability.par_chunks_exact(width),
+                width,
+                size,
+            );
+            insts.reactivity.update_rows(
+                writer,
+                view.reactivity.par_chunks_exact(width),
+                width,
+                size,
             );
             insts
-                .stability
-                .update_rows(writer, board.stability.par_rows(ys, ye), size, xs, xe);
-            insts
-                .reactivity
-                .update_rows(writer, board.reactivity.par_rows(ys, ye), size, xs, xe);
-            insts
                 .energy
-                .update_rows(writer, board.energy.par_rows(ys, ye), size, xs, xe);
+                .update_rows(writer, view.energy.par_chunks_exact(width), width, size);
         }
 
         if tile_view_changed {
-            self.uniforms.tile_view = view;
+            self.uniforms.tile_view = view_uniform;
             let slice = &[self.uniforms.tile_view];
             writer
                 .mut_view::<TileViewUniform>(&self.buffers.tile_view, slice.len())
@@ -109,41 +105,6 @@ impl TilePipeline {
             writer
                 .mut_view::<CameraUniform>(&self.buffers.camera, slice.len())
                 .copy_from_slice(bytemuck::cast_slice(slice));
-        }
-    }
-
-    fn calc_board_slice(&self, state: &GameState) -> BoardView {
-        // get positions in the world
-        let b = state.board.pos;
-        let bw = state.board.width();
-        let bh = state.board.height();
-        let (cw, ch) = self.uniforms.camera.world_dimensions();
-        // get camera position relative to board
-        let x = (state.camera.pos.x - b.x + 0.5) as i32;
-        let y = (state.camera.pos.y - b.y + 0.5) as i32;
-        // calculate chunk size based on max camera dimension
-        let chunk_align = (cw.max(ch) as u32).max(1).ilog2();
-        let chunk_size = 2i32.pow(chunk_align);
-        let chunk_mask = !(chunk_size - 1);
-        // align with chunks and add an extra chunk in each direction
-        // s = start, e = end
-        let xs = (x & chunk_mask) - 1 * chunk_size;
-        let ys = (y & chunk_mask) - 1 * chunk_size;
-        let xe = (x & chunk_mask) + 2 * chunk_size;
-        let ye = (y & chunk_mask) + 2 * chunk_size;
-        // cut off values for bounds
-        let xs = (xs.max(0) as usize).min(bw);
-        let ys = (ys.max(0) as usize).min(bh);
-        let xe = (xe.max(0) as usize).min(bw);
-        let ye = (ye.max(0) as usize).min(bh);
-
-        BoardView {
-            bx: b.x,
-            by: b.y,
-            xs,
-            xe,
-            ys,
-            ye,
         }
     }
 }

@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-use winit::event::MouseButton;
-
 use crate::{
     input::Input,
     keybinds::{Action, Keybinds},
@@ -21,18 +19,18 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState, rend
 
 
     let mouse_tile_pos = renderer.pixel_to_tile(input.mouse_pixel_pos);
-    state.hovered_tile = state.board.tile_at(mouse_tile_pos);
-    if input.mouse_just_pressed(MouseButton::Left) {
-        state.held_tile = state.hovered_tile;
-    }
-    if input.mouse_just_released(MouseButton::Left) {
-        if let Some(pos1) = state.held_tile {
-            if let Some(pos2) = state.hovered_tile {
-                state.board.player_swap(pos1, pos2);
-            }
-        }
-        state.held_tile = None;
-    }
+    // state.hovered_tile = state.board.tile_at(mouse_tile_pos);
+    // if input.mouse_just_pressed(MouseButton::Left) {
+    //     state.held_tile = state.hovered_tile;
+    // }
+    // if input.mouse_just_released(MouseButton::Left) {
+    //     if let Some(pos1) = state.held_tile {
+    //         if let Some(pos2) = state.hovered_tile {
+    //             state.board.player_swap(pos1, pos2);
+    //         }
+    //     }
+    //     state.held_tile = None;
+    // }
 
     if ainput.pressed(Action::MoveUp) {
         camera.pos.y += move_dist;
@@ -50,15 +48,15 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState, rend
     if ainput.just_pressed(Action::Pause) {
         state.paused = !state.paused;
     }
-    if ainput.just_pressed(Action::AddEnergy) {
-        if let Some(pos) = state.hovered_tile {
-            let i = pos.index(state.board.width());
-            state
-                .board
-                .energy
-                .god_set(i, state.board.energy.god_get(i) + 10.0);
-        }
-    }
+    // if ainput.just_pressed(Action::AddEnergy) {
+    //     if let Some(pos) = state.hovered_tile {
+    //         let i = pos.index(state.board.width());
+    //         state
+    //             .board
+    //             .energy
+    //             .god_set(i, state.board.energy.god_get(i) + 10.0);
+    //     }
+    // }
     if ainput.just_pressed(Action::Step) {
         state.step = true;
     }
