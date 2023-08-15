@@ -81,7 +81,7 @@ impl Renderer {
                 })],
                 depth_stencil_attachment: None,
             });
-            self.ui_pipeline.draw(render_pass);
+            //self.ui_pipeline.draw(render_pass);
             self.tile_pipeline.draw(render_pass);
         }
 

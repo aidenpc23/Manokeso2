@@ -50,10 +50,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState) -> b
     if ainput.just_pressed(Action::AddEnergy) {
         if let Some(pos) = state.board.tile_at(input.mouse_tile_pos) {
             let i = pos[1] * state.board.width() + pos[0];
-            state
-                .board
-                .energy
-                .god_set(i, state.board.energy.god_get(i) + 10.0);
+            state.board.energy.god_set(i, state.board.energy.god_get(i) + 10.0);
         }
     }
     if ainput.just_pressed(Action::Step) {

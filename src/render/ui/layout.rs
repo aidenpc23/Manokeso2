@@ -1,6 +1,6 @@
 use wgpu_glyph::{BuiltInLineBreaker, HorizontalAlign, Section, Text, VerticalAlign};
 
-use crate::{input::Input, state::GameState};
+use crate::{input::Input, state::GameState, world::decode_alpha};
 
 #[derive(Default)]
 pub struct UIText {
@@ -22,8 +22,7 @@ pub fn create_sections<'a>(
     bounds: (f32, f32),
 ) -> Vec<Section<'a>> {
     text.performance_stats = format!(
-        "frame time: {:?}\nupdate time: {:?}",
-        state.timers.render.avg(),
+        "update time: {:?}",
         state.timers.update.avg()
     );
     text.total_energy = format!("total energy: {:?}", state.board.total_energy());
@@ -32,23 +31,23 @@ pub fn create_sections<'a>(
         let i = pos[0] + pos[1] * b.width();
         text.tile_info = format!(
             concat!(
-                "tile pos: {:?}\n",
-                "connex number: {:?}\n",
-                "stability: {:?}\n",
-                "reactivity: {:?}\n",
-                "energy: {:?}\n",
-                "alpha: {:?}\n",
-                "beta: {:?}\n",
-                "gamma: {:?}\n",
-                "delta: {:?}\n",
-                "omega: {:?}\n",
+                "Tile Pos: ({:?}, {:?})\n",
+                "Connex Number: {:?}\n",
+                "Stability: {:?}\n",
+                "Reactivity: {:?}\n",
+                "Energy: {:?}\n",
+                "Alpha: {:?}\n",
+                "Beta: {:?}\n",
+                "Gamma: {:?}\n",
+                "Delta: {:?}\n",
+                "Omega: {:?}\n",
             ),
-            pos,
+            pos[0], pos[1],
             b.connex_numbers.read()[i],
             b.stability.read()[i],
             b.reactivity.read()[i],
             b.energy.read()[i],
-            b.alpha.read()[i],
+            decode_alpha(b.alpha.read()[i]),
             b.beta.read()[i],
             b.gamma.read()[i],
             b.delta.read()[i],

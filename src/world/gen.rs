@@ -4,7 +4,7 @@ use itertools::izip;
 use noise::{NoiseFn, OpenSimplex};
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},
-    Rng,
+    Rng, random,
 };
 
 use super::swap_buffer::SwapBuffer;
