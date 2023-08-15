@@ -3,7 +3,7 @@ use crate::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
     },
-    state::GameState,
+    state::GameState, util::point::Point,
 };
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
@@ -50,7 +50,7 @@ impl TilePipeline {
         self.instances.reactivity.set_in(render_pass);
         self.instances.energy.set_in(render_pass);
 
-        render_pass.draw(0..4, 0..self.instances.connex_number.len() as _);
+        render_pass.draw(0..4, 0..self.instances.connex_number.len() as u32);
     }
 
     pub fn update(
@@ -59,7 +59,6 @@ impl TilePipeline {
         state: &GameState,
         window_size: &PhysicalSize<u32>,
     ) {
-        let slice = self.calc_board_slice(state);
         let BoardView {
             bx,
             by,
@@ -67,9 +66,9 @@ impl TilePipeline {
             xe,
             ys,
             ye,
-        } = slice;
+        } = self.calc_board_slice(state);
 
-        let view = TileViewUniform::new([bx + xs as f32, by + ys as f32], (xe - xs) as u32);
+        let view = TileViewUniform::new(Point::new(bx + xs as f32, by + ys as f32), (xe - xs) as u32);
         let tile_view_changed = self.uniforms.tile_view != view;
 
         // don't update tile buffers if paused and board section hasn't changed

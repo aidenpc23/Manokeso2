@@ -39,16 +39,11 @@ impl CameraUniform {
     }
 
     pub fn render_to_tile(&self, coords: Point<f32>) -> Point<f32> {
-        let mut coords = coords;
-        coords /= self.proj;
-        coords += self.pos;
-        coords
+        coords / self.proj + self.pos
     }
 
     pub fn tile_to_view(&self, pos: Point<f32>) -> Point<f32> {
-        let mut pos = pos;
-        pos -= self.pos;
-        pos
+        pos - self.pos
     }
 
     fn calc_proj(camera: &Camera, size: &PhysicalSize<u32>) -> Point<f32> {
@@ -66,30 +61,29 @@ impl CameraUniform {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct TileViewUniform {
-    pub pos: [f32; 2],
+    pub pos: Point<f32>,
     pub width: u32,
     // shader has an alignment of 8, so we need to add padding
     _padding: u32,
 }
 
 impl TileViewUniform {
-    pub fn new(pos: [f32; 2], width: u32) -> Self {
+    pub fn new(pos: Point<f32>, width: u32) -> Self {
         Self {
             pos,
             width,
             _padding: 0,
         }
     }
+    pub fn empty() -> Self {
+        Self::new(Point::new(0.0, 0.0), 0)
+    }
 }
 
 impl PartialEq for TileViewUniform {
     fn eq(&self, other: &Self) -> bool {
-        arr_eq(self.pos, other.pos) && self.width == other.width
+        self.pos == other.pos && self.width == other.width
     }
-}
-
-fn arr_eq<T: PartialEq, const N: usize>(arr1: [T; N], arr2: [T; N]) -> bool {
-    arr1.iter().zip(arr2.iter()).all(|(x, y)| x == y)
 }
 
 #[repr(C)]

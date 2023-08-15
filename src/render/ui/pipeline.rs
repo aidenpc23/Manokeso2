@@ -1,50 +1,36 @@
-use wgpu::{RenderPass, RenderPipeline, TextureView};
-use wgpu_glyph::GlyphBrush;
+use wgpu::{Device, Queue, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-use crate::{render::writer::StagingBufWriter, state::GameState};
+use crate::state::GameState;
 
-use super::layout::{create_sections, UIText};
+use super::text::UIText;
 
 pub const SHADER: &str = concat!(include_str!("./shader.wgsl"));
 
 pub struct UIPipeline {
     pub(super) pipeline: RenderPipeline,
-    pub brush: GlyphBrush<()>,
-    pub text: UIText,
     pub vertex_buffer: wgpu::Buffer,
     pub diffuse_bind_group: wgpu::BindGroup,
+    pub text: UIText,
 }
 
 impl UIPipeline {
-    pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.draw(0..4, 0..1);
+    pub fn draw<'a>(&'a self, pass: &mut RenderPass<'a>) {
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+        pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        pass.draw(0..4, 0..1);
+
+        self.text.draw(pass);
     }
 
-    pub fn update(&mut self, state: &GameState, size: &PhysicalSize<u32>) {
-        for section in create_sections(state, &mut self.text, (size.width as f32, size.height as f32)) {
-            self.brush.queue(section);
-        }
-    }
-
-    pub fn draw_text(
+    pub fn update(
         &mut self,
-        writer: &mut StagingBufWriter,
-        view: &TextureView,
+        state: &GameState,
         size: &PhysicalSize<u32>,
+        device: &Device,
+        queue: &Queue,
     ) {
-        self.brush
-            .draw_queued(
-                writer.device,
-                writer.belt,
-                writer.encoder,
-                view,
-                size.width,
-                size.height,
-            )
-            .expect("Draw queued");
+        self.text.update(state, size, device, queue);
     }
 }

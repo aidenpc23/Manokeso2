@@ -1,16 +1,15 @@
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Device, Queue};
-use wgpu_glyph::{ab_glyph, GlyphBrushBuilder};
+use winit::dpi::PhysicalSize;
 
 use crate::render::{surface::RenderSurface, ui::texture::GameTexture};
 
 use super::{
-    layout::UIText,
     pipeline::{UIPipeline, SHADER},
-    vertex::{Vertex, VERTICES},
+    vertex::{Vertex, VERTICES}, text::UIText,
 };
 
 impl UIPipeline {
-    pub fn new(surface: &RenderSurface) -> Self {
+    pub fn new(surface: &RenderSurface, size: &PhysicalSize<u32>, scale: f64) -> Self {
         let RenderSurface {
             device,
             config,
@@ -72,16 +71,11 @@ impl UIPipeline {
             multiview: None,
         });
 
-        let font =
-            ab_glyph::FontArc::try_from_slice(include_bytes!("./fonts/NotoSerif-Regular.ttf"))
-                .expect("Failed to load font");
-        let brush = GlyphBrushBuilder::using_font(font).build(device, config.format);
         Self {
             pipeline,
-            brush,
-            text: UIText::new(),
             vertex_buffer,
             diffuse_bind_group,
+            text: UIText::init(device, queue, config, size, scale)
         }
     }
 

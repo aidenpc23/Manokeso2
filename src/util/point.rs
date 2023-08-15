@@ -13,6 +13,12 @@ impl<T> Point<T> {
     }
 }
 
+impl<T: Add<Output = T> + Mul<Output = T> + Copy> Point<T> {
+    pub fn index(&self, width: T) -> T {
+        self.y * width + self.x
+    }
+}
+
 impl<T: Add<Output = T>> Add for Point<T> {
     type Output = Self;
 

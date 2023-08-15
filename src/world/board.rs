@@ -152,9 +152,9 @@ impl Board {
                 gw[i] += (1.02 as f32).powf(c.0[i] as f32) - 1.0;
             }
 
-            let g1 = (c.0[i] - 1) % 5;
-            let g2 = ((c.0[i] - 1) / 5) % 5;
-            let g3 = ((c.0[i] - 1) / 25) % 8 + 1;
+            let g1 = (c.0[i] + 5 - 1) % 5;
+            let g2 = ((c.0[i] + 5 - 1) / 5) % 5;
+            let g3 = ((c.0[i] + 8 - 1) / 25) % 8 + 1;
 
             if gw[i] > gamma_cost {
                 if r.0[i] > 0.0 {
@@ -276,18 +276,18 @@ impl Board {
         self.total_energy
     }
 
-    pub fn tile_at(&self, pos: Point<f32>) -> Option<[usize; 2]> {
+    pub fn tile_at(&self, pos: Point<f32>) -> Option<Point<usize>> {
         let Point {x, y} = pos - self.pos;
         if x < 0.0 || y < 0.0 || x >= self.width as f32 || y >= self.height as f32 {
             None
         } else {
-            Some([x as usize, y as usize])
+            Some(Point::new(x as usize, y as usize))
         }
     }
 
-    pub fn player_swap(&mut self, pos1: [usize; 2], pos2: [usize; 2]) {
-        let pos1 = pos1[1] * self.width + pos1[0];
-        let pos2 = pos2[1] * self.width + pos2[0];
+    pub fn player_swap(&mut self, pos1: Point<usize>, pos2: Point<usize>) {
+        let pos1 = pos1.index(self.width);
+        let pos2 = pos2.index(self.width);
 
         // if (self.connex_numbers.bufs().0[pos1] > 20 && self.stability.bufs().0[pos1] > 0.8) ||
         // (self.connex_numbers.bufs().0[pos2] > 20 && self.stability.bufs().0[pos2] > 0.8) {
@@ -302,9 +302,9 @@ impl Board {
         self.dirty = true;
     }
 
-    pub fn swap(&mut self, pos1: [usize; 2], pos2: [usize; 2]) {
-        let pos1 = pos1[1] * self.width + pos1[0];
-        let pos2 = pos2[1] * self.width + pos2[0];
+    pub fn swap(&mut self, pos1: Point<usize>, pos2: Point<usize>) {
+        let pos1 = pos1.index(self.width);
+        let pos2 = pos2.index(self.width);
 
         self.connex_numbers.swap_cell(pos1, pos2);
         self.stability.swap_cell(pos1, pos2);

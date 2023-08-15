@@ -52,7 +52,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState, rend
     }
     if ainput.just_pressed(Action::AddEnergy) {
         if let Some(pos) = state.hovered_tile {
-            let i = pos[1] * state.board.width() + pos[0];
+            let i = pos.index(state.board.width());
             state
                 .board
                 .energy

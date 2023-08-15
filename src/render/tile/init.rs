@@ -34,7 +34,7 @@ impl TilePipeline {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let tile_view_uniform = TileViewUniform::new([0.0, 0.0], 0);
+        let tile_view_uniform = TileViewUniform::empty();
         let tile_view_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Tile View Buffer"),
             contents: bytemuck::cast_slice(&[tile_view_uniform]),
@@ -141,7 +141,7 @@ impl TilePipeline {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: None,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,

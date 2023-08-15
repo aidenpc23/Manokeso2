@@ -28,7 +28,7 @@ impl Renderer {
         let size = window.inner_size();
         let render_surface = RenderSurface::init(&window).await;
         let tile_pipeline = TilePipeline::new(&render_surface, &camera, &size);
-        let ui_pipeline = UIPipeline::new(&render_surface);
+        let ui_pipeline = UIPipeline::new(&render_surface, &size, window.scale_factor());
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom
         let staging_belt = StagingBelt::new(4096 * 4);
@@ -66,7 +66,7 @@ impl Renderer {
         };
         self.tile_pipeline
             .update(writer, state, size);
-        self.ui_pipeline.update(state, size);
+        self.ui_pipeline.update(state, size, writer.device, &self.render_surface.queue);
 
         {
             let render_pass = &mut writer.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -85,14 +85,14 @@ impl Renderer {
             self.ui_pipeline.draw(render_pass);
         }
 
-        self.ui_pipeline.draw_text(writer, &view, size);
-
         self.staging_belt.finish();
         self.render_surface
             .queue
             .submit(std::iter::once(encoder.finish()));
         output.present();
         self.staging_belt.recall();
+
+        self.ui_pipeline.text.atlas.trim();
     }
 
     pub fn pixel_to_render(&self, pos: Point<f32>) -> Point<f32> {

@@ -7,6 +7,7 @@ edition = "2021"
 bytemuck = {version="1.13.1", features=["derive"]}
 dirs = "5.0.1"
 env_logger = "0.10.0"
+glyphon = {git = "https://github.com/grovesNL/glyphon"}
 itertools = "0.11.0"
 log = "0.4.18"
 noise = "0.8.2"
@@ -16,8 +17,7 @@ rand_chacha = "0.3.1"
 rayon = "1.7.0"
 ron = "0.8.0"
 serde = "1.0.164"
-wgpu = "0.16.1"
-wgpu_glyph = "0.20.0"
+wgpu = "0.17.0"
 winit = {version="0.28.6", features=["serde"]}
 
 [dependencies.image]
