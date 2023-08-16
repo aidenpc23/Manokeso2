@@ -3,7 +3,7 @@ use crate::{
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
-    }, client::Client,
+    }, state::ClientState,
 };
 use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
@@ -55,7 +55,7 @@ impl TilePipeline {
     pub fn update(
         &mut self,
         writer: &mut StagingBufWriter,
-        client: &Client,
+        client: &ClientState,
         window_size: &PhysicalSize<u32>,
     ) {
         if let Ok(mut view) = client.board_view.try_write() {

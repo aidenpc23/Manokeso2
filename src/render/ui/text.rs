@@ -5,11 +5,11 @@ use glyphon::{
 use wgpu::{Device, MultisampleState, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 
-use crate::{client::Client, util::point::Point, render::surface::RenderSurface};
+use crate::{state::ClientState, util::point::Point, render::surface::RenderSurface};
 
 use super::layout;
 
-pub type TextUpdate = fn(&Client, &RenderSurface) -> Option<String>;
+pub type TextUpdate = fn(&ClientState, &RenderSurface) -> Option<String>;
 
 pub struct Text {
     pub update: TextUpdate,
@@ -77,7 +77,7 @@ impl UIText {
 
     pub fn update(
         &mut self,
-        state: &Client,
+        state: &ClientState,
         size: &PhysicalSize<u32>,
         surface: &RenderSurface,
     ) {

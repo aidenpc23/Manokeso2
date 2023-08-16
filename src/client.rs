@@ -1,106 +1,61 @@
-use std::{
-    sync::{mpsc::Sender, Arc, RwLock},
-    time::{Duration, Instant},
-};
+use std::{sync::mpsc::channel, time::Instant};
 
-use winit::{
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-};
+use winit::{event_loop::{EventLoop, ControlFlow}, event::{Event, WindowEvent}};
 
-use crate::{
-    board_view::BoardView,
-    camera::Camera,
-    config::Config,
-    keybinds::{default_keybinds, Keybinds},
-    message::ClientMessage,
-    rsc::{FPS, FRAME_TIME, UPDATE_TIME},
-    util::{point::Point, timer::Timer}, input::Input, handle_input::handle_input, render::Renderer,
-};
+use crate::{state::ClientState, config::Config, render::Renderer, world::World, input::Input, handle_input::handle_input};
 
-pub struct Client {
-    pub keybinds: Keybinds,
-    pub frame_time: Duration,
-    pub update_time: Duration,
-    pub camera: Camera,
-    pub camera_scroll: f32,
-    pub held_tile: Option<Point<usize>>,
-    pub hovered_tile: Option<Point<usize>>,
-    pub paused: bool,
-    pub frame_timer: Timer,
-    pub board_view: Arc<RwLock<BoardView>>,
-    pub sender: Sender<ClientMessage>,
-}
+pub async fn run() {
+    // Setup
+    let (cs, cr) = channel();
 
-impl Client {
-    pub fn new(config: Config, sender: Sender<ClientMessage>) -> Self {
-        let mut keybinds = default_keybinds();
-        if let Some(config_keybinds) = config.keybinds {
-            keybinds.extend(config_keybinds);
-        }
-        let camera = Camera::default();
-        Self {
-            keybinds,
-            frame_time: FRAME_TIME,
-            update_time: UPDATE_TIME,
-            camera,
-            camera_scroll: 0.0,
-            held_tile: None,
-            hovered_tile: None,
-            paused: true,
-            frame_timer: Timer::new(FPS as usize),
-            board_view: Arc::new(BoardView::empty().into()),
-            sender,
-        }
-    }
+    let event_loop = EventLoop::new();
+    let mut state = ClientState::new(Config::load(), cs);
+    let mut renderer = Renderer::new(&event_loop).await;
 
-    pub fn run(mut self, mut renderer: Renderer, event_loop: EventLoop<()>) {
-        let mut last_frame = Instant::now();
-        let mut input = Input::new();
-        let mut resized = false;
+    let bv = state.board_view.clone();
 
-        renderer.window.set_visible(true);
+    std::thread::spawn(move || {
+        World::new(bv, cr).run();
+    });
 
-        event_loop.run(move |event, _, control_flow| {
-            *control_flow = ControlFlow::Poll;
+    let mut last_frame = Instant::now();
+    let mut input = Input::new();
+    let mut resized = false;
 
-            match event {
-                Event::WindowEvent { event, window_id }
-                    if window_id == renderer.window.id() =>
-                {
-                    match event {
-                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                        WindowEvent::Resized(_) => resized = true,
-                        _ => input.update(event),
-                    }
+    renderer.window.set_visible(true);
+
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Poll;
+
+        match event {
+            Event::WindowEvent { event, window_id } if window_id == renderer.window.id() => {
+                match event {
+                    WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::Resized(_) => resized = true,
+                    _ => input.update(event),
                 }
-                Event::RedrawRequested(_) => renderer.render(&self, false),
-                Event::MainEventsCleared => {
-                    let now = Instant::now();
-                    let fdelta = now - last_frame;
-                    if fdelta > self.frame_time {
-                        last_frame = now;
-
-                        if handle_input(&fdelta, &input, &mut self, &renderer) {
-                            *control_flow = ControlFlow::Exit;
-                        }
-                        input.end();
-
-                        self.frame_timer.start();
-                        renderer.render(&self, resized);
-                        self.frame_timer.stop();
-
-                        resized = false;
-                    }
-                }
-                _ => {}
             }
-        });
-    }
+            Event::RedrawRequested(_) => renderer.render(&state, false),
+            Event::MainEventsCleared => {
+                let now = Instant::now();
+                let fdelta = now - last_frame;
+                if fdelta > state.frame_time {
+                    last_frame = now;
 
-    pub fn send(&self, message: ClientMessage) {
-        if let Err(err) = self.sender.send(message) {
-            println!("Failed to send message to server: {:?}", err);
+                    if handle_input(&fdelta, &input, &mut state, &renderer) {
+                        *control_flow = ControlFlow::Exit;
+                    }
+                    input.end();
+
+                    state.frame_timer.start();
+                    renderer.render(&state, resized);
+                    state.frame_timer.stop();
+
+                    resized = false;
+                }
+            }
+            _ => {}
         }
-    }
+    });
 }
+

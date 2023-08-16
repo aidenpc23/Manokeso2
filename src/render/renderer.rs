@@ -1,4 +1,4 @@
-use crate::{rsc::CLEAR_COLOR, client::Client, util::point::Point};
+use crate::{rsc::CLEAR_COLOR, state::ClientState, util::point::Point};
 use wgpu::util::StagingBelt;
 use winit::{
     event_loop::EventLoop,
@@ -41,7 +41,7 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, client: &Client, resize: bool) {
+    pub fn render(&mut self, client: &ClientState, resize: bool) {
         let size = &self.window.inner_size();
         if resize {
             self.render_surface.resize(size);

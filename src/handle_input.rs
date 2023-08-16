@@ -3,7 +3,7 @@ use std::time::Duration;
 use winit::event::MouseButton;
 
 use crate::{
-    client::Client,
+    state::ClientState,
     input::Input,
     keybinds::{Action, Keybinds},
     message::ClientMessage,
@@ -14,7 +14,7 @@ use crate::{
 pub fn handle_input(
     delta: &Duration,
     input: &Input,
-    client: &mut Client,
+    client: &mut ClientState,
     renderer: &Renderer,
 ) -> bool {
     let ainput = (input, &client.keybinds);
