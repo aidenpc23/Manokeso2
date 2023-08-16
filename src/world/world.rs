@@ -15,9 +15,9 @@ use crate::{
     util::{point::Point, timer::Timer},
 };
 
-use super::{swap_buffer::SwapBuffer, Board};
+use super::{swap_buffer::SwapBuffer, board::Board};
 
-pub struct Server {
+pub struct World {
     pub board: Board,
     pub client_view: Arc<RwLock<ClientView>>,
     pub board_view: Arc<RwLock<BoardView>>,
@@ -28,10 +28,10 @@ pub struct Server {
     pub receiver: Receiver<ClientMessage>,
 }
 
-impl Server {
+impl World {
     pub fn new(
-        client_view: &Arc<RwLock<ClientView>>,
-        board_view: &Arc<RwLock<BoardView>>,
+        client_view: Arc<RwLock<ClientView>>,
+        board_view: Arc<RwLock<BoardView>>,
         receiver: Receiver<ClientMessage>,
     ) -> Self {
         let width = 1000;
@@ -43,8 +43,8 @@ impl Server {
         );
         Self {
             board,
-            client_view: client_view.clone(),
-            board_view: board_view.clone(),
+            client_view,
+            board_view,
             slice: BoardSlice::default(),
             update_time: UPDATE_TIME,
             paused: true,

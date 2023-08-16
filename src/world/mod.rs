@@ -1,7 +1,6 @@
 mod board;
 mod gen;
-mod server;
 mod swap_buffer;
+mod world;
 
-pub use board::*;
-pub use server::*;
+pub use world::*;
