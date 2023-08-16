@@ -77,12 +77,10 @@ impl World {
         for msg in self.receiver.try_iter() {
             match msg {
                 ClientMessage::Swap(pos1, pos2) => {
-                    let pos1 = pos1 + self.slice.start;
-                    let pos2 = pos2 + self.slice.start;
                     self.board.player_swap(pos1, pos2);
                 }
                 ClientMessage::AddEnergy(pos) => {
-                    let i = (pos + self.slice.start).index(self.board.width);
+                    let i = pos.index(self.board.width);
                     self.board
                         .energy
                         .god_set(i, self.board.energy.god_get(i) + 10.0);
