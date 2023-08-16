@@ -75,10 +75,6 @@ async fn run() {
                     }
                     input.end();
 
-                    if let Ok(mut cview) = client.client_view.try_write() {
-                        cview.paused = client.paused;
-                    }
-
                     client.frame_timer.start();
                     renderer.render(&client, resized);
                     client.frame_timer.stop();

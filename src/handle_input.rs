@@ -6,6 +6,7 @@ use crate::{
     client::Client,
     input::Input,
     keybinds::{Action, Keybinds},
+    message::ClientMessage,
     render::Renderer,
     rsc::PLAYER_SPEED,
     util::point::Point,
@@ -22,9 +23,31 @@ pub fn handle_input(
         return true;
     }
 
-    let camera = &mut client.camera;
+    // camera stuff
+
+    if input.scroll_delta != 0.0 {
+        client.camera_scroll += input.scroll_delta;
+        client.camera.scale = (client.camera_scroll * 0.1).exp();
+    }
+
     let delta_mult = delta.as_millis() as f32;
-    let move_dist = PLAYER_SPEED * delta_mult / camera.scale;
+    let move_dist = PLAYER_SPEED * delta_mult / client.camera.scale;
+
+    let pos = &mut client.camera.pos;
+    if ainput.pressed(Action::MoveUp) {
+        pos.y += move_dist;
+    }
+    if ainput.pressed(Action::MoveLeft) {
+        pos.x -= move_dist;
+    }
+    if ainput.pressed(Action::MoveDown) {
+        pos.y -= move_dist;
+    }
+    if ainput.pressed(Action::MoveRight) {
+        pos.x += move_dist;
+    }
+
+    // interactions
 
     let mouse_world_pos = renderer.pixel_to_world(input.mouse_pixel_pos);
     if let Ok(view) = client.board_view.try_read() {
@@ -36,55 +59,33 @@ pub fn handle_input(
                 Some(Point::new(x as usize, y as usize))
             }
     }
+
     if input.mouse_just_pressed(MouseButton::Left) {
         client.held_tile = client.hovered_tile;
     }
+
     if input.mouse_just_released(MouseButton::Left) {
         if let Some(pos1) = client.held_tile {
             if let Some(pos2) = client.hovered_tile {
-                if let Err(..) = client
-                    .sender
-                    .send(crate::message::ClientMessage::Swap(pos1, pos2))
-                {
-                    println!("Failed to send swap to server!");
-                }
+                client.send(ClientMessage::Swap(pos1, pos2));
             }
         }
         client.held_tile = None;
     }
 
-    if ainput.pressed(Action::MoveUp) {
-        camera.pos.y += move_dist;
-    }
-    if ainput.pressed(Action::MoveLeft) {
-        camera.pos.x -= move_dist;
-    }
-    if ainput.pressed(Action::MoveDown) {
-        camera.pos.y -= move_dist;
-    }
-    if ainput.pressed(Action::MoveRight) {
-        camera.pos.x += move_dist;
+    if ainput.just_pressed(Action::AddEnergy) {
+        if let Some(pos) = client.hovered_tile {
+            client.send(ClientMessage::AddEnergy(pos));
+        }
     }
 
     if ainput.just_pressed(Action::Pause) {
         client.paused = !client.paused;
-    }
-    if ainput.just_pressed(Action::AddEnergy) {
-        if let Some(pos) = client.hovered_tile {
-            if let Err(..) = client
-                .sender
-                .send(crate::message::ClientMessage::AddEnergy(pos)) {
-                    println!("Failed to send add energy to server!");
-                }
-        }
-    }
-    if ainput.just_pressed(Action::Step) {
-        client.step = true;
+        client.send(ClientMessage::Pause(client.paused));
     }
 
-    if input.scroll_delta != 0.0 {
-        client.camera_scroll += input.scroll_delta;
-        camera.scale = (client.camera_scroll * 0.1).exp();
+    if ainput.just_pressed(Action::Step) {
+        client.send(ClientMessage::Step());
     }
 
     return false;

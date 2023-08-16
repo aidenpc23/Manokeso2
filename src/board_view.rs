@@ -45,7 +45,6 @@ pub struct ClientView {
     pub pos: Point<f32>,
     pub width: f32,
     pub height: f32,
-    pub paused: bool,
 }
 
 impl ClientView {
@@ -54,7 +53,6 @@ impl ClientView {
             pos: Point::new(0.0, 0.0),
             width: 0.0,
             height: 0.0,
-            paused: false,
         }
     }
 }

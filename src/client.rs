@@ -21,7 +21,6 @@ pub struct Client {
     pub held_tile: Option<Point<usize>>,
     pub hovered_tile: Option<Point<usize>>,
     pub paused: bool,
-    pub step: bool,
     pub frame_timer: Timer,
     pub board_view: Arc<RwLock<BoardView>>,
     pub client_view: Arc<RwLock<ClientView>>,
@@ -44,11 +43,16 @@ impl Client {
             held_tile: None,
             hovered_tile: None,
             paused: true,
-            step: false,
             frame_timer: Timer::new(FPS as usize),
             board_view: Arc::new(BoardView::empty().into()),
             client_view: Arc::new(ClientView::new().into()),
             sender
+        }
+    }
+
+    pub fn send(&self, message: ClientMessage) {
+        if let Err(err) = self.sender.send(message) {
+            println!("Failed to send message to server: {:?}", err);
         }
     }
 }

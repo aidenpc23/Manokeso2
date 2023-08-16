@@ -15,7 +15,7 @@ use crate::{
     util::{point::Point, timer::Timer},
 };
 
-use super::{swap_buffer::SwapBuffer, board::Board};
+use super::{board::Board, swap_buffer::SwapBuffer};
 
 pub struct World {
     pub board: Board,
@@ -24,6 +24,7 @@ pub struct World {
     pub slice: BoardSlice,
     pub update_time: Duration,
     pub paused: bool,
+    pub step: bool,
     pub timer: Timer,
     pub receiver: Receiver<ClientMessage>,
 }
@@ -48,6 +49,7 @@ impl World {
             slice: BoardSlice::default(),
             update_time: UPDATE_TIME,
             paused: true,
+            step: false,
             timer: Timer::new(UPS as usize),
             receiver,
         }
@@ -74,9 +76,13 @@ impl World {
                                 .god_set(i, self.board.energy.god_get(i) + 10.0);
                             self.board.dirty = true;
                         }
+                        ClientMessage::Pause(set) => self.paused = set,
+                        ClientMessage::Step() => self.step = true
                     }
                 }
-                if !self.paused {
+                if !self.paused || self.step {
+                    self.step = false;
+
                     self.timer.start();
                     self.board.update();
                     self.timer.stop();
@@ -91,7 +97,6 @@ impl World {
             .client_view
             .read()
             .expect("Failed to get tile view lock");
-        self.paused = client.paused;
         let slice = self.calc_board_slice(&client);
         drop(client);
 
