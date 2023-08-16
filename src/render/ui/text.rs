@@ -10,7 +10,7 @@ use crate::{client::Client, util::point::Point};
 use super::layout;
 
 pub struct Text {
-    pub update: fn(&Client) -> String,
+    pub update: fn(&Client) -> Option<String>,
     pub align: Align,
     pub pos: fn((f32, f32)) -> Point<f32>,
     pub bounds: fn((f32, f32)) -> (f32, f32),
@@ -18,7 +18,7 @@ pub struct Text {
 
 pub struct TextElement {
     pub buffer: glyphon::Buffer,
-    pub update: fn(&Client) -> String,
+    pub update: fn(&Client) -> Option<String>,
     pub align: Align,
     pub pos: fn((f32, f32)) -> Point<f32>,
     pub bounds: fn((f32, f32)) -> (f32, f32),
@@ -82,12 +82,14 @@ impl UIText {
     ) {
         let bounds = (size.width as f32, size.height as f32);
         for element in &mut self.elements {
-            element.buffer.set_text(
-                &mut self.font_system,
-                &(element.update)(state),
-                Attrs::new().family(Family::SansSerif),
-                Shaping::Advanced,
-            );
+            if let Some(text) = (element.update)(state) {
+                element.buffer.set_text(
+                    &mut self.font_system,
+                    &text,
+                    Attrs::new().family(Family::SansSerif),
+                    Shaping::Advanced,
+                );
+            }
             let size = (element.bounds)(bounds);
             element
                 .buffer
