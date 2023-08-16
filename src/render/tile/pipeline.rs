@@ -3,7 +3,7 @@ use crate::{
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
-    },
+    }, message::CameraView,
 };
 use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
@@ -103,12 +103,12 @@ impl TilePipeline {
 
         if self.uniforms.camera.update(&client.camera, window_size) {
             let uniform = self.uniforms.camera;
-            if let Ok(mut cview) = client.client_view.try_write() {
-                cview.pos = uniform.pos;
-                let (w, h) = uniform.world_dimensions();
-                cview.width = w;
-                cview.height = h;
-            }
+            let (width, height) = uniform.world_dimensions();
+
+            client.send(crate::message::ClientMessage::CameraUpdate(CameraView {
+                pos: uniform.pos,
+                width, height
+            }));
 
             let slice = &[uniform];
             writer

@@ -40,19 +40,3 @@ impl BoardView {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct ClientView {
-    pub pos: Point<f32>,
-    pub width: f32,
-    pub height: f32,
-}
-
-impl ClientView {
-    pub fn new() -> Self {
-        Self {
-            pos: Point::new(0.0, 0.0),
-            width: 0.0,
-            height: 0.0,
-        }
-    }
-}

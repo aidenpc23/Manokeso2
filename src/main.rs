@@ -43,11 +43,10 @@ async fn run() {
     let mut input = Input::new();
     let mut resized = false;
 
-    let cv = client.client_view.clone();
     let bv = client.board_view.clone();
 
     std::thread::spawn(move || {
-        let mut server = World::new(cv, bv, cr);
+        let mut server = World::new(bv, cr);
         server.run();
     });
 

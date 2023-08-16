@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    board_view::{BoardView, ClientView},
+    board_view::BoardView,
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
@@ -23,7 +23,6 @@ pub struct Client {
     pub paused: bool,
     pub frame_timer: Timer,
     pub board_view: Arc<RwLock<BoardView>>,
-    pub client_view: Arc<RwLock<ClientView>>,
     pub sender: Sender<ClientMessage>
 }
 
@@ -45,7 +44,6 @@ impl Client {
             paused: true,
             frame_timer: Timer::new(FPS as usize),
             board_view: Arc::new(BoardView::empty().into()),
-            client_view: Arc::new(ClientView::new().into()),
             sender
         }
     }

@@ -9,8 +9,8 @@ use rayon::{
 };
 
 use crate::{
-    board_view::{BoardView, ClientView},
-    message::ClientMessage,
+    board_view::BoardView,
+    message::{CameraView, ClientMessage},
     rsc::{UPDATE_TIME, UPS},
     util::{point::Point, timer::Timer},
 };
@@ -19,9 +19,9 @@ use super::{board::Board, swap_buffer::SwapBuffer};
 
 pub struct World {
     pub board: Board,
-    pub client_view: Arc<RwLock<ClientView>>,
     pub board_view: Arc<RwLock<BoardView>>,
     pub slice: BoardSlice,
+    pub slice_change: bool,
     pub update_time: Duration,
     pub paused: bool,
     pub step: bool,
@@ -30,11 +30,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(
-        client_view: Arc<RwLock<ClientView>>,
-        board_view: Arc<RwLock<BoardView>>,
-        receiver: Receiver<ClientMessage>,
-    ) -> Self {
+    pub fn new(board_view: Arc<RwLock<BoardView>>, receiver: Receiver<ClientMessage>) -> Self {
         let width = 1000;
         let height = 1000;
         let board = Board::new(
@@ -44,9 +40,9 @@ impl World {
         );
         Self {
             board,
-            client_view,
             board_view,
             slice: BoardSlice::default(),
+            slice_change: false,
             update_time: UPDATE_TIME,
             paused: true,
             step: false,
@@ -62,24 +58,7 @@ impl World {
             let udelta = now - last_update;
             if udelta > self.update_time {
                 last_update = now;
-                for msg in self.receiver.try_iter() {
-                    match msg {
-                        ClientMessage::Swap(pos1, pos2) => {
-                            let pos1 = pos1 + self.slice.start;
-                            let pos2 = pos2 + self.slice.start;
-                            self.board.player_swap(pos1, pos2);
-                        }
-                        ClientMessage::AddEnergy(pos) => {
-                            let i = (pos + self.slice.start).index(self.board.width);
-                            self.board
-                                .energy
-                                .god_set(i, self.board.energy.god_get(i) + 10.0);
-                            self.board.dirty = true;
-                        }
-                        ClientMessage::Pause(set) => self.paused = set,
-                        ClientMessage::Step() => self.step = true
-                    }
-                }
+                self.receive_messages();
                 if !self.paused || self.step {
                     self.step = false;
 
@@ -87,47 +66,66 @@ impl World {
                     self.board.update();
                     self.timer.stop();
                 }
-                self.sync();
+                if self.slice_change || self.board.dirty {
+                    self.sync_board();
+                }
             }
         }
     }
 
-    fn sync(&mut self) {
-        let client = self
-            .client_view
-            .read()
-            .expect("Failed to get tile view lock");
-        let slice = self.calc_board_slice(&client);
-        drop(client);
-
-        if slice != self.slice || self.board.dirty {
-            self.slice = slice;
-            self.board.dirty = false;
-
-            let mut view = self
-                .board_view
-                .write()
-                .expect("Failed to get tile view lock");
-
-            copy_swap_buf(&mut view.connex_numbers, &self.board.connex_numbers, &slice);
-            copy_swap_buf(&mut view.stability, &self.board.stability, &slice);
-            copy_swap_buf(&mut view.reactivity, &self.board.reactivity, &slice);
-            copy_swap_buf(&mut view.energy, &self.board.energy, &slice);
-            copy_swap_buf(&mut view.alpha, &self.board.alpha, &slice);
-            copy_swap_buf(&mut view.beta, &self.board.beta, &slice);
-            copy_swap_buf(&mut view.gamma, &self.board.gamma, &slice);
-            copy_swap_buf(&mut view.delta, &self.board.delta, &slice);
-            copy_swap_buf(&mut view.omega, &self.board.omega, &slice);
-
-            view.pos = self.board.pos + slice.start.into();
-            view.slice = slice.clone();
-            view.total_energy = self.board.total_energy;
-            view.dirty = true;
-            view.time_taken = self.timer.avg();
+    fn receive_messages(&mut self) {
+        for msg in self.receiver.try_iter() {
+            match msg {
+                ClientMessage::Swap(pos1, pos2) => {
+                    let pos1 = pos1 + self.slice.start;
+                    let pos2 = pos2 + self.slice.start;
+                    self.board.player_swap(pos1, pos2);
+                }
+                ClientMessage::AddEnergy(pos) => {
+                    let i = (pos + self.slice.start).index(self.board.width);
+                    self.board
+                        .energy
+                        .god_set(i, self.board.energy.god_get(i) + 10.0);
+                    self.board.dirty = true;
+                }
+                ClientMessage::Pause(set) => self.paused = set,
+                ClientMessage::Step() => self.step = true,
+                ClientMessage::CameraUpdate(view) => {
+                    self.slice = self.calc_board_slice(view);
+                    self.slice_change = true;
+                }
+            }
         }
     }
 
-    fn calc_board_slice(&self, view: &ClientView) -> BoardSlice {
+    fn sync_board(&mut self) {
+        let board = &mut self.board;
+        let slice = &mut self.slice;
+        board.dirty = false;
+
+        let mut view = self
+            .board_view
+            .write()
+            .expect("Failed to get tile view lock");
+
+        copy_swap_buf(&mut view.connex_numbers, &board.connex_numbers, &slice);
+        copy_swap_buf(&mut view.stability, &board.stability, &slice);
+        copy_swap_buf(&mut view.reactivity, &board.reactivity, &slice);
+        copy_swap_buf(&mut view.energy, &board.energy, &slice);
+        copy_swap_buf(&mut view.alpha, &board.alpha, &slice);
+        copy_swap_buf(&mut view.beta, &board.beta, &slice);
+        copy_swap_buf(&mut view.gamma, &board.gamma, &slice);
+        copy_swap_buf(&mut view.delta, &board.delta, &slice);
+        copy_swap_buf(&mut view.omega, &board.omega, &slice);
+
+        view.pos = self.board.pos + self.slice.start.into();
+        view.slice = self.slice.clone();
+        view.total_energy = self.board.total_energy;
+        view.dirty = true;
+        view.time_taken = self.timer.avg();
+    }
+
+    fn calc_board_slice(&self, view: CameraView) -> BoardSlice {
         // get positions in the world
         let b = self.board.pos;
         let bw = self.board.width;
