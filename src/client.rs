@@ -1,6 +1,11 @@
 use std::{
-    sync::{Arc, RwLock, mpsc::Sender},
-    time::Duration,
+    sync::{mpsc::Sender, Arc, RwLock},
+    time::{Duration, Instant},
+};
+
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
 };
 
 use crate::{
@@ -8,8 +13,9 @@ use crate::{
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
+    message::ClientMessage,
     rsc::{FPS, FRAME_TIME, UPDATE_TIME},
-    util::{point::Point, timer::Timer}, message::ClientMessage,
+    util::{point::Point, timer::Timer}, input::Input, handle_input::handle_input, render::Renderer,
 };
 
 pub struct Client {
@@ -23,7 +29,7 @@ pub struct Client {
     pub paused: bool,
     pub frame_timer: Timer,
     pub board_view: Arc<RwLock<BoardView>>,
-    pub sender: Sender<ClientMessage>
+    pub sender: Sender<ClientMessage>,
 }
 
 impl Client {
@@ -44,8 +50,50 @@ impl Client {
             paused: true,
             frame_timer: Timer::new(FPS as usize),
             board_view: Arc::new(BoardView::empty().into()),
-            sender
+            sender,
         }
+    }
+
+    pub fn run(mut self, mut renderer: Renderer, event_loop: EventLoop<()>) {
+        let mut last_frame = Instant::now();
+        let mut input = Input::new();
+        let mut resized = false;
+
+        event_loop.run(move |event, _, control_flow| {
+            *control_flow = ControlFlow::Poll;
+
+            match event {
+                Event::WindowEvent { event, window_id }
+                    if window_id == renderer.window.id() =>
+                {
+                    match event {
+                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                        WindowEvent::Resized(_) => resized = true,
+                        _ => input.update(event),
+                    }
+                }
+                Event::RedrawRequested(_) => renderer.render(&self, false),
+                Event::MainEventsCleared => {
+                    let now = Instant::now();
+                    let fdelta = now - last_frame;
+                    if fdelta > self.frame_time {
+                        last_frame = now;
+
+                        if handle_input(&fdelta, &input, &mut self, &renderer) {
+                            *control_flow = ControlFlow::Exit;
+                        }
+                        input.end();
+
+                        self.frame_timer.start();
+                        renderer.render(&self, resized);
+                        self.frame_timer.stop();
+
+                        resized = false;
+                    }
+                }
+                _ => {}
+            }
+        });
     }
 
     pub fn send(&self, message: ClientMessage) {

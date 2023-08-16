@@ -1,6 +1,8 @@
-use std::time::Duration;
+use std::{time::Duration, sync::{Arc, RwLock}};
 
 use crate::{util::point::Point, world::BoardSlice};
+
+pub type BoardViewLock = Arc<RwLock<BoardView>>;
 
 pub struct BoardView {
     pub pos: Point<f32>,

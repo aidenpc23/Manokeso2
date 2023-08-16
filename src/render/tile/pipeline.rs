@@ -1,9 +1,13 @@
+use std::sync::{Arc, RwLock};
+
 use crate::{
-    client::Client,
+    board_view::{BoardView, BoardViewLock},
+    camera::Camera,
+    message::CameraView,
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
-    }, message::CameraView,
+    }, client::Client,
 };
 use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
@@ -107,7 +111,8 @@ impl TilePipeline {
 
             client.send(crate::message::ClientMessage::CameraUpdate(CameraView {
                 pos: uniform.pos,
-                width, height
+                width,
+                height,
             }));
 
             let slice = &[uniform];

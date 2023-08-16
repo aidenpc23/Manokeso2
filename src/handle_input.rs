@@ -7,9 +7,8 @@ use crate::{
     input::Input,
     keybinds::{Action, Keybinds},
     message::ClientMessage,
-    render::Renderer,
     rsc::PLAYER_SPEED,
-    util::point::Point,
+    util::point::Point, render::Renderer,
 };
 
 pub fn handle_input(

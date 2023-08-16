@@ -7,7 +7,7 @@ use crate::{
 
 pub const BOARD: [Text; 3] = [
     Text {
-        update: |client| {
+        update: |client, _| {
             if let Some(pos) = client.hovered_tile {
                 if let Ok(view) = client.board_view.try_read() {
                     let i = pos.index(view.slice.width);
@@ -47,7 +47,7 @@ pub const BOARD: [Text; 3] = [
         bounds: |(w, h)| (w / 3.0, h),
     },
     Text {
-        update: |client| {
+        update: |client, _| {
             client
                 .board_view
                 .try_read()
@@ -62,9 +62,12 @@ pub const BOARD: [Text; 3] = [
         bounds: |(w, h)| (w / 3.0, h),
     },
     Text {
-        update: |client| {
+        update: |client, surface| {
+            let adp_info = surface.adapter.get_info();
             Some(format!(
-                "frame time: {:?}\nupdate time: {:?}",
+                "adapter: {}\nbackend: {:?}\nframe time: {:?}\nupdate time: {:?}",
+                adp_info.name,
+                adp_info.backend,
                 client.frame_timer.avg(),
                 client
                     .board_view

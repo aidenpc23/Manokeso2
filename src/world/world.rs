@@ -1,5 +1,5 @@
 use std::{
-    sync::{mpsc::Receiver, Arc, RwLock},
+    sync::mpsc::Receiver,
     time::{Duration, Instant},
 };
 
@@ -9,7 +9,7 @@ use rayon::{
 };
 
 use crate::{
-    board_view::BoardView,
+    board_view::BoardViewLock,
     message::{CameraView, ClientMessage},
     rsc::{UPDATE_TIME, UPS},
     util::{point::Point, timer::Timer},
@@ -19,7 +19,7 @@ use super::{board::Board, swap_buffer::SwapBuffer};
 
 pub struct World {
     pub board: Board,
-    pub board_view: Arc<RwLock<BoardView>>,
+    pub board_view: BoardViewLock,
     pub slice: BoardSlice,
     pub slice_change: bool,
     pub update_time: Duration,
@@ -30,7 +30,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(board_view: Arc<RwLock<BoardView>>, receiver: Receiver<ClientMessage>) -> Self {
+    pub fn new(board_view: BoardViewLock, receiver: Receiver<ClientMessage>) -> Self {
         let width = 1000;
         let height = 1000;
         let board = Board::new(

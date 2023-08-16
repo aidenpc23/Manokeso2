@@ -5,12 +5,14 @@ use glyphon::{
 use wgpu::{Device, MultisampleState, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 
-use crate::{client::Client, util::point::Point};
+use crate::{client::Client, util::point::Point, render::surface::RenderSurface};
 
 use super::layout;
 
+pub type TextUpdate = fn(&Client, &RenderSurface) -> Option<String>;
+
 pub struct Text {
-    pub update: fn(&Client) -> Option<String>,
+    pub update: TextUpdate,
     pub align: Align,
     pub pos: fn((f32, f32)) -> Point<f32>,
     pub bounds: fn((f32, f32)) -> (f32, f32),
@@ -18,7 +20,7 @@ pub struct Text {
 
 pub struct TextElement {
     pub buffer: glyphon::Buffer,
-    pub update: fn(&Client) -> Option<String>,
+    pub update: TextUpdate,
     pub align: Align,
     pub pos: fn((f32, f32)) -> Point<f32>,
     pub bounds: fn((f32, f32)) -> (f32, f32),
@@ -78,11 +80,11 @@ impl UIText {
         state: &Client,
         size: &PhysicalSize<u32>,
         device: &Device,
-        queue: &Queue,
+        surface: &RenderSurface,
     ) {
         let bounds = (size.width as f32, size.height as f32);
         for element in &mut self.elements {
-            if let Some(text) = (element.update)(state) {
+            if let Some(text) = (element.update)(state, surface) {
                 element.buffer.set_text(
                     &mut self.font_system,
                     &text,
@@ -122,7 +124,7 @@ impl UIText {
         self.renderer
             .prepare(
                 device,
-                queue,
+                &surface.queue,
                 &mut self.font_system,
                 &mut self.atlas,
                 Resolution {

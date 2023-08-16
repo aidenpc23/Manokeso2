@@ -1,11 +1,12 @@
-use wgpu::{Backends, Device, Queue, Surface, SurfaceConfiguration};
-use winit::{window::Window, dpi::PhysicalSize};
+use wgpu::{Adapter, Backends, Device, Queue, Surface, SurfaceConfiguration};
+use winit::{dpi::PhysicalSize, window::Window};
 
 pub struct RenderSurface {
     pub surface: Surface,
     pub device: Device,
     pub queue: Queue,
     pub config: SurfaceConfiguration,
+    pub adapter: Adapter,
 }
 
 impl RenderSurface {
@@ -34,13 +35,6 @@ impl RenderSurface {
             })
             .await
             .expect("Could not get adapter!");
-
-        for a in instance.enumerate_adapters(Backends::PRIMARY) {
-            println!("A: {:?}", a.get_info().name);
-        }
-
-        println!("Adapter: {:?}", adapter.get_info().name);
-        println!("Backend: {:?}", adapter.get_info().backend);
 
         let (device, queue) = adapter
             .request_device(
@@ -84,6 +78,7 @@ impl RenderSurface {
             device,
             queue,
             config,
+            adapter,
         };
     }
 
