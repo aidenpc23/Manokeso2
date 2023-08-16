@@ -11,8 +11,8 @@ const DEFAULT_SCALE: f32 = 0.05;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
-    pos: Point<f32>,
-    proj: Point<f32>,
+    pub pos: Point<f32>,
+    pub proj: Point<f32>,
 }
 
 impl CameraUniform {
@@ -38,12 +38,8 @@ impl CameraUniform {
         (2.0 / self.proj.x, 2.0 / self.proj.y)
     }
 
-    pub fn render_to_tile(&self, coords: Point<f32>) -> Point<f32> {
+    pub fn render_to_world(&self, coords: Point<f32>) -> Point<f32> {
         coords / self.proj + self.pos
-    }
-
-    pub fn tile_to_view(&self, pos: Point<f32>) -> Point<f32> {
-        pos - self.pos
     }
 
     fn calc_proj(camera: &Camera, size: &PhysicalSize<u32>) -> Point<f32> {

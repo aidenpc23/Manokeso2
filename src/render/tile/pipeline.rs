@@ -1,9 +1,9 @@
 use crate::{
+    client::Client,
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
     },
-    state::GameState,
 };
 use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
@@ -55,53 +55,62 @@ impl TilePipeline {
     pub fn update(
         &mut self,
         writer: &mut StagingBufWriter,
-        state: &GameState,
+        client: &Client,
         window_size: &PhysicalSize<u32>,
     ) {
-        let view = state.tile_view;
+        if let Ok(mut view) = client.board_view.try_write() {
+            let view_uniform = TileViewUniform::new(view.pos, view.slice.width as u32);
+            let tile_view_changed = self.uniforms.tile_view != view_uniform;
 
-        let view_uniform = TileViewUniform::new(state.tile_view.pos, state.tile_view.width as u32);
-        let tile_view_changed = self.uniforms.tile_view != view_uniform;
+            // don't update tile buffers if paused and board section hasn't changed
+            if view.dirty || tile_view_changed {
+                let width = view.slice.width;
+                let size = width * view.slice.height;
 
-        // don't update tile buffers if paused and board section hasn't changed
-        if state.tile_view.dirty || tile_view_changed {
-            let width = state.tile_view.width;
-            let size = width * state.tile_view.height;
+                let insts = &mut self.instances;
+                insts.connex_number.update_rows(
+                    writer,
+                    view.connex_numbers.par_chunks_exact(width),
+                    width,
+                    size,
+                );
+                insts.stability.update_rows(
+                    writer,
+                    view.stability.par_chunks_exact(width),
+                    width,
+                    size,
+                );
+                insts.reactivity.update_rows(
+                    writer,
+                    view.reactivity.par_chunks_exact(width),
+                    width,
+                    size,
+                );
+                insts
+                    .energy
+                    .update_rows(writer, view.energy.par_chunks_exact(width), width, size);
+                view.dirty = false;
+            }
 
-            let insts = &mut self.instances;
-            insts.connex_number.update_rows(
-                writer,
-                view.connex_numbers.par_chunks_exact(width),
-                width,
-                size,
-            );
-            insts.stability.update_rows(
-                writer,
-                view.stability.par_chunks_exact(width),
-                width,
-                size,
-            );
-            insts.reactivity.update_rows(
-                writer,
-                view.reactivity.par_chunks_exact(width),
-                width,
-                size,
-            );
-            insts
-                .energy
-                .update_rows(writer, view.energy.par_chunks_exact(width), width, size);
+            if tile_view_changed {
+                self.uniforms.tile_view = view_uniform;
+                let slice = &[self.uniforms.tile_view];
+                writer
+                    .mut_view::<TileViewUniform>(&self.buffers.tile_view, slice.len())
+                    .copy_from_slice(bytemuck::cast_slice(slice));
+            }
         }
 
-        if tile_view_changed {
-            self.uniforms.tile_view = view_uniform;
-            let slice = &[self.uniforms.tile_view];
-            writer
-                .mut_view::<TileViewUniform>(&self.buffers.tile_view, slice.len())
-                .copy_from_slice(bytemuck::cast_slice(slice));
-        }
+        if self.uniforms.camera.update(&client.camera, window_size) {
+            let uniform = self.uniforms.camera;
+            if let Ok(mut cview) = client.client_view.try_write() {
+                cview.pos = uniform.pos;
+                let (w, h) = uniform.world_dimensions();
+                cview.width = w;
+                cview.height = h;
+            }
 
-        if self.uniforms.camera.update(&state.camera, window_size) {
-            let slice = &[self.uniforms.camera];
+            let slice = &[uniform];
             writer
                 .mut_view::<CameraUniform>(&self.buffers.camera, slice.len())
                 .copy_from_slice(bytemuck::cast_slice(slice));

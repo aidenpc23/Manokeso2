@@ -1,7 +1,7 @@
 use wgpu::{Device, Queue, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-use crate::state::GameState;
+use crate::client::Client;
 
 use super::text::UIText;
 
@@ -26,7 +26,7 @@ impl UIPipeline {
 
     pub fn update(
         &mut self,
-        state: &GameState,
+        state: &Client,
         size: &PhysicalSize<u32>,
         device: &Device,
         queue: &Queue,

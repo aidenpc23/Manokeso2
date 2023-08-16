@@ -1,5 +1,5 @@
 use std::{
-    sync::RwLock,
+    sync::{mpsc::Receiver, Arc, RwLock},
     time::{Duration, Instant},
 };
 
@@ -9,23 +9,31 @@ use rayon::{
 };
 
 use crate::{
-    rsc::UPDATE_TIME,
-    tile_view::{BoardView, ClientView},
-    util::point::Point,
+    board_view::{BoardView, ClientView},
+    message::ClientMessage,
+    rsc::{UPDATE_TIME, UPS},
+    util::{point::Point, timer::Timer},
 };
 
 use super::{swap_buffer::SwapBuffer, Board};
 
 pub struct Server {
     pub board: Board,
-    pub client_view: RwLock<ClientView>,
-    pub board_view: RwLock<BoardView>,
+    pub client_view: Arc<RwLock<ClientView>>,
+    pub board_view: Arc<RwLock<BoardView>>,
+    pub slice: BoardSlice,
     pub update_time: Duration,
     pub paused: bool,
+    pub timer: Timer,
+    pub receiver: Receiver<ClientMessage>,
 }
 
 impl Server {
-    pub fn new(client_view: RwLock<ClientView>, board_view: RwLock<BoardView>) -> Self {
+    pub fn new(
+        client_view: &Arc<RwLock<ClientView>>,
+        board_view: &Arc<RwLock<BoardView>>,
+        receiver: Receiver<ClientMessage>,
+    ) -> Self {
         let width = 1000;
         let height = 1000;
         let board = Board::new(
@@ -35,44 +43,82 @@ impl Server {
         );
         Self {
             board,
-            client_view,
-            board_view,
+            client_view: client_view.clone(),
+            board_view: board_view.clone(),
+            slice: BoardSlice::default(),
             update_time: UPDATE_TIME,
             paused: true,
+            timer: Timer::new(UPS as usize),
+            receiver,
         }
     }
 
-    pub async fn run(&mut self) {
+    pub fn run(&mut self) {
         let mut last_update = Instant::now();
         loop {
             let now = Instant::now();
             let udelta = now - last_update;
             if udelta > self.update_time {
                 last_update = now;
-                if !self.paused {
-                    self.board.update();
-                    let client = self
-                        .client_view
-                        .read()
-                        .expect("Failed to get tile view lock");
-                    let slice = self.calc_board_slice(&client);
-                    drop(client);
-
-                    let mut view = self
-                        .board_view
-                        .write()
-                        .expect("Failed to get tile view lock");
-                    copy_swap_buf(&mut view.connex_numbers, &self.board.connex_numbers, &slice);
-                    copy_swap_buf(&mut view.stability, &self.board.stability, &slice);
-                    copy_swap_buf(&mut view.reactivity, &self.board.reactivity, &slice);
-                    copy_swap_buf(&mut view.energy, &self.board.energy, &slice);
-                    view.pos = self.board.pos + Point::new(slice.xs as f32, slice.ys as f32);
-                    view.width = slice.width;
-                    view.height = slice.height;
-                    view.total_energy = self.board.total_energy;
-                    view.dirty = self.board.dirty;
+                for msg in self.receiver.try_iter() {
+                    match msg {
+                        ClientMessage::Swap(pos1, pos2) => {
+                            let pos1 = pos1 + self.slice.start;
+                            let pos2 = pos2 + self.slice.start;
+                            self.board.player_swap(pos1, pos2);
+                        }
+                        ClientMessage::AddEnergy(pos) => {
+                            let i = (pos + self.slice.start).index(self.board.width);
+                            self.board
+                                .energy
+                                .god_set(i, self.board.energy.god_get(i) + 10.0);
+                            self.board.dirty = true;
+                        }
+                    }
                 }
+                if !self.paused {
+                    self.timer.start();
+                    self.board.update();
+                    self.timer.stop();
+                }
+                self.sync();
             }
+        }
+    }
+
+    fn sync(&mut self) {
+        let client = self
+            .client_view
+            .read()
+            .expect("Failed to get tile view lock");
+        self.paused = client.paused;
+        let slice = self.calc_board_slice(&client);
+        drop(client);
+
+        if slice != self.slice || self.board.dirty {
+            self.slice = slice;
+            self.board.dirty = false;
+
+            let mut view = self
+                .board_view
+                .write()
+                .expect("Failed to get tile view lock");
+
+            copy_swap_buf(&mut view.connex_numbers, &self.board.connex_numbers, &slice);
+            copy_swap_buf(&mut view.stability, &self.board.stability, &slice);
+            copy_swap_buf(&mut view.reactivity, &self.board.reactivity, &slice);
+            copy_swap_buf(&mut view.energy, &self.board.energy, &slice);
+            copy_swap_buf(&mut view.alpha, &self.board.alpha, &slice);
+            copy_swap_buf(&mut view.beta, &self.board.beta, &slice);
+            copy_swap_buf(&mut view.gamma, &self.board.gamma, &slice);
+            copy_swap_buf(&mut view.delta, &self.board.delta, &slice);
+            copy_swap_buf(&mut view.omega, &self.board.omega, &slice);
+
+            view.pos = self.board.pos + slice.start.into();
+            view.slice = slice.clone();
+            view.total_energy = self.board.total_energy;
+            view.dirty = true;
+            view.time_taken = self.timer.avg();
         }
     }
 
@@ -106,10 +152,8 @@ impl Server {
         let size = width * height;
 
         BoardSlice {
-            xs,
-            xe,
-            ys,
-            ye,
+            start: Point { x: xs, y: ys },
+            end: Point { x: xe, y: ye },
             width,
             height,
             size,
@@ -117,11 +161,10 @@ impl Server {
     }
 }
 
+#[derive(PartialEq, Default, Clone, Copy)]
 pub struct BoardSlice {
-    pub xs: usize,
-    pub xe: usize,
-    pub ys: usize,
-    pub ye: usize,
+    pub start: Point<usize>,
+    pub end: Point<usize>,
     pub width: usize,
     pub height: usize,
     pub size: usize,
@@ -130,10 +173,11 @@ pub struct BoardSlice {
 fn copy_swap_buf<T: Send + Sync + Copy>(dest: &mut Vec<T>, sb: &SwapBuffer<T>, slice: &BoardSlice) {
     if dest.len() != slice.size {
         *dest = Vec::with_capacity(slice.size);
+        unsafe { dest.set_len(slice.size) }
     }
     dest.par_chunks_exact_mut(slice.width)
-        .zip(sb.par_rows(slice.ys, slice.ye))
+        .zip(sb.par_rows(slice.start.y, slice.end.y))
         .for_each(|(data, row)| {
-            data.copy_from_slice(&row[slice.xs..slice.xe]);
+            data.copy_from_slice(&row[slice.start.x..slice.end.x]);
         });
 }

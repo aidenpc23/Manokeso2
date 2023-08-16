@@ -1,25 +1,24 @@
-use std::time;
+use std::{time, sync::mpsc::channel};
 
+use client::Client;
 use config::Config;
 use handle_input::handle_input;
 use input::Input;
-use state::GameState;
-use tile_view::ClientView;
 use winit::{
     event::*,
     event_loop::{ControlFlow, EventLoop},
 };
 
+mod board_view;
 mod camera;
+mod client;
 mod config;
 mod handle_input;
 mod input;
 mod keybinds;
+mod message;
 mod render;
 mod rsc;
-mod state;
-mod tile_view;
-mod timer;
 mod util;
 mod world;
 
@@ -33,19 +32,21 @@ fn main() {
 async fn run() {
     // Setup
     env_logger::init();
-    let mut state = GameState::new(Config::load());
+    let (cs, cr) = channel();
+    let mut client = Client::new(Config::load(), cs);
 
     let event_loop = EventLoop::new();
-    let mut renderer = Renderer::new(&event_loop, &state.camera).await;
+    let mut renderer = Renderer::new(&event_loop, &client.camera).await;
     renderer.window.set_visible(true);
 
-    let mut last_update = time::Instant::now();
     let mut last_frame = time::Instant::now();
     let mut input = Input::new();
     let mut resized = false;
 
-    let client_view = ClientView::new();
-    let mut server = Server::new();
+    let mut server = Server::new(&client.client_view, &client.board_view, cr);
+    std::thread::spawn(move || {
+        server.run();
+    });
 
     // Game loop
     event_loop.run(move |event, _, control_flow| {
@@ -59,21 +60,25 @@ async fn run() {
                     _ => input.update(event),
                 }
             }
-            Event::RedrawRequested(_) => renderer.render(&state, false),
+            Event::RedrawRequested(_) => renderer.render(&client, false),
             Event::MainEventsCleared => {
                 let now = time::Instant::now();
                 let fdelta = now - last_frame;
-                if fdelta > state.frame_time {
+                if fdelta > client.frame_time {
                     last_frame = now;
 
-                    if handle_input(&fdelta, &input, &mut state, &renderer) {
+                    if handle_input(&fdelta, &input, &mut client, &renderer) {
                         *control_flow = ControlFlow::Exit;
                     }
                     input.end();
 
-                    state.timers.render.start();
-                    renderer.render(&state, resized);
-                    state.timers.render.end();
+                    if let Ok(mut cview) = client.client_view.try_write() {
+                        cview.paused = client.paused;
+                    }
+
+                    client.frame_timer.start();
+                    renderer.render(&client, resized);
+                    client.frame_timer.stop();
 
                     resized = false;
                 }

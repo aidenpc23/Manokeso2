@@ -5,12 +5,12 @@ use glyphon::{
 use wgpu::{Device, MultisampleState, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 
-use crate::{state::GameState, util::point::Point};
+use crate::{client::Client, util::point::Point};
 
 use super::layout;
 
 pub struct Text {
-    pub update: fn(&GameState) -> String,
+    pub update: fn(&Client) -> String,
     pub align: Align,
     pub pos: fn((f32, f32)) -> Point<f32>,
     pub bounds: fn((f32, f32)) -> (f32, f32),
@@ -18,7 +18,7 @@ pub struct Text {
 
 pub struct TextElement {
     pub buffer: glyphon::Buffer,
-    pub update: fn(&GameState) -> String,
+    pub update: fn(&Client) -> String,
     pub align: Align,
     pub pos: fn((f32, f32)) -> Point<f32>,
     pub bounds: fn((f32, f32)) -> (f32, f32),
@@ -75,7 +75,7 @@ impl UIText {
 
     pub fn update(
         &mut self,
-        state: &GameState,
+        state: &Client,
         size: &PhysicalSize<u32>,
         device: &Device,
         queue: &Queue,

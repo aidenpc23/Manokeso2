@@ -25,7 +25,7 @@ impl Timer {
             self.start = Some(Instant::now());
         }
     }
-    pub fn end(&mut self) {
+    pub fn stop(&mut self) {
         if self.enabled {
             let end = Instant::now();
             if let Some(start) = self.start {
@@ -33,9 +33,6 @@ impl Timer {
                 self.push(end - start);
             }
         }
-    }
-    pub fn ready(&self) -> bool {
-        !self.durs.last().unwrap_or(&Duration::ZERO).is_zero()
     }
     pub fn avg(&self) -> Duration {
         self.durs.iter().sum::<Duration>() / self.durs.len() as u32

@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul, Sub, MulAssign, DivAssign, AddAssign, SubAssign};
 
 #[repr(C, packed)]
-#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable, PartialEq)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable, PartialEq, Default)]
 pub struct Point<T> {
     pub x: T,
     pub y: T,
@@ -99,5 +99,11 @@ impl<T: Mul<Output = T> + Copy> MulAssign<T> for Point<T> {
     fn mul_assign(&mut self, rhs: T) {
         self.x = self.x * rhs;
         self.y = self.y * rhs;
+    }
+}
+
+impl Into<Point<f32>> for Point<usize> {
+    fn into(self) -> Point<f32> {
+        return Point { x: self.x as f32, y: self.y as f32 }
     }
 }

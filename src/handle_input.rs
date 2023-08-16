@@ -1,36 +1,57 @@
 use std::time::Duration;
 
+use winit::event::MouseButton;
+
 use crate::{
+    client::Client,
     input::Input,
     keybinds::{Action, Keybinds},
+    render::Renderer,
     rsc::PLAYER_SPEED,
-    state::GameState, render::Renderer,
+    util::point::Point,
 };
 
-pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState, renderer: &Renderer) -> bool {
-    let ainput = (input, &state.keybinds);
+pub fn handle_input(
+    delta: &Duration,
+    input: &Input,
+    client: &mut Client,
+    renderer: &Renderer,
+) -> bool {
+    let ainput = (input, &client.keybinds);
     if ainput.pressed(Action::Exit) {
         return true;
     }
 
-    let camera = &mut state.camera;
+    let camera = &mut client.camera;
     let delta_mult = delta.as_millis() as f32;
     let move_dist = PLAYER_SPEED * delta_mult / camera.scale;
 
-
-    let mouse_tile_pos = renderer.pixel_to_tile(input.mouse_pixel_pos);
-    // state.hovered_tile = state.board.tile_at(mouse_tile_pos);
-    // if input.mouse_just_pressed(MouseButton::Left) {
-    //     state.held_tile = state.hovered_tile;
-    // }
-    // if input.mouse_just_released(MouseButton::Left) {
-    //     if let Some(pos1) = state.held_tile {
-    //         if let Some(pos2) = state.hovered_tile {
-    //             state.board.player_swap(pos1, pos2);
-    //         }
-    //     }
-    //     state.held_tile = None;
-    // }
+    let mouse_world_pos = renderer.pixel_to_world(input.mouse_pixel_pos);
+    if let Ok(view) = client.board_view.try_read() {
+        let Point { x, y } = mouse_world_pos - view.pos;
+        client.hovered_tile =
+            if x < 0.0 || y < 0.0 || x >= view.slice.width as f32 || y >= view.slice.height as f32 {
+                None
+            } else {
+                Some(Point::new(x as usize, y as usize))
+            }
+    }
+    if input.mouse_just_pressed(MouseButton::Left) {
+        client.held_tile = client.hovered_tile;
+    }
+    if input.mouse_just_released(MouseButton::Left) {
+        if let Some(pos1) = client.held_tile {
+            if let Some(pos2) = client.hovered_tile {
+                if let Err(..) = client
+                    .sender
+                    .send(crate::message::ClientMessage::Swap(pos1, pos2))
+                {
+                    println!("Failed to send swap to server!");
+                }
+            }
+        }
+        client.held_tile = None;
+    }
 
     if ainput.pressed(Action::MoveUp) {
         camera.pos.y += move_dist;
@@ -46,24 +67,22 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut GameState, rend
     }
 
     if ainput.just_pressed(Action::Pause) {
-        state.paused = !state.paused;
+        client.paused = !client.paused;
     }
-    // if ainput.just_pressed(Action::AddEnergy) {
-    //     if let Some(pos) = state.hovered_tile {
-    //         let i = pos.index(state.board.width());
-    //         state
-    //             .board
-    //             .energy
-    //             .god_set(i, state.board.energy.god_get(i) + 10.0);
-    //     }
-    // }
+    if ainput.just_pressed(Action::AddEnergy) {
+        if let Some(pos) = client.hovered_tile {
+            client
+                .sender
+                .send(crate::message::ClientMessage::AddEnergy(pos));
+        }
+    }
     if ainput.just_pressed(Action::Step) {
-        state.step = true;
+        client.step = true;
     }
 
     if input.scroll_delta != 0.0 {
-        state.camera_scroll += input.scroll_delta;
-        camera.scale = (state.camera_scroll * 0.1).exp();
+        client.camera_scroll += input.scroll_delta;
+        camera.scale = (client.camera_scroll * 0.1).exp();
     }
 
     return false;
