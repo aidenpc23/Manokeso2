@@ -1,9 +1,14 @@
+use std::sync::mpsc::Sender;
+
 use crate::{
-    message::CameraView,
+    board_view::{BoardView, BoardViewLock},
+    camera::Camera,
+    message::{CameraView, ClientMessage},
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
-    }, state::ClientState,
+    },
+    state::ClientState,
 };
 use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
@@ -36,6 +41,7 @@ pub struct TilePipeline {
     pub(super) buffers: Buffers,
     pub(super) camera_bind_group: BindGroup,
     pub uniforms: Uniforms,
+    pub(super) tiles_dirty: bool,
 }
 
 impl TilePipeline {
@@ -52,60 +58,64 @@ impl TilePipeline {
         render_pass.draw(0..4, 0..self.instances.connex_number.len() as u32);
     }
 
+    pub fn sync(&mut self, view: &mut BoardView, writer: &mut StagingBufWriter) {
+        let mut info = view.info;
+        let tile_view_changed = self
+            .uniforms
+            .tile_view
+            .update(info.pos, info.slice.width as u32);
+
+        // don't update tile buffers if paused and board section hasn't changed
+        if info.dirty || tile_view_changed {
+            let width = info.slice.width;
+            let size = width * info.slice.height;
+
+            let insts = &mut self.instances;
+            insts.connex_number.update_rows(
+                writer,
+                view.connex_numbers.par_chunks_exact(width),
+                width,
+                size,
+            );
+            insts.stability.update_rows(
+                writer,
+                view.stability.par_chunks_exact(width),
+                width,
+                size,
+            );
+            insts.reactivity.update_rows(
+                writer,
+                view.reactivity.par_chunks_exact(width),
+                width,
+                size,
+            );
+            insts
+                .energy
+                .update_rows(writer, view.energy.par_chunks_exact(width), width, size);
+            info.dirty = false;
+            self.tiles_dirty = true;
+        }
+    }
+
     pub fn update(
         &mut self,
         writer: &mut StagingBufWriter,
-        client: &ClientState,
+        camera: &Camera,
         window_size: &PhysicalSize<u32>,
+        sender: &Sender<ClientMessage>,
     ) {
-        if let Ok(mut view) = client.board_view.try_write() {
-            let view_uniform = TileViewUniform::new(view.pos, view.slice.width as u32);
-            let tile_view_changed = self.uniforms.tile_view != view_uniform;
-
-            // don't update tile buffers if paused and board section hasn't changed
-            if view.dirty || tile_view_changed {
-                let width = view.slice.width;
-                let size = width * view.slice.height;
-
-                let insts = &mut self.instances;
-                insts.connex_number.update_rows(
-                    writer,
-                    view.connex_numbers.par_chunks_exact(width),
-                    width,
-                    size,
-                );
-                insts.stability.update_rows(
-                    writer,
-                    view.stability.par_chunks_exact(width),
-                    width,
-                    size,
-                );
-                insts.reactivity.update_rows(
-                    writer,
-                    view.reactivity.par_chunks_exact(width),
-                    width,
-                    size,
-                );
-                insts
-                    .energy
-                    .update_rows(writer, view.energy.par_chunks_exact(width), width, size);
-                view.dirty = false;
-            }
-
-            if tile_view_changed {
-                self.uniforms.tile_view = view_uniform;
-                let slice = &[self.uniforms.tile_view];
-                writer
-                    .mut_view::<TileViewUniform>(&self.buffers.tile_view, slice.len())
-                    .copy_from_slice(bytemuck::cast_slice(slice));
-            }
+        if self.tiles_dirty {
+            let slice = &[self.uniforms.tile_view];
+            writer
+                .mut_view::<TileViewUniform>(&self.buffers.tile_view, slice.len())
+                .copy_from_slice(bytemuck::cast_slice(slice));
+            self.tiles_dirty = false;
         }
-
-        if self.uniforms.camera.update(&client.camera, window_size) {
+        if self.uniforms.camera.update(&camera, window_size) {
             let uniform = self.uniforms.camera;
             let (width, height) = uniform.world_dimensions();
 
-            client.send(crate::message::ClientMessage::CameraUpdate(CameraView {
+            sender.send(crate::message::ClientMessage::CameraUpdate(CameraView {
                 pos: uniform.pos,
                 width,
                 height,

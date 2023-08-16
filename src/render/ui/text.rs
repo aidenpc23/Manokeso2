@@ -9,7 +9,7 @@ use crate::{state::ClientState, util::point::Point, render::surface::RenderSurfa
 
 use super::layout;
 
-pub type TextUpdate = fn(&ClientState, &RenderSurface) -> Option<String>;
+pub type TextUpdate = fn(&ClientState, &RenderSurface) -> String;
 
 pub struct Text {
     pub update: TextUpdate,
@@ -83,14 +83,12 @@ impl UIText {
     ) {
         let bounds = (size.width as f32, size.height as f32);
         for element in &mut self.elements {
-            if let Some(text) = (element.update)(state, surface) {
-                element.buffer.set_text(
-                    &mut self.font_system,
-                    &text,
-                    Attrs::new().family(Family::SansSerif),
-                    Shaping::Advanced,
-                );
-            }
+            element.buffer.set_text(
+                &mut self.font_system,
+                &(element.update)(state, surface),
+                Attrs::new().family(Family::SansSerif),
+                Shaping::Advanced,
+            );
             let size = (element.bounds)(bounds);
             element
                 .buffer

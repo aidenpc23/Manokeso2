@@ -1,5 +1,10 @@
-use crate::{rsc::CLEAR_COLOR, state::ClientState, util::point::Point};
-use wgpu::util::StagingBelt;
+use crate::{
+    board_view::{BoardView, BoardViewLock},
+    rsc::CLEAR_COLOR,
+    state::ClientState,
+    util::point::Point,
+};
+use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
@@ -13,6 +18,7 @@ use super::{
 pub struct Renderer {
     pub window: Window,
     pub(super) render_surface: RenderSurface,
+    pub(super) encoder: Option<CommandEncoder>,
     pub(super) tile_pipeline: TilePipeline,
     pub(super) ui_pipeline: UIPipeline,
     pub(super) staging_belt: StagingBelt,
@@ -35,10 +41,30 @@ impl Renderer {
         Self {
             window,
             render_surface,
+            encoder: None,
             tile_pipeline,
             ui_pipeline,
             staging_belt,
         }
+    }
+
+    pub fn start_encoder(&mut self) {
+        self.encoder = Some(self.render_surface.device.create_command_encoder(
+            &wgpu::CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            },
+        ));
+    }
+
+    pub fn sync(&mut self, board_view: &mut BoardView) {
+        let mut encoder = self.encoder.take().expect("encoder not started");
+        let writer = &mut StagingBufWriter {
+            device: &self.render_surface.device,
+            belt: &mut self.staging_belt,
+            encoder: &mut encoder,
+        };
+        self.tile_pipeline.sync(board_view, writer);
+        self.encoder = Some(encoder);
     }
 
     pub fn render(&mut self, client: &ClientState, resize: bool) {
@@ -51,12 +77,7 @@ impl Renderer {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder =
-            self.render_surface
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
-                });
+        let mut encoder = self.encoder.take().expect("encoder not started");
 
         let writer = &mut StagingBufWriter {
             device: &self.render_surface.device,
@@ -64,22 +85,24 @@ impl Renderer {
             encoder: &mut encoder,
         };
         self.tile_pipeline
-            .update(writer, client, size);
+            .update(writer, &client.camera, size, &client.sender);
         self.ui_pipeline.update(client, size, &self.render_surface);
 
         {
-            let render_pass = &mut writer.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(CLEAR_COLOR),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
+            let render_pass = &mut writer
+                .encoder
+                .begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(CLEAR_COLOR),
+                            store: true,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                });
             self.tile_pipeline.draw(render_pass);
             self.ui_pipeline.draw(render_pass);
         }

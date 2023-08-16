@@ -8,14 +8,12 @@ use crate::{
     keybinds::{Action, Keybinds},
     message::ClientMessage,
     rsc::PLAYER_SPEED,
-    util::point::Point, render::Renderer,
 };
 
 pub fn handle_input(
     delta: &Duration,
     input: &Input,
     client: &mut ClientState,
-    renderer: &Renderer,
 ) -> bool {
     let ainput = (input, &client.keybinds);
     if ainput.pressed(Action::Exit) {
@@ -48,33 +46,22 @@ pub fn handle_input(
 
     // interactions
 
-    let mouse_world_pos = renderer.pixel_to_world(input.mouse_pixel_pos);
-    if let Ok(view) = client.board_view.try_read() {
-        let Point { x, y } = mouse_world_pos - view.pos;
-        client.hovered_tile =
-            if x < 0.0 || y < 0.0 || x >= view.slice.width as f32 || y >= view.slice.height as f32 {
-                None
-            } else {
-                Some(Point::new(x as usize, y as usize))
-            }
-    }
-
     if input.mouse_just_pressed(MouseButton::Left) {
         client.held_tile = client.hovered_tile;
     }
 
     if input.mouse_just_released(MouseButton::Left) {
-        if let Some(pos1) = client.held_tile {
-            if let Some(pos2) = client.hovered_tile {
-                client.send(ClientMessage::Swap(pos1, pos2));
+        if let Some(tile1) = client.held_tile {
+            if let Some(tile2) = client.hovered_tile {
+                client.send(ClientMessage::Swap(tile1.pos, tile2.pos));
             }
         }
         client.held_tile = None;
     }
 
     if ainput.just_pressed(Action::AddEnergy) {
-        if let Some(pos) = client.hovered_tile {
-            client.send(ClientMessage::AddEnergy(pos));
+        if let Some(tile) = client.hovered_tile {
+            client.send(ClientMessage::AddEnergy(tile.pos));
         }
     }
 

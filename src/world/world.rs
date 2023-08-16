@@ -9,7 +9,7 @@ use rayon::{
 };
 
 use crate::{
-    board_view::BoardViewLock,
+    board_view::{BoardViewInfo, BoardViewLock},
     message::{CameraView, ClientMessage},
     rsc::{UPDATE_TIME, UPS},
     util::{point::Point, timer::Timer},
@@ -118,11 +118,13 @@ impl World {
         copy_swap_buf(&mut view.delta, &board.delta, &slice);
         copy_swap_buf(&mut view.omega, &board.omega, &slice);
 
-        view.pos = self.board.pos + self.slice.start.into();
-        view.slice = self.slice.clone();
-        view.total_energy = self.board.total_energy;
-        view.dirty = true;
-        view.time_taken = self.timer.avg();
+        view.info = BoardViewInfo {
+            pos: self.board.pos + self.slice.start.into(),
+            slice: self.slice.clone(),
+            total_energy: self.board.total_energy,
+            dirty: true,
+            time_taken: self.timer.avg(),
+        }
     }
 
     fn calc_board_slice(&self, view: CameraView) -> BoardSlice {

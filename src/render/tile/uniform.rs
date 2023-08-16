@@ -67,14 +67,16 @@ impl TileViewUniform {
             _padding: 0,
         }
     }
+    pub fn update(&mut self, pos: Point<f32>, width: u32) -> bool {
+        if self.pos == pos && self.width == width {
+            return false;
+        }
+        self.pos = pos;
+        self.width = width;
+        true
+    }
     pub fn empty() -> Self {
         Self::new(Point::new(0.0, 0.0), 0)
-    }
-}
-
-impl PartialEq for TileViewUniform {
-    fn eq(&self, other: &Self) -> bool {
-        self.pos == other.pos && self.width == other.width
     }
 }
 

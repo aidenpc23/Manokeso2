@@ -168,6 +168,7 @@ impl TilePipeline {
                 consts: consts_uniform,
             },
             camera_bind_group,
+            tiles_dirty: false,
         }
     }
 }

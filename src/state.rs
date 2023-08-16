@@ -1,10 +1,10 @@
 use std::{
-    sync::{mpsc::Sender, Arc, RwLock},
+    sync::{mpsc::Sender, Arc},
     time::Duration,
 };
 
 use crate::{
-    board_view::BoardView,
+    board_view::{BoardView, BoardViewInfo, BoardViewLock},
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
@@ -18,11 +18,12 @@ pub struct ClientState {
     pub frame_time: Duration,
     pub camera: Camera,
     pub camera_scroll: f32,
-    pub held_tile: Option<Point<usize>>,
-    pub hovered_tile: Option<Point<usize>>,
+    pub held_tile: Option<TileInfo>,
+    pub hovered_tile: Option<TileInfo>,
     pub paused: bool,
     pub frame_timer: Timer,
-    pub board_view: Arc<RwLock<BoardView>>,
+    pub board_view: BoardViewLock,
+    pub view_info: BoardViewInfo,
     pub sender: Sender<ClientMessage>,
 }
 
@@ -33,6 +34,8 @@ impl ClientState {
             keybinds.extend(config_keybinds);
         }
         let camera = Camera::default();
+        let view = BoardView::empty();
+        let info = view.info.clone();
         Self {
             keybinds,
             frame_time: FRAME_TIME,
@@ -42,7 +45,8 @@ impl ClientState {
             hovered_tile: None,
             paused: true,
             frame_timer: Timer::new(FPS as usize),
-            board_view: Arc::new(BoardView::empty().into()),
+            board_view: Arc::new(view.into()),
+            view_info: info,
             sender,
         }
     }
@@ -52,4 +56,18 @@ impl ClientState {
             println!("Failed to send message to server: {:?}", err);
         }
     }
+}
+
+#[derive(Clone, Copy)]
+pub struct TileInfo {
+    pub pos: Point<usize>,
+    pub connex_number: u32,
+    pub stability: f32,
+    pub reactivity: f32,
+    pub energy: f32,
+    pub alpha: u64,
+    pub beta: u64,
+    pub gamma: f32,
+    pub delta: f32,
+    pub omega: f32,
 }
