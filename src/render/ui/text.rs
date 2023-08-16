@@ -79,7 +79,6 @@ impl UIText {
         &mut self,
         state: &Client,
         size: &PhysicalSize<u32>,
-        device: &Device,
         surface: &RenderSurface,
     ) {
         let bounds = (size.width as f32, size.height as f32);
@@ -123,7 +122,7 @@ impl UIText {
         });
         self.renderer
             .prepare(
-                device,
+                &surface.device,
                 &surface.queue,
                 &mut self.font_system,
                 &mut self.atlas,

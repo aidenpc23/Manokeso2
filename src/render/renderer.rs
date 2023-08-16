@@ -66,7 +66,7 @@ impl Renderer {
         };
         self.tile_pipeline
             .update(writer, client, size);
-        self.ui_pipeline.update(client, size, writer.device, &self.render_surface);
+        self.ui_pipeline.update(client, size, &self.render_surface);
 
         {
             let render_pass = &mut writer.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

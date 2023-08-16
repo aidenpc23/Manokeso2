@@ -1,8 +1,4 @@
-use std::sync::{Arc, RwLock};
-
 use crate::{
-    board_view::{BoardView, BoardViewLock},
-    camera::Camera,
     message::CameraView,
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},

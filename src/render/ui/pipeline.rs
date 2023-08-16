@@ -1,4 +1,4 @@
-use wgpu::{Device, Queue, RenderPass, RenderPipeline};
+use wgpu::{RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
 use crate::{client::Client, render::surface::RenderSurface};
@@ -28,9 +28,8 @@ impl UIPipeline {
         &mut self,
         state: &Client,
         size: &PhysicalSize<u32>,
-        device: &Device,
         surface: &RenderSurface,
     ) {
-        self.text.update(state, size, device, surface);
+        self.text.update(state, size, surface);
     }
 }
