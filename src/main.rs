@@ -30,14 +30,12 @@ async fn run() {
 
     let event_loop = EventLoop::new();
     let client = Client::new(Config::load(), cs);
-    let renderer = Renderer::new(&event_loop, &client.camera).await;
-    renderer.window.set_visible(true);
+    let renderer = Renderer::new(&event_loop).await;
 
     let bv = client.board_view.clone();
 
     std::thread::spawn(move || {
-        let mut server = World::new(bv, cr);
-        server.run();
+        World::new(bv, cr).run();
     });
 
     client.run(renderer, event_loop);

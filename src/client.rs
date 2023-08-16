@@ -59,6 +59,8 @@ impl Client {
         let mut input = Input::new();
         let mut resized = false;
 
+        renderer.window.set_visible(true);
+
         event_loop.run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
 

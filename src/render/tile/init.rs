@@ -2,9 +2,8 @@ use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
     BufferUsages,
 };
-use winit::dpi::PhysicalSize;
 
-use crate::{camera::Camera, render::surface::RenderSurface};
+use crate::render::surface::RenderSurface;
 
 use super::{
     pipeline::{Instances, TilePipeline, SHADER, Buffers, Uniforms},
@@ -12,7 +11,7 @@ use super::{
 };
 
 impl TilePipeline {
-    pub fn new(surface: &RenderSurface, camera: &Camera, size: &PhysicalSize<u32>) -> Self {
+    pub fn new(surface: &RenderSurface) -> Self {
         let RenderSurface { device, config, .. } = surface;
         // shaders
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -27,7 +26,7 @@ impl TilePipeline {
             energy: InstanceField::init(device, "Energy"),
         };
 
-        let camera_uniform = CameraUniform::new(camera, size);
+        let camera_uniform = CameraUniform::new();
         let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Camera Buffer"),
             contents: bytemuck::cast_slice(&[camera_uniform]),

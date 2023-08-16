@@ -9,20 +9,16 @@ use crate::{
 const DEFAULT_SCALE: f32 = 0.05;
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable, Default)]
 pub struct CameraUniform {
     pub pos: Point<f32>,
     pub proj: Point<f32>,
 }
 
 impl CameraUniform {
-    pub fn new(camera: &Camera, size: &PhysicalSize<u32>) -> Self {
-        Self {
-            pos: camera.pos,
-            proj: Self::calc_proj(camera, size),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
-
     pub fn update(&mut self, camera: &Camera, size: &PhysicalSize<u32>) -> bool {
         let new_pos = camera.pos;
         let new_proj = Self::calc_proj(camera, size);

@@ -1,4 +1,4 @@
-use crate::{camera::Camera, rsc::CLEAR_COLOR, client::Client, util::point::Point};
+use crate::{rsc::CLEAR_COLOR, client::Client, util::point::Point};
 use wgpu::util::StagingBelt;
 use winit::{
     event_loop::EventLoop,
@@ -19,15 +19,14 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub async fn new(event_loop: &EventLoop<()>, camera: &Camera) -> Renderer {
+    pub async fn new(event_loop: &EventLoop<()>) -> Renderer {
         let window = WindowBuilder::new()
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
 
-        let size = window.inner_size();
         let render_surface = RenderSurface::init(&window).await;
-        let tile_pipeline = TilePipeline::new(&render_surface, &camera, &size);
+        let tile_pipeline = TilePipeline::new(&render_surface);
         let ui_pipeline = UIPipeline::new(&render_surface);
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom
