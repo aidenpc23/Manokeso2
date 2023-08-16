@@ -1,14 +1,13 @@
 use std::sync::mpsc::Sender;
 
 use crate::{
-    board_view::{BoardView, BoardViewLock},
+    board_view::BoardView,
     camera::Camera,
     message::{CameraView, ClientMessage},
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
     },
-    state::ClientState,
 };
 use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
@@ -59,7 +58,7 @@ impl TilePipeline {
     }
 
     pub fn sync(&mut self, view: &mut BoardView, writer: &mut StagingBufWriter) {
-        let mut info = view.info;
+        let info = &mut view.info;
         let tile_view_changed = self
             .uniforms
             .tile_view
@@ -71,6 +70,9 @@ impl TilePipeline {
             let size = width * info.slice.height;
 
             let insts = &mut self.instances;
+
+            let start = std::time::Instant::now();
+
             insts.connex_number.update_rows(
                 writer,
                 view.connex_numbers.par_chunks_exact(width),
@@ -92,6 +94,8 @@ impl TilePipeline {
             insts
                 .energy
                 .update_rows(writer, view.energy.par_chunks_exact(width), width, size);
+            let end = std::time::Instant::now();
+            println!("{:?}", end - start);
             info.dirty = false;
             self.tiles_dirty = true;
         }

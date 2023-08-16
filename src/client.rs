@@ -11,6 +11,8 @@ use crate::{
 };
 
 pub async fn run() {
+    rayon::ThreadPoolBuilder::new().num_threads(1).build_global().unwrap();
+
     // Setup
     let (cs, cr) = channel();
 
@@ -57,6 +59,7 @@ pub async fn run() {
                     input.end();
 
                     state.frame_timer.start();
+
                     renderer.start_encoder();
                     let mouse_world_pos = renderer.pixel_to_world(input.mouse_pixel_pos);
                     if let Ok(mut view) = state.board_view.try_write() {

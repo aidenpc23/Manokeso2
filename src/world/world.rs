@@ -89,8 +89,9 @@ impl World {
                 ClientMessage::Pause(set) => self.paused = set,
                 ClientMessage::Step() => self.step = true,
                 ClientMessage::CameraUpdate(view) => {
-                    self.slice = self.calc_board_slice(view);
-                    self.slice_change = true;
+                    let new = self.calc_board_slice(view);
+                    self.slice_change = self.slice != new;
+                    self.slice = new;
                 }
             }
         }
@@ -100,6 +101,7 @@ impl World {
         let board = &mut self.board;
         let slice = &mut self.slice;
         board.dirty = false;
+        self.slice_change = false;
 
         let mut view = self
             .board_view
