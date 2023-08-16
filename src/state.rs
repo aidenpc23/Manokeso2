@@ -1,11 +1,6 @@
 use std::{
     sync::{mpsc::Sender, Arc, RwLock},
-    time::{Duration, Instant},
-};
-
-use winit::{
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    time::Duration,
 };
 
 use crate::{
@@ -14,14 +9,13 @@ use crate::{
     config::Config,
     keybinds::{default_keybinds, Keybinds},
     message::ClientMessage,
-    rsc::{FPS, FRAME_TIME, UPDATE_TIME},
-    util::{point::Point, timer::Timer}, input::Input, handle_input::handle_input, render::Renderer,
+    rsc::{FPS, FRAME_TIME},
+    util::{point::Point, timer::Timer},
 };
 
 pub struct ClientState {
     pub keybinds: Keybinds,
     pub frame_time: Duration,
-    pub update_time: Duration,
     pub camera: Camera,
     pub camera_scroll: f32,
     pub held_tile: Option<Point<usize>>,
@@ -42,7 +36,6 @@ impl ClientState {
         Self {
             keybinds,
             frame_time: FRAME_TIME,
-            update_time: UPDATE_TIME,
             camera,
             camera_scroll: 0.0,
             held_tile: None,
@@ -52,9 +45,6 @@ impl ClientState {
             board_view: Arc::new(BoardView::empty().into()),
             sender,
         }
-    }
-
-    pub fn run(mut self, mut renderer: Renderer, event_loop: EventLoop<()>) {
     }
 
     pub fn send(&self, message: ClientMessage) {
