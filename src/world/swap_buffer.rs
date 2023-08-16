@@ -13,9 +13,6 @@ impl<T: Sync + Send + Copy> SwapBuffer<T> {
     pub fn par_rows(&self, from: usize, to: usize) -> rayon::slice::ChunksExact<'_, T> {
         self.read[from * self.width..to * self.width].par_chunks_exact(self.width)
     }
-    pub fn rows(&self, from: usize, to: usize) -> std::slice::ChunksExact<'_, T> {
-        self.read[from * self.width..to * self.width].chunks_exact(self.width)
-    }
     pub fn bufs(&mut self) -> (&Vec<T>, &mut Vec<T>) {
         (&self.read, &mut self.write)
     }
@@ -30,9 +27,6 @@ impl<T: Sync + Send + Copy> SwapBuffer<T> {
     }
     pub fn god_set(&mut self, pos: usize, val: T) {
         self.read[pos] = val;
-    }
-    pub fn sync_write(&mut self) {
-        self.write.copy_from_slice(&self.read);
     }
 }
 

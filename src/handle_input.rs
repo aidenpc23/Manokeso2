@@ -71,9 +71,11 @@ pub fn handle_input(
     }
     if ainput.just_pressed(Action::AddEnergy) {
         if let Some(pos) = client.hovered_tile {
-            client
+            if let Err(..) = client
                 .sender
-                .send(crate::message::ClientMessage::AddEnergy(pos));
+                .send(crate::message::ClientMessage::AddEnergy(pos)) {
+                    println!("Failed to send add energy to server!");
+                }
         }
     }
     if ainput.just_pressed(Action::Step) {
