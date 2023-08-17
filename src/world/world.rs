@@ -91,7 +91,7 @@ impl World {
                     let i = pos.index(self.board.width);
                     self.board
                         .energy
-                        .god_set(i, self.board.energy.god_get(i) + 10.0);
+                        .set(i, self.board.energy.get(i) + 10.0);
                     self.board.dirty = true;
                 }
                 ClientMessage::Pause(set) => self.paused = set,

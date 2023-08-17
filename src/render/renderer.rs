@@ -1,4 +1,4 @@
-use crate::{client::ClientState, rsc::CLEAR_COLOR, sync::BoardView, util::point::Point};
+use crate::{client::Camera, rsc::CLEAR_COLOR, sync::{BoardView, WorldInterface}, util::point::Point};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
@@ -6,13 +6,13 @@ use winit::{
 };
 
 use super::{
-    surface::RenderSurface, tile::pipeline::TilePipeline, ui::pipeline::UIPipeline,
+    surface::RenderSurface, tile::pipeline::TilePipeline, ui::{pipeline::UIPipeline, text::TextElement},
     writer::StagingBufWriter,
 };
 
 pub struct Renderer {
     pub window: Window,
-    pub(super) render_surface: RenderSurface,
+    pub render_surface: RenderSurface,
     pub(super) encoder: Option<CommandEncoder>,
     pub(super) tile_pipeline: TilePipeline,
     pub(super) ui_pipeline: UIPipeline,
@@ -62,7 +62,7 @@ impl Renderer {
         self.encoder = Some(encoder);
     }
 
-    pub fn render(&mut self, client: &ClientState, resize: bool) {
+    pub fn render(&mut self, world: &WorldInterface, camera: &Camera, text: &[TextElement], resize: bool) {
         let size = &self.window.inner_size();
         if resize {
             self.render_surface.resize(size);
@@ -80,8 +80,8 @@ impl Renderer {
             encoder: &mut encoder,
         };
         self.tile_pipeline
-            .update(writer, &client.camera, size, &client.world);
-        self.ui_pipeline.update(client, size, &self.render_surface);
+            .update(writer, world, camera, size);
+        self.ui_pipeline.update(size, &self.render_surface, text);
 
         {
             let render_pass = &mut writer

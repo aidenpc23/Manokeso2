@@ -92,9 +92,9 @@ impl TilePipeline {
     pub fn update(
         &mut self,
         writer: &mut StagingBufWriter,
+        world: &WorldInterface,
         camera: &Camera,
         window_size: &PhysicalSize<u32>,
-        world: &WorldInterface,
     ) {
         if self.tiles_dirty {
             let slice = &[self.uniforms.tile_view];

@@ -1,4 +1,4 @@
-use super::CARDINAL_DIRECTIONS;
+use super::update::CARDINAL_DIRECTIONS;
 
 pub const DEFAULT_ALPHA: u64 = 18114672341640257536;
 

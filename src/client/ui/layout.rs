@@ -1,12 +1,13 @@
 use crate::{
-    render::ui::text::{Align, Text},
-    util::point::Point,
+    util::point::Point, world::decode_alpha,
 };
+
+use super::text::{Text, Align};
 
 pub const BOARD: [Text; 3] = [
     Text {
-        update: |client, _| {
-            if let Some(tile) = &client.hovered_tile {
+        content: |state| {
+            if let Some(tile) = &state.hovered_tile {
                 format!(
                     concat!(
                         "tile pos: {:?}\n",
@@ -25,7 +26,7 @@ pub const BOARD: [Text; 3] = [
                     tile.stability,
                     tile.reactivity,
                     tile.energy,
-                    tile.alpha,
+                    decode_alpha(tile.alpha),
                     tile.beta,
                     tile.gamma,
                     tile.delta,
@@ -40,7 +41,7 @@ pub const BOARD: [Text; 3] = [
         bounds: |(w, h)| (w / 3.0, h),
     },
     Text {
-        update: |client, _| format!("total energy: {}", client.world.view_info.total_energy),
+        content: |state| format!("total energy: {}", state.world.view_info.total_energy),
         pos: |(w, _)| Point {
             x: w / 2.0,
             y: 10.0,
@@ -49,14 +50,14 @@ pub const BOARD: [Text; 3] = [
         bounds: |(w, h)| (w / 3.0, h),
     },
     Text {
-        update: |client, surface| {
-            let adp_info = surface.adapter.get_info();
+        content: |state| {
+            let adp_info = state.renderer.render_surface.adapter.get_info();
             format!(
-                "adapter: {}\nbackend: {:?}\nframe time: {:?}\nupdate time: {:?}",
+                "adapter: {}\nbackend: {:?}\nclient update: {:.3}ms\nworld update: {:.3}ms",
                 adp_info.name,
                 adp_info.backend,
-                client.frame_timer.avg(),
-                client.world.view_info.time_taken
+                state.timer.avg().as_secs_f32() * 1000.0,
+                state.world.view_info.time_taken.as_secs_f32() * 1000.0
             )
         },
         pos: |(w, _)| Point {

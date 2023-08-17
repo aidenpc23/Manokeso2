@@ -1,13 +1,12 @@
 mod board_view;
-mod sync;
+mod client;
 mod message;
 mod render;
 mod rsc;
+mod sync;
 mod util;
 mod world;
-mod client;
 
 fn main() {
     pollster::block_on(client::run());
 }
-

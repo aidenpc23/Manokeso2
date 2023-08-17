@@ -5,3 +5,4 @@ mod ui;
 mod writer;
 
 pub use renderer::*;
+pub use ui::text::TextElement;

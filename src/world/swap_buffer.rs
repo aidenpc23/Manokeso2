@@ -22,10 +22,10 @@ impl<T: Sync + Send + Copy> SwapBuffer<T> {
     pub fn swap_cell(&mut self, pos1: usize, pos2: usize) {
         self.read.swap(pos1, pos2);
     }
-    pub fn god_get(&self, pos: usize) -> &T {
+    pub fn get(&self, pos: usize) -> &T {
         &self.read[pos]
     }
-    pub fn god_set(&mut self, pos: usize, val: T) {
+    pub fn set(&mut self, pos: usize, val: T) {
         self.read[pos] = val;
     }
 }

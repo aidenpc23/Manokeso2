@@ -1,9 +1,9 @@
 use wgpu::{RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-use crate::{client::ClientState, render::surface::RenderSurface};
+use crate::render::surface::RenderSurface;
 
-use super::text::UIText;
+use super::text::{UIText, TextElement};
 
 pub const SHADER: &str = concat!(include_str!("./shader.wgsl"));
 
@@ -26,10 +26,10 @@ impl UIPipeline {
 
     pub fn update(
         &mut self,
-        state: &ClientState,
         size: &PhysicalSize<u32>,
         surface: &RenderSurface,
+        text: &[TextElement]
     ) {
-        self.text.update(state, size, surface);
+        self.text.update(size, surface, text);
     }
 }

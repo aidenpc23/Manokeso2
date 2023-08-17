@@ -5,9 +5,9 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{world::World, util::point::Point, render::Renderer, sync::TileInfo};
+use crate::{world::World, util::point::Point, sync::TileInfo};
 
-use super::{state::ClientState, config::Config, input::Input, handle_input::handle_input};
+use super::{state::ClientState, config::Config, input::Input, handle_input::handle_input, ui::layout};
 
 pub async fn run() {
     let world_pool = rayon::ThreadPoolBuilder::new()
@@ -19,8 +19,7 @@ pub async fn run() {
     let (ws, wr) = channel();
 
     let event_loop = EventLoop::new();
-    let mut state = ClientState::new(Config::load(), cs, wr);
-    let mut renderer = Renderer::new(&event_loop).await;
+    let mut state = ClientState::new(Config::load(), &event_loop, cs, wr).await;
 
     let bv = state.world.view_lock.clone();
 
@@ -31,14 +30,16 @@ pub async fn run() {
     let mut last_frame = Instant::now();
     let mut input = Input::new();
     let mut resized = false;
+    let text = layout::BOARD;
+    let mut text_elements = Vec::new();
 
-    renderer.window.set_visible(true);
+    state.renderer.window.set_visible(true);
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
 
         match event {
-            Event::WindowEvent { event, window_id } if window_id == renderer.window.id() => {
+            Event::WindowEvent { event, window_id } if window_id == state.renderer.window.id() => {
                 match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                     WindowEvent::Resized(_) => resized = true,
@@ -46,8 +47,8 @@ pub async fn run() {
                 }
             }
             Event::RedrawRequested(_) => {
-                renderer.start_encoder();
-                renderer.render(&state, false);
+                state.renderer.start_encoder();
+                state.renderer.render(&state.world, &state.camera, &text_elements, false);
             }
             Event::MainEventsCleared => {
                 let now = Instant::now();
@@ -60,16 +61,16 @@ pub async fn run() {
                     }
                     input.end();
 
-                    state.frame_timer.start();
+                    state.timer.start();
 
                     for msg in state.world.receiver.try_iter() {
                         match msg {}
                     }
 
-                    renderer.start_encoder();
-                    let mouse_world_pos = renderer.pixel_to_world(input.mouse_pixel_pos);
+                    state.renderer.start_encoder();
+                    let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
                     if let Ok(mut view) = state.world.view_lock.try_lock() {
-                        renderer.sync(&mut view);
+                        state.renderer.sync(&mut view);
                         state.world.send(crate::message::ClientMessage::RenderFinished());
                         state.world.view_info = view.info.clone();
                         let Point { x, y } = mouse_world_pos - view.info.pos;
@@ -97,8 +98,9 @@ pub async fn run() {
                             })
                         };
                     }
-                    renderer.render(&state, resized);
-                    state.frame_timer.stop();
+                    text_elements = text.iter().map(|t| t.into_element(&state)).collect();
+                    state.renderer.render(&state.world, &state.camera, &text_elements, resized);
+                    state.timer.stop();
 
                     resized = false;
                 }
