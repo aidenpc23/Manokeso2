@@ -5,15 +5,21 @@ pub struct Timer {
     durs: Vec<Duration>,
     i: usize,
     enabled: bool,
+    duration: Duration,
 }
 
 impl Timer {
-    pub fn new(size: usize) -> Self {
+    /// Creates a new timer that can store up to `size` durations.
+    /// The `avg` function will report the average time taken roughly over the provided duration.
+    /// The size should be at least as many times as you expect to run the timer within the
+    /// provided duration.
+    pub fn new(duration: Duration, size: usize) -> Self {
         Self {
             start: None,
             durs: vec![Duration::ZERO; size],
             i: 0,
             enabled: true,
+            duration,
         }
     }
     pub fn push(&mut self, dur: Duration) {
@@ -35,6 +41,19 @@ impl Timer {
         }
     }
     pub fn avg(&self) -> Duration {
-        self.durs.iter().sum::<Duration>() / self.durs.len() as u32
+        let mut sum = Duration::ZERO;
+        let mut count = 0;
+        for i in 0..self.durs.len() {
+            let dur = self.durs[(self.i + i) % self.durs.len()];
+            if dur == Duration::ZERO {
+                break;
+            }
+            sum += dur;
+            count += 1;
+            if sum > self.duration {
+                break;
+            }
+        }
+        sum.checked_div(count).unwrap_or(Duration::ZERO)
     }
 }

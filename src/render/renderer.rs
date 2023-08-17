@@ -1,4 +1,4 @@
-use crate::{board_view::BoardView, rsc::CLEAR_COLOR, state::ClientState, util::point::Point};
+use crate::{client::ClientState, rsc::CLEAR_COLOR, sync::BoardView, util::point::Point};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
@@ -80,7 +80,7 @@ impl Renderer {
             encoder: &mut encoder,
         };
         self.tile_pipeline
-            .update(writer, &client.camera, size, &client.sender);
+            .update(writer, &client.camera, size, &client.world);
         self.ui_pipeline.update(client, size, &self.render_surface);
 
         {

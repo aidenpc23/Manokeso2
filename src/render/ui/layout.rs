@@ -40,7 +40,7 @@ pub const BOARD: [Text; 3] = [
         bounds: |(w, h)| (w / 3.0, h),
     },
     Text {
-        update: |client, _| format!("total energy: {}", client.view_info.total_energy),
+        update: |client, _| format!("total energy: {}", client.world.view_info.total_energy),
         pos: |(w, _)| Point {
             x: w / 2.0,
             y: 10.0,
@@ -56,7 +56,7 @@ pub const BOARD: [Text; 3] = [
                 adp_info.name,
                 adp_info.backend,
                 client.frame_timer.avg(),
-                client.view_info.time_taken
+                client.world.view_info.time_taken
             )
         },
         pos: |(w, _)| Point {

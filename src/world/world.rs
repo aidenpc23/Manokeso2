@@ -9,7 +9,7 @@ use rayon::{
 };
 
 use crate::{
-    board_view::{BoardViewInfo, BoardViewLock},
+    sync::{BoardViewInfo, BoardViewLock},
     message::{CameraView, ClientMessage, WorldMessage},
     rsc::{UPDATE_TIME, UPS},
     util::{point::Point, timer::Timer},
@@ -52,7 +52,7 @@ impl World {
             update_time: UPDATE_TIME,
             paused: true,
             step: false,
-            timer: Timer::new(UPS as usize),
+            timer: Timer::new(Duration::from_secs(1), UPS as usize),
             sender,
             receiver,
             client_ready: true,

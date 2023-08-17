@@ -1,7 +1,7 @@
 use wgpu::{RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-use crate::{state::ClientState, render::surface::RenderSurface};
+use crate::{client::ClientState, render::surface::RenderSurface};
 
 use super::text::UIText;
 

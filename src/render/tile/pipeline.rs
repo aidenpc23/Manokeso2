@@ -1,13 +1,12 @@
-use std::sync::mpsc::Sender;
-
 use crate::{
-    board_view::BoardView,
-    camera::Camera,
-    message::{CameraView, ClientMessage},
+    client::Camera,
+    message::CameraView,
     render::{
         tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
         writer::StagingBufWriter,
     },
+    sync::BoardView,
+    sync::WorldInterface,
 };
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
@@ -95,7 +94,7 @@ impl TilePipeline {
         writer: &mut StagingBufWriter,
         camera: &Camera,
         window_size: &PhysicalSize<u32>,
-        sender: &Sender<ClientMessage>,
+        world: &WorldInterface,
     ) {
         if self.tiles_dirty {
             let slice = &[self.uniforms.tile_view];
@@ -108,14 +107,11 @@ impl TilePipeline {
             let uniform = self.uniforms.camera;
             let (width, height) = uniform.world_dimensions();
 
-            if let Err(_) = sender.send(crate::message::ClientMessage::CameraUpdate(CameraView {
+            world.send(crate::message::ClientMessage::CameraUpdate(CameraView {
                 pos: uniform.pos,
                 width,
                 height,
-            })) {
-                println!("Failed to send camera update to server")
-            }
-
+            }));
             let slice = &[uniform];
             writer
                 .mut_view::<CameraUniform>(&self.buffers.camera, slice.len())

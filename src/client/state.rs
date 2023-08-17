@@ -6,14 +6,16 @@ use std::{
     time::Duration,
 };
 
-use crate::{
-    board_view::{BoardView, BoardViewInfo, BoardViewLock},
+use super::{
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
+};
+
+use crate::{
     message::{ClientMessage, WorldMessage},
     rsc::{FPS, FRAME_TIME},
-    util::{point::Point, timer::Timer},
+    util::timer::Timer, sync::{TileInfo, WorldInterface, BoardView},
 };
 
 pub struct ClientState {
@@ -25,10 +27,7 @@ pub struct ClientState {
     pub hovered_tile: Option<TileInfo>,
     pub paused: bool,
     pub frame_timer: Timer,
-    pub sender: Sender<ClientMessage>,
-    pub receiver: Receiver<WorldMessage>,
-    pub board_view: BoardViewLock,
-    pub view_info: BoardViewInfo,
+    pub world: WorldInterface,
 }
 
 impl ClientState {
@@ -52,31 +51,14 @@ impl ClientState {
             held_tile: None,
             hovered_tile: None,
             paused: true,
-            frame_timer: Timer::new(FPS as usize),
-            sender,
-            receiver,
-            board_view: Arc::new(view.into()),
-            view_info: info,
-        }
-    }
-
-    pub fn send(&self, message: ClientMessage) {
-        if let Err(err) = self.sender.send(message) {
-            println!("Failed to send message to server: {:?}", err);
+            frame_timer: Timer::new(Duration::from_secs(1), FPS as usize),
+            world: WorldInterface {
+                sender,
+                receiver,
+                view_lock: Arc::new(view.into()),
+                view_info: info,
+            },
         }
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct TileInfo {
-    pub pos: Point<usize>,
-    pub connex_number: u32,
-    pub stability: f32,
-    pub reactivity: f32,
-    pub energy: f32,
-    pub alpha: u64,
-    pub beta: u64,
-    pub gamma: f32,
-    pub delta: f32,
-    pub omega: f32,
-}

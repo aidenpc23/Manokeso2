@@ -2,10 +2,13 @@ use std::time::Duration;
 
 use winit::event::MouseButton;
 
-use crate::{
+use super::{
     state::ClientState,
     input::Input,
     keybinds::{Action, Keybinds},
+};
+
+use crate::{
     message::ClientMessage,
     rsc::PLAYER_SPEED,
 };
@@ -53,7 +56,7 @@ pub fn handle_input(
     if input.mouse_just_released(MouseButton::Left) {
         if let Some(tile1) = client.held_tile {
             if let Some(tile2) = client.hovered_tile {
-                client.send(ClientMessage::Swap(tile1.pos, tile2.pos));
+                client.world.send(ClientMessage::Swap(tile1.pos, tile2.pos));
             }
         }
         client.held_tile = None;
@@ -61,17 +64,17 @@ pub fn handle_input(
 
     if ainput.just_pressed(Action::AddEnergy) {
         if let Some(tile) = client.hovered_tile {
-            client.send(ClientMessage::AddEnergy(tile.pos));
+            client.world.send(ClientMessage::AddEnergy(tile.pos));
         }
     }
 
     if ainput.just_pressed(Action::Pause) {
         client.paused = !client.paused;
-        client.send(ClientMessage::Pause(client.paused));
+        client.world.send(ClientMessage::Pause(client.paused));
     }
 
     if ainput.just_pressed(Action::Step) {
-        client.send(ClientMessage::Step());
+        client.world.send(ClientMessage::Step());
     }
 
     return false;

@@ -1,7 +1,7 @@
 use winit::dpi::PhysicalSize;
 
 use crate::{
-    camera::Camera,
+    client::Camera,
     rsc::{CONNEX_NUMBER_RANGE, ENERGY_RANGE, REACTIVITY_RANGE, STABILITY_RANGE},
     util::point::Point,
 };

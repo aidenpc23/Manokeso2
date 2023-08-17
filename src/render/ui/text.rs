@@ -5,7 +5,7 @@ use glyphon::{
 use wgpu::{Device, MultisampleState, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 
-use crate::{state::ClientState, util::point::Point, render::surface::RenderSurface};
+use crate::{client::ClientState, util::point::Point, render::surface::RenderSurface};
 
 use super::layout;
 

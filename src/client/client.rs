@@ -5,12 +5,15 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{
-    config::Config, handle_input::handle_input, input::Input, render::Renderer, state::ClientState,
-    util::point::Point, world::World,
-};
+use crate::{world::World, util::point::Point, render::Renderer, sync::TileInfo};
+
+use super::{state::ClientState, config::Config, input::Input, handle_input::handle_input};
 
 pub async fn run() {
+    let world_pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(rayon::current_num_threads() - 1)
+        .build()
+        .unwrap();
     // Setup
     let (cs, cr) = channel();
     let (ws, wr) = channel();
@@ -19,9 +22,9 @@ pub async fn run() {
     let mut state = ClientState::new(Config::load(), cs, wr);
     let mut renderer = Renderer::new(&event_loop).await;
 
-    let bv = state.board_view.clone();
+    let bv = state.world.view_lock.clone();
 
-    std::thread::spawn(move || {
+    world_pool.spawn(move || {
         World::new(bv, ws, cr).run();
     });
 
@@ -59,16 +62,16 @@ pub async fn run() {
 
                     state.frame_timer.start();
 
-                    for msg in state.receiver.try_iter() {
+                    for msg in state.world.receiver.try_iter() {
                         match msg {}
                     }
 
                     renderer.start_encoder();
                     let mouse_world_pos = renderer.pixel_to_world(input.mouse_pixel_pos);
-                    if let Ok(mut view) = state.board_view.try_lock() {
+                    if let Ok(mut view) = state.world.view_lock.try_lock() {
                         renderer.sync(&mut view);
-                        state.send(crate::message::ClientMessage::RenderFinished());
-                        state.view_info = view.info.clone();
+                        state.world.send(crate::message::ClientMessage::RenderFinished());
+                        state.world.view_info = view.info.clone();
                         let Point { x, y } = mouse_world_pos - view.info.pos;
                         state.hovered_tile = if x < 0.0
                             || y < 0.0
@@ -80,7 +83,7 @@ pub async fn run() {
                             let pos = Point::new(x as usize, y as usize);
                             let i = pos.index(view.info.slice.width);
                             let pos = pos + view.info.slice.start;
-                            Some(crate::state::TileInfo {
+                            Some(TileInfo {
                                 pos,
                                 connex_number: view.connex_numbers[i],
                                 stability: view.stability[i],

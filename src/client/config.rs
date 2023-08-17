@@ -4,7 +4,7 @@ use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
 use winit::event::VirtualKeyCode as Key;
 
-use crate::keybinds::Action;
+use super::keybinds::Action;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
