@@ -1,11 +1,11 @@
 use std::{
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
 use crate::{util::point::Point, world::BoardSlice};
 
-pub type BoardViewLock = Arc<RwLock<BoardView>>;
+pub type BoardViewLock = Arc<Mutex<BoardView>>;
 
 pub struct BoardView {
     pub connex_numbers: Vec<u32>,

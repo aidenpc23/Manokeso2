@@ -1,9 +1,4 @@
-use crate::{
-    board_view::{BoardView, BoardViewLock},
-    rsc::CLEAR_COLOR,
-    state::ClientState,
-    util::point::Point,
-};
+use crate::{board_view::BoardView, rsc::CLEAR_COLOR, state::ClientState, util::point::Point};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,

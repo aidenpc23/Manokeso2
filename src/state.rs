@@ -1,5 +1,8 @@
 use std::{
-    sync::{mpsc::Sender, Arc},
+    sync::{
+        mpsc::{Receiver, Sender},
+        Arc,
+    },
     time::Duration,
 };
 
@@ -8,7 +11,7 @@ use crate::{
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
-    message::ClientMessage,
+    message::{ClientMessage, WorldMessage},
     rsc::{FPS, FRAME_TIME},
     util::{point::Point, timer::Timer},
 };
@@ -22,13 +25,18 @@ pub struct ClientState {
     pub hovered_tile: Option<TileInfo>,
     pub paused: bool,
     pub frame_timer: Timer,
+    pub sender: Sender<ClientMessage>,
+    pub receiver: Receiver<WorldMessage>,
     pub board_view: BoardViewLock,
     pub view_info: BoardViewInfo,
-    pub sender: Sender<ClientMessage>,
 }
 
 impl ClientState {
-    pub fn new(config: Config, sender: Sender<ClientMessage>) -> Self {
+    pub fn new(
+        config: Config,
+        sender: Sender<ClientMessage>,
+        receiver: Receiver<WorldMessage>,
+    ) -> Self {
         let mut keybinds = default_keybinds();
         if let Some(config_keybinds) = config.keybinds {
             keybinds.extend(config_keybinds);
@@ -45,9 +53,10 @@ impl ClientState {
             hovered_tile: None,
             paused: true,
             frame_timer: Timer::new(FPS as usize),
+            sender,
+            receiver,
             board_view: Arc::new(view.into()),
             view_info: info,
-            sender,
         }
     }
 

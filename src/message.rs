@@ -12,4 +12,7 @@ pub enum ClientMessage {
     Swap(Point<usize>, Point<usize>),
     Pause(bool),
     Step(),
+    RenderFinished(),
 }
+
+pub enum WorldMessage {}

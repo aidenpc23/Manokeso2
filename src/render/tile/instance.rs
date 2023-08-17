@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use rayon::prelude::*;
 use wgpu::{BufferDescriptor, BufferUsages, Device, RenderPass};
 
 use crate::render::writer::StagingBufWriter;
@@ -25,7 +24,7 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
     pub fn update_rows(
         &mut self,
         writer: &mut StagingBufWriter,
-        row_chunks: rayon::slice::ChunksExact<T>,
+        row_chunks: std::slice::ChunksExact<T>,
         width: usize,
         size: usize,
     ) where
@@ -40,7 +39,7 @@ impl<const LOCATION: u32, T: bytemuck::Pod + Send + Default> InstanceField<LOCAT
         }
         writer
             .mut_view::<T>(&self.buffer, size)
-            .par_chunks_exact_mut(width * std::mem::size_of::<T>())
+            .chunks_exact_mut(width * std::mem::size_of::<T>())
             .zip(row_chunks)
             .for_each(|(data, row)| {
                 data.copy_from_slice(bytemuck::cast_slice(&row));

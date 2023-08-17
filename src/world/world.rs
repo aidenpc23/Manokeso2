@@ -1,5 +1,5 @@
 use std::{
-    sync::mpsc::Receiver,
+    sync::mpsc::{Receiver, Sender},
     time::{Duration, Instant},
 };
 
@@ -10,7 +10,7 @@ use rayon::{
 
 use crate::{
     board_view::{BoardViewInfo, BoardViewLock},
-    message::{CameraView, ClientMessage},
+    message::{CameraView, ClientMessage, WorldMessage},
     rsc::{UPDATE_TIME, UPS},
     util::{point::Point, timer::Timer},
 };
@@ -25,14 +25,20 @@ pub struct World {
     pub update_time: Duration,
     pub paused: bool,
     pub step: bool,
+    pub client_ready: bool,
     pub timer: Timer,
+    pub sender: Sender<WorldMessage>,
     pub receiver: Receiver<ClientMessage>,
 }
 
 impl World {
-    pub fn new(board_view: BoardViewLock, receiver: Receiver<ClientMessage>) -> Self {
-        let width = 1000;
-        let height = 1000;
+    pub fn new(
+        board_view: BoardViewLock,
+        sender: Sender<WorldMessage>,
+        receiver: Receiver<ClientMessage>,
+    ) -> Self {
+        let width = 708;
+        let height = 708;
         let board = Board::new(
             Point::new(-(width as f32) / 2.0, -(height as f32) / 2.0),
             width,
@@ -47,7 +53,9 @@ impl World {
             paused: true,
             step: false,
             timer: Timer::new(UPS as usize),
+            sender,
             receiver,
+            client_ready: true,
         }
     }
 
@@ -66,7 +74,7 @@ impl World {
                     self.board.update();
                     self.timer.stop();
                 }
-                if self.slice_change || self.board.dirty {
+                if (self.slice_change || self.board.dirty) && self.client_ready {
                     self.sync_board();
                 }
             }
@@ -93,6 +101,7 @@ impl World {
                     self.slice_change = self.slice != new;
                     self.slice = new;
                 }
+                ClientMessage::RenderFinished() => self.client_ready = true,
             }
         }
     }
@@ -105,7 +114,7 @@ impl World {
 
         let mut view = self
             .board_view
-            .write()
+            .lock()
             .expect("Failed to get tile view lock");
 
         copy_swap_buf(&mut view.connex_numbers, &board.connex_numbers, &slice);

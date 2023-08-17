@@ -9,7 +9,6 @@ use crate::{
         writer::StagingBufWriter,
     },
 };
-use rayon::slice::ParallelSlice;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
@@ -71,31 +70,21 @@ impl TilePipeline {
 
             let insts = &mut self.instances;
 
-            let start = std::time::Instant::now();
-
             insts.connex_number.update_rows(
                 writer,
-                view.connex_numbers.par_chunks_exact(width),
-                width,
-                size,
-            );
-            insts.stability.update_rows(
-                writer,
-                view.stability.par_chunks_exact(width),
-                width,
-                size,
-            );
-            insts.reactivity.update_rows(
-                writer,
-                view.reactivity.par_chunks_exact(width),
+                view.connex_numbers.chunks_exact(width),
                 width,
                 size,
             );
             insts
+                .stability
+                .update_rows(writer, view.stability.chunks_exact(width), width, size);
+            insts
+                .reactivity
+                .update_rows(writer, view.reactivity.chunks_exact(width), width, size);
+            insts
                 .energy
-                .update_rows(writer, view.energy.par_chunks_exact(width), width, size);
-            let end = std::time::Instant::now();
-            println!("{:?}", end - start);
+                .update_rows(writer, view.energy.chunks_exact(width), width, size);
             info.dirty = false;
             self.tiles_dirty = true;
         }
@@ -119,11 +108,13 @@ impl TilePipeline {
             let uniform = self.uniforms.camera;
             let (width, height) = uniform.world_dimensions();
 
-            sender.send(crate::message::ClientMessage::CameraUpdate(CameraView {
+            if let Err(_) = sender.send(crate::message::ClientMessage::CameraUpdate(CameraView {
                 pos: uniform.pos,
                 width,
                 height,
-            }));
+            })) {
+                println!("Failed to send camera update to server")
+            }
 
             let slice = &[uniform];
             writer
