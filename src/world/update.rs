@@ -162,7 +162,7 @@ impl Board {
                 if counter == 0 && ar[i] != DEFAULT_ALPHA {
                     *cn = (*cn as i32 + cnc).max(0) as u32;
 
-                    let g3 = ((c.0[i] - 1) / 22) + 1;
+                    let g3 = if c.0[i] == 0 { 1 } else { ((c.0[i] - 1) / 22) + 1 };
                     let gfactor = (g3 - 1) as f32 + (1.0 - 0.04 * (g3 - 1) as f32);
 
                     *sn += sc * (10.0 / (c.0[i] as f32).powf(1.05 - 0.01 * gfactor)).min(1.0);
@@ -197,11 +197,12 @@ impl Board {
                     *gn += (1.02 as f32).powf(c.0[i] as f32) - 1.0;
                 }
 
-                let not0 = (c.0[i] > 0) as u32;
+
+                let temp = if c.0[i] == 0 { 0 } else { c.0[i] - 1 };
                 let (g1, g2, g3) = (
-                    not0 * ((c.0[i] - 1) % 5),
-                    not0 * (((c.0[i] - 1) / 5) % 5),
-                    (not0 * ((c.0[i] - 1) / 22)) + 1,
+                    (temp % 5),
+                    ((temp / 5) % 5),
+                    ((temp / 22) + 1),
                 );
 
                 // not0 *= (g3 != 1) as u32;
@@ -266,7 +267,7 @@ impl Board {
                         *bn = g1 as u64;
                         if g1 != 4 || g2 != 1 {
                             *an = encode_alpha(
-                                awave.0 + g3 as u64 + 1,
+                                awave.0 + g3 as u64,
                                 awave.1 + cnc,
                                 awave.2 + sc,
                                 awave.3 + ec,
