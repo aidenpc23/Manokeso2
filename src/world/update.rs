@@ -87,7 +87,7 @@ impl Board {
                 let mut ssum = 0.0;
                 let mut esum = 0.0;
                 let mut rsum = 0.0;
-                let mut max_alpha = 0;
+                let mut max_counter = 0;
                 let mut sb = 4;
 
                 for (dx, dy) in &CARDINAL_DIRECTIONS {
@@ -105,9 +105,9 @@ impl Board {
                             ssum += sc;
                             esum += ec;
                             rsum += rc;
-                            if counter > max_alpha {
+                            if counter > max_counter {
                                 sb = br[i2];
-                                max_alpha = counter;
+                                max_counter = counter;
                             }
                         }
                     }
@@ -254,13 +254,13 @@ impl Board {
                             0.0,
                             0.0,
                         ),
-                        2 => (0.0, 0, gfactor * 30.0, 0.1 * r.0[i], 0.0, 0.0, 0.0, 0.0),
+                        2 => (0.0, 0, gfactor * 15.0, 0.1 * r.0[i], 0.0, 0.0, 0.0, 0.0),
                         1 => (0.0, 0, 0.0, 0.0, en_move, en_move, 0.0, 0.0),
-                        0 => (0.0, 0, 0.0, 0.0, 0.0, 0.0, gfactor * 10.0, 0.1 * r.0[i]),
+                        0 => (0.0, 0, 0.0, 0.0, 0.0, 0.0, gfactor * 20.0, 0.1 * r.0[i]),
                         _ => (0.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
                     };
 
-                    let cost = ccost + scost + ecost + rcost;
+                    let cost = ecost; //ccost + scost + ecost + rcost;
 
                     let awave = decode_alpha(ar[i]);
                     if *en >= cost {
@@ -268,10 +268,13 @@ impl Board {
                         if g1 != 4 || g2 != 1 {
                             *an = encode_alpha(
                                 awave.0 + g3 as u64,
-                                awave.1 + cnc,
-                                awave.2 + sc,
+                                // awave.1 + cnc,
+                                // awave.2 + sc,
+                                // awave.3 + ec,
+                                0,
+                                0.0,
                                 awave.3 + ec,
-                                awave.4 + rc,
+                                0.0
                             );
                             *en -= cost;
                         }
