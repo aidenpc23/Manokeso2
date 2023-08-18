@@ -5,9 +5,14 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{world::World, util::point::Point, sync::TileInfo};
+use crate::{
+    message::ClientMessage,
+    sync::TileInfo,
+    util::point::Point,
+    world::World,
+};
 
-use super::{state::ClientState, config::Config, input::Input, handle_input::handle_input, ui::layout};
+use super::{config::Config, handle_input::handle_input, input::Input, state::ClientState};
 
 pub async fn run() {
     let world_pool = rayon::ThreadPoolBuilder::new()
@@ -28,9 +33,9 @@ pub async fn run() {
     });
 
     let mut last_frame = Instant::now();
+    let mut last_debug = Instant::now();
     let mut input = Input::new();
     let mut resized = false;
-    let text = layout::BOARD;
     let mut text_elements = Vec::new();
 
     state.renderer.window.set_visible(true);
@@ -48,7 +53,9 @@ pub async fn run() {
             }
             Event::RedrawRequested(_) => {
                 state.renderer.start_encoder();
-                state.renderer.render(&state.world, &state.camera, &text_elements, false);
+                state
+                    .renderer
+                    .render(&state.world, &state.camera, &text_elements, false);
             }
             Event::MainEventsCleared => {
                 let now = Instant::now();
@@ -56,56 +63,72 @@ pub async fn run() {
                 if fdelta > state.frame_time {
                     last_frame = now;
 
+                    state.timer.start();
+
+                    let ddelta = now - last_debug;
+                    if ddelta > state.debug_stats.period {
+                        last_debug = now;
+                        state.debug_stats.client_update_time = state.timer.avg().as_secs_f32() * 1000.0;
+                        state.debug_stats.world_update_time = state.world.view_info.time_taken.as_secs_f32() * 1000.0;
+                    }
+
                     if handle_input(&fdelta, &input, &mut state) {
                         *control_flow = ControlFlow::Exit;
                     }
                     input.end();
-
-                    state.timer.start();
 
                     for msg in state.world.receiver.try_iter() {
                         match msg {}
                     }
 
                     state.renderer.start_encoder();
-                    let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
-                    if let Ok(mut view) = state.world.view_lock.try_lock() {
-                        state.renderer.sync(&mut view);
-                        state.world.send(crate::message::ClientMessage::RenderFinished());
-                        state.world.view_info = view.info.clone();
-                        let Point { x, y } = mouse_world_pos - view.info.pos;
-                        state.hovered_tile = if x < 0.0
-                            || y < 0.0
-                            || x >= view.info.slice.width as f32
-                            || y >= view.info.slice.height as f32
-                        {
-                            None
-                        } else {
-                            let pos = Point::new(x as usize, y as usize);
-                            let i = pos.index(view.info.slice.width);
-                            let pos = pos + view.info.slice.start;
-                            Some(TileInfo {
-                                pos,
-                                connex_number: view.connex_numbers[i],
-                                stability: view.stability[i],
-                                reactivity: view.reactivity[i],
-                                energy: view.energy[i],
-                                alpha: view.alpha[i],
-                                beta: view.beta[i],
-                                gamma: view.gamma[i],
-                                delta: view.delta[i],
-                                omega: view.omega[i],
-                            })
-                        };
-                    }
-                    text_elements = text.iter().map(|t| t.into_element(&state)).collect();
-                    state.renderer.render(&state.world, &state.camera, &text_elements, resized);
-                    state.timer.stop();
+                    sync_board(&mut state, &input);
+                    text_elements = state.text.iter().map(|t| t.into_element(&state)).collect();
+                    state
+                        .renderer
+                        .render(&state.world, &state.camera, &text_elements, resized);
 
                     resized = false;
+
+                    state.timer.stop();
                 }
             }
             _ => {}
         }
     });
+}
+
+pub fn sync_board(state: &mut ClientState, input: &Input) {
+    if let Ok(mut view) = state.world.view_lock.try_lock() {
+        state.renderer.sync(&mut view);
+
+        state.world.send(ClientMessage::RenderFinished());
+        state.world.view_info = view.info.clone();
+
+        let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
+        let Point { x, y } = mouse_world_pos - view.info.pos;
+        state.hovered_tile = if x < 0.0
+            || y < 0.0
+            || x >= view.info.slice.width as f32
+            || y >= view.info.slice.height as f32
+        {
+            None
+        } else {
+            let pos = Point::new(x as usize, y as usize);
+            let i = pos.index(view.info.slice.width);
+            let pos = pos + view.info.slice.start;
+            Some(TileInfo {
+                pos,
+                connex_number: view.connex_numbers[i],
+                stability: view.stability[i],
+                reactivity: view.reactivity[i],
+                energy: view.energy[i],
+                alpha: view.alpha[i],
+                beta: view.beta[i],
+                gamma: view.gamma[i],
+                delta: view.delta[i],
+                omega: view.omega[i],
+            })
+        };
+    }
 }

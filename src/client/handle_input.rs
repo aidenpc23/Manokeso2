@@ -16,9 +16,9 @@ use crate::{
 pub fn handle_input(
     delta: &Duration,
     input: &Input,
-    client: &mut ClientState,
+    state: &mut ClientState,
 ) -> bool {
-    let ainput = (input, &client.keybinds);
+    let ainput = (input, &state.keybinds);
     if ainput.pressed(Action::Exit) {
         return true;
     }
@@ -26,14 +26,14 @@ pub fn handle_input(
     // camera stuff
 
     if input.scroll_delta != 0.0 {
-        client.camera_scroll += input.scroll_delta;
-        client.camera.scale = (client.camera_scroll * 0.1).exp();
+        state.camera_scroll += input.scroll_delta;
+        state.camera.scale = (state.camera_scroll * 0.1).exp();
     }
 
     let delta_mult = delta.as_millis() as f32;
-    let move_dist = PLAYER_SPEED * delta_mult / client.camera.scale;
+    let move_dist = PLAYER_SPEED * delta_mult / state.camera.scale;
 
-    let pos = &mut client.camera.pos;
+    let pos = &mut state.camera.pos;
     if ainput.pressed(Action::MoveUp) {
         pos.y += move_dist;
     }
@@ -50,31 +50,31 @@ pub fn handle_input(
     // interactions
 
     if input.mouse_just_pressed(MouseButton::Left) {
-        client.held_tile = client.hovered_tile;
+        state.held_tile = state.hovered_tile;
     }
 
     if input.mouse_just_released(MouseButton::Left) {
-        if let Some(tile1) = client.held_tile {
-            if let Some(tile2) = client.hovered_tile {
-                client.world.send(ClientMessage::Swap(tile1.pos, tile2.pos));
+        if let Some(tile1) = state.held_tile {
+            if let Some(tile2) = state.hovered_tile {
+                state.world.send(ClientMessage::Swap(tile1.pos, tile2.pos));
             }
         }
-        client.held_tile = None;
+        state.held_tile = None;
     }
 
     if ainput.just_pressed(Action::AddEnergy) {
-        if let Some(tile) = client.hovered_tile {
-            client.world.send(ClientMessage::AddEnergy(tile.pos));
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::AddEnergy(tile.pos));
         }
     }
 
     if ainput.just_pressed(Action::Pause) {
-        client.paused = !client.paused;
-        client.world.send(ClientMessage::Pause(client.paused));
+        state.paused = !state.paused;
+        state.world.send(ClientMessage::Pause(state.paused));
     }
 
     if ainput.just_pressed(Action::Step) {
-        client.world.send(ClientMessage::Step());
+        state.world.send(ClientMessage::Step());
     }
 
     return false;

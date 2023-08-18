@@ -23,7 +23,7 @@ impl Text {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Align {
     Left,
     Center,

@@ -5,11 +5,7 @@ use glyphon::{
 use wgpu::{Device, MultisampleState, Queue, RenderPass, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
 
-use crate::{
-    client::ui::text::Align,
-    render::surface::RenderSurface,
-    util::point::Point,
-};
+use crate::{client::ui::text::Align, render::surface::RenderSurface, util::point::Point};
 
 pub struct UIText {
     pub renderer: TextRenderer,
@@ -17,6 +13,7 @@ pub struct UIText {
     pub atlas: TextAtlas,
     pub cache: SwashCache,
     pub text_buffers: Vec<glyphon::Buffer>,
+    pub old_text: Vec<TextElement>,
 }
 
 impl UIText {
@@ -32,6 +29,7 @@ impl UIText {
             cache,
             renderer,
             text_buffers: Vec::new(),
+            old_text: Vec::new(),
         }
     }
 
@@ -47,19 +45,22 @@ impl UIText {
     ) {
         let buffers = &mut self.text_buffers;
         if buffers.len() < text.len() {
-            buffers.extend(
-                (0..(text.len() - buffers.len()))
-                    .map(|_| Buffer::new(&mut self.font_system, Metrics::new(20.0, 25.0))),
-            )
+            self.old_text.resize(text.len(), TextElement::empty());
+            buffers.resize_with(text.len(), || {
+                Buffer::new(&mut self.font_system, Metrics::new(20.0, 25.0))
+            })
         }
-        for (buffer, text) in buffers.iter_mut().zip(text) {
-            buffer.set_text(
-                &mut self.font_system,
-                &text.content,
-                Attrs::new().family(Family::SansSerif),
-                Shaping::Advanced,
-            );
-            buffer.set_size(&mut self.font_system, text.bounds.0, text.bounds.1);
+        for ((buffer, text), old) in buffers.iter_mut().zip(text).zip(&mut self.old_text) {
+            if text != old {
+                *old = text.clone();
+                buffer.set_size(&mut self.font_system, text.bounds.0, text.bounds.1);
+                buffer.set_text(
+                    &mut self.font_system,
+                    &text.content,
+                    Attrs::new().family(Family::SansSerif),
+                    Shaping::Basic,
+                );
+            }
         }
         let color = Color::rgb(255, 255, 255);
         let areas = buffers.iter().zip(text).map(|(buffer, text)| {
@@ -106,9 +107,21 @@ fn measure(buffer: &glyphon::Buffer) -> (f32, f32) {
     (width, total_lines as f32 * buffer.metrics().line_height)
 }
 
+#[derive(PartialEq, Clone)]
 pub struct TextElement {
     pub content: String,
     pub align: Align,
     pub pos: Point<f32>,
     pub bounds: (f32, f32),
+}
+
+impl TextElement {
+    pub fn empty() -> Self {
+        Self {
+            content: String::new(),
+            align: Align::Left,
+            pos: Point::default(),
+            bounds: (0.0, 0.0),
+        }
+    }
 }

@@ -1,4 +1,3 @@
-mod board_view;
 mod client;
 mod message;
 mod render;

@@ -12,16 +12,20 @@ use super::{
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
+    ui::{layout, text::Text},
 };
 
 use crate::{
     message::{ClientMessage, WorldMessage},
+    render::Renderer,
     rsc::{FPS, FRAME_TIME},
-    util::timer::Timer, sync::{TileInfo, WorldInterface, BoardView}, render::Renderer,
+    sync::{BoardView, TileInfo, WorldInterface},
+    util::timer::Timer,
 };
 
 pub struct ClientState {
     pub renderer: Renderer,
+    pub text: Vec<Text>,
     pub keybinds: Keybinds,
     pub frame_time: Duration,
     pub camera: Camera,
@@ -31,6 +35,7 @@ pub struct ClientState {
     pub paused: bool,
     pub timer: Timer,
     pub world: WorldInterface,
+    pub debug_stats: DebugStats,
 }
 
 impl ClientState {
@@ -63,7 +68,24 @@ impl ClientState {
                 view_lock: Arc::new(view.into()),
                 view_info: info,
             },
+            text: layout::board(),
+            debug_stats: DebugStats::new(),
         }
     }
 }
 
+pub struct DebugStats {
+    pub period: Duration,
+    pub client_update_time: f32,
+    pub world_update_time: f32,
+}
+
+impl DebugStats {
+    pub fn new() -> Self {
+        Self {
+            period: Duration::from_secs_f32(0.5),
+            client_update_time: 0.0,
+            world_update_time: 0.0,
+        }
+    }
+}
