@@ -37,8 +37,8 @@ impl World {
         sender: Sender<WorldMessage>,
         receiver: Receiver<ClientMessage>,
     ) -> Self {
-        let width = 708;
-        let height = 708;
+        let width = 1000;
+        let height = 1000;
         let board = Board::new(
             Point::new(-(width as f32) / 2.0, -(height as f32) / 2.0),
             width,
@@ -85,7 +85,7 @@ impl World {
         for msg in self.receiver.try_iter() {
             match msg {
                 ClientMessage::Swap(pos1, pos2) => {
-                    self.board.player_swap(pos1, pos2);
+                    self.board.swap(pos1, pos2);
                 }
                 ClientMessage::AddEnergy(pos) => {
                     let i = pos.index(self.board.width);
