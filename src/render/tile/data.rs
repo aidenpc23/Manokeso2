@@ -57,7 +57,7 @@ macro_rules! tile_render_data {
             }
             fn set_in<'b>(&'b self, render_pass: &mut wgpu::RenderPass<'b>) {
                 $(
-                    render_pass.set_vertex_buffer(self.$name.location, self.$name.buffer.slice(..));
+                    self.$name.set_in(render_pass);
                 )*
             }
             fn len(&self) -> usize {

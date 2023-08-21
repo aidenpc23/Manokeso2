@@ -4,13 +4,11 @@ use crate::{
     client::Camera,
     message::CameraView,
     render::tile::{CameraUniform, ConstsUniform, TileViewUniform},
-    sync::BoardView,
-    sync::WorldInterface,
 };
 use wgpu::{util::StagingBelt, BindGroup, CommandEncoder, Device, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-use super::data::{TileData, RenderViewInfo};
+use super::data::{RenderViewInfo, TileData};
 
 pub const SHADER: &str = concat!(include_str!("./shader.wgsl"));
 
@@ -52,7 +50,7 @@ impl<T: TileData> TilePipeline<T> {
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
         info: &mut RenderViewInfo,
-        data: T::UpdateData<'a>
+        data: T::UpdateData<'a>,
     ) {
         let tile_view_changed = self
             .uniforms
@@ -64,7 +62,8 @@ impl<T: TileData> TilePipeline<T> {
             let width = info.slice.width;
             let size = width * info.slice.height;
 
-            self.data.update_rows(device, encoder, belt, data, width, size);
+            self.data
+                .update_rows(device, encoder, belt, data, width, size);
 
             info.dirty = false;
             self.tiles_dirty = true;
@@ -76,10 +75,9 @@ impl<T: TileData> TilePipeline<T> {
         device: &Device,
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
-        world: &WorldInterface,
         camera: &Camera,
         window_size: &PhysicalSize<u32>,
-    ) {
+    ) -> Option<CameraView> {
         if self.tiles_dirty {
             let slice = &[self.uniforms.tile_view];
             let mut view = belt.write_buffer(
@@ -96,15 +94,16 @@ impl<T: TileData> TilePipeline<T> {
             view.copy_from_slice(bytemuck::cast_slice(slice));
             self.tiles_dirty = false;
         }
+        let mut camera_view = None;
         if self.uniforms.camera.update(&camera, window_size) {
             let uniform = self.uniforms.camera;
             let (width, height) = uniform.world_dimensions();
 
-            world.send(crate::message::ClientMessage::CameraUpdate(CameraView {
+            camera_view = Some(CameraView {
                 pos: uniform.pos,
                 width,
                 height,
-            }));
+            });
             let slice = &[uniform];
             let mut view = belt.write_buffer(
                 encoder,
@@ -119,5 +118,6 @@ impl<T: TileData> TilePipeline<T> {
             );
             view.copy_from_slice(bytemuck::cast_slice(slice));
         }
+        camera_view
     }
 }

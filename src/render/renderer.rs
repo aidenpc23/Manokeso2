@@ -1,9 +1,4 @@
-use crate::{
-    client::Camera,
-    rsc::CLEAR_COLOR,
-    sync::{BoardView, WorldInterface},
-    util::point::Point,
-};
+use crate::{client::Camera, message::CameraView, rsc::CLEAR_COLOR, util::point::Point};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
@@ -72,34 +67,38 @@ impl<T: TileData> Renderer<T> {
         self.encoder = Some(encoder);
     }
 
-    pub fn render(
+    pub fn update(
         &mut self,
-        world: &WorldInterface,
         camera: &Camera,
         text: &[TextElement],
         resize: bool,
-    ) {
+    ) -> Option<CameraView> {
         let size = &self.window.inner_size();
         if resize {
             self.render_surface.resize(size);
         }
 
+        let mut encoder = self.encoder.take().expect("encoder not started");
+        let camera_view = self.tile_pipeline.update(
+            &self.render_surface.device,
+            &mut encoder,
+            &mut self.staging_belt,
+            camera,
+            size,
+        );
+        self.encoder = Some(encoder);
+
+        self.ui_pipeline.update(size, &self.render_surface, text);
+
+        camera_view
+    }
+
+    pub fn render(&mut self) {
         let output = self.render_surface.surface.get_current_texture().unwrap();
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self.encoder.take().expect("encoder not started");
-
-        self.tile_pipeline.update(
-            &self.render_surface.device,
-            &mut encoder,
-            &mut self.staging_belt,
-            world,
-            camera,
-            size,
-        );
-        self.ui_pipeline.update(size, &self.render_surface, text);
-
         {
             let render_pass = &mut encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),

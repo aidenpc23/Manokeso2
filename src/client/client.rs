@@ -5,11 +5,10 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{message::ClientMessage, sync::TileInfo, util::point::Point, world::World};
+use crate::{message::ClientMessage, sync::TileInfo, util::point::Point, world::World, render::TextElement};
 
 use super::{
-    config::Config, handle_input::handle_input, input::Input, state::ClientState,
-    TileUpdateData,
+    config::Config, handle_input::handle_input, input::Input, state::ClientState, TileUpdateData,
 };
 
 pub async fn run() {
@@ -34,7 +33,6 @@ pub async fn run() {
     let mut last_debug = Instant::now();
     let mut input = Input::new();
     let mut resized = false;
-    let mut text_elements = Vec::new();
 
     state.renderer.window.set_visible(true);
 
@@ -51,9 +49,7 @@ pub async fn run() {
             }
             Event::RedrawRequested(_) => {
                 state.renderer.start_encoder();
-                state
-                    .renderer
-                    .render(&state.world, &state.camera, &text_elements, false);
+                state.renderer.render();
             }
             Event::MainEventsCleared => {
                 let now = Instant::now();
@@ -83,10 +79,15 @@ pub async fn run() {
 
                     state.renderer.start_encoder();
                     sync_board(&mut state, &input);
-                    text_elements = state.text.iter().map(|t| t.into_element(&state)).collect();
-                    state
-                        .renderer
-                        .render(&state.world, &state.camera, &text_elements, resized);
+                    let text_elements: Vec<TextElement> = state.text.iter().map(|t| t.into_element(&state)).collect();
+                    if let Some(cam_view) =
+                        state
+                            .renderer
+                            .update(&state.camera, &text_elements, resized)
+                    {
+                        state.world.send(ClientMessage::CameraUpdate(cam_view));
+                    }
+                    state.renderer.render();
 
                     resized = false;
 
