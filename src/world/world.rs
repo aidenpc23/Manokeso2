@@ -9,9 +9,9 @@ use rayon::{
 };
 
 use crate::{
-    sync::{BoardViewInfo, BoardViewLock},
     message::{CameraView, ClientMessage, WorldMessage},
     rsc::{UPDATE_TIME, UPS},
+    sync::{BoardViewInfo, BoardViewLock},
     util::{point::Point, timer::Timer},
 };
 
@@ -89,9 +89,7 @@ impl World {
                 }
                 ClientMessage::AddEnergy(pos) => {
                     let i = pos.index(self.board.width);
-                    self.board
-                        .energy
-                        .set(i, self.board.energy.get(i) + 10.0);
+                    self.board.energy.set(i, self.board.energy.get(i) + 10.0);
                     self.board.dirty = true;
                 }
                 ClientMessage::Pause(set) => self.paused = set,
@@ -128,10 +126,12 @@ impl World {
         copy_swap_buf(&mut view.omega, &board.omega, &slice);
 
         view.info = BoardViewInfo {
-            pos: self.board.pos + self.slice.start.into(),
-            slice: self.slice.clone(),
+            render_info: crate::render::tile::data::RenderViewInfo {
+                pos: self.board.pos + self.slice.start.into(),
+                slice: self.slice.clone(),
+                dirty: true,
+            },
             total_energy: self.board.total_energy,
-            dirty: true,
             time_taken: self.timer.avg(),
         }
     }

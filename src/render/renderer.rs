@@ -1,4 +1,9 @@
-use crate::{client::Camera, rsc::CLEAR_COLOR, sync::{BoardView, WorldInterface}, util::point::Point};
+use crate::{
+    client::Camera,
+    rsc::CLEAR_COLOR,
+    sync::{BoardView, WorldInterface},
+    util::point::Point,
+};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
@@ -6,21 +11,25 @@ use winit::{
 };
 
 use super::{
-    surface::RenderSurface, tile::pipeline::TilePipeline, ui::{pipeline::UIPipeline, text::TextElement},
-    writer::StagingBufWriter,
+    surface::RenderSurface,
+    tile::{
+        data::{RenderViewInfo, TileData},
+        pipeline::TilePipeline,
+    },
+    ui::{pipeline::UIPipeline, text::TextElement},
 };
 
-pub struct Renderer {
+pub struct Renderer<T: TileData> {
     pub window: Window,
     pub render_surface: RenderSurface,
     pub(super) encoder: Option<CommandEncoder>,
-    pub(super) tile_pipeline: TilePipeline,
+    pub(super) tile_pipeline: TilePipeline<T>,
     pub(super) ui_pipeline: UIPipeline,
     pub(super) staging_belt: StagingBelt,
 }
 
-impl Renderer {
-    pub async fn new(event_loop: &EventLoop<()>) -> Renderer {
+impl<T: TileData> Renderer<T> {
+    pub async fn new(event_loop: &EventLoop<()>) -> Self {
         let window = WindowBuilder::new()
             .with_visible(false)
             .build(&event_loop)
@@ -51,18 +60,25 @@ impl Renderer {
         ));
     }
 
-    pub fn sync(&mut self, board_view: &mut BoardView) {
+    pub fn sync<'a>(&mut self, info: &mut RenderViewInfo, data: T::UpdateData<'a>) {
         let mut encoder = self.encoder.take().expect("encoder not started");
-        let writer = &mut StagingBufWriter {
-            device: &self.render_surface.device,
-            belt: &mut self.staging_belt,
-            encoder: &mut encoder,
-        };
-        self.tile_pipeline.sync(board_view, writer);
+        self.tile_pipeline.sync(
+            &self.render_surface.device,
+            &mut encoder,
+            &mut self.staging_belt,
+            info,
+            data,
+        );
         self.encoder = Some(encoder);
     }
 
-    pub fn render(&mut self, world: &WorldInterface, camera: &Camera, text: &[TextElement], resize: bool) {
+    pub fn render(
+        &mut self,
+        world: &WorldInterface,
+        camera: &Camera,
+        text: &[TextElement],
+        resize: bool,
+    ) {
         let size = &self.window.inner_size();
         if resize {
             self.render_surface.resize(size);
@@ -74,30 +90,29 @@ impl Renderer {
             .create_view(&wgpu::TextureViewDescriptor::default());
         let mut encoder = self.encoder.take().expect("encoder not started");
 
-        let writer = &mut StagingBufWriter {
-            device: &self.render_surface.device,
-            belt: &mut self.staging_belt,
-            encoder: &mut encoder,
-        };
-        self.tile_pipeline
-            .update(writer, world, camera, size);
+        self.tile_pipeline.update(
+            &self.render_surface.device,
+            &mut encoder,
+            &mut self.staging_belt,
+            world,
+            camera,
+            size,
+        );
         self.ui_pipeline.update(size, &self.render_surface, text);
 
         {
-            let render_pass = &mut writer
-                .encoder
-                .begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Render Pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(CLEAR_COLOR),
-                            store: true,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                });
+            let render_pass = &mut encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(CLEAR_COLOR),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
             self.tile_pipeline.draw(render_pass);
             self.ui_pipeline.draw(render_pass);
         }

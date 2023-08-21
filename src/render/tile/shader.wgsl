@@ -11,6 +11,7 @@ struct InstanceInput {
     @location(1) stability: f32,
     @location(2) reactivity: f32,
     @location(3) energy: f32,
+    @location(4) gamma: f32,
 };
 
 struct CameraUniform {

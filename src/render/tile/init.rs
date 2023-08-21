@@ -6,11 +6,12 @@ use wgpu::{
 use crate::render::surface::RenderSurface;
 
 use super::{
-    pipeline::{Instances, TilePipeline, SHADER, Buffers, Uniforms},
-    CameraUniform, ConstsUniform, InstanceField, TileViewUniform,
+    data::TileData,
+    pipeline::{Buffers, TilePipeline, Uniforms, SHADER},
+    CameraUniform, ConstsUniform, TileViewUniform,
 };
 
-impl TilePipeline {
+impl<T: TileData> TilePipeline<T> {
     pub fn new(surface: &RenderSurface) -> Self {
         let RenderSurface { device, config, .. } = surface;
         // shaders
@@ -19,12 +20,7 @@ impl TilePipeline {
             source: wgpu::ShaderSource::Wgsl(SHADER.into()),
         });
 
-        let instances = Instances {
-            connex_number: InstanceField::init(device, "Connex Number"),
-            stability: InstanceField::init(device, "Stability"),
-            reactivity: InstanceField::init(device, "Reactivity"),
-            energy: InstanceField::init(device, "Energy"),
-        };
+        let data = T::init(device);
 
         let camera_uniform = CameraUniform::new();
         let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -113,12 +109,7 @@ impl TilePipeline {
             });
 
         let mut bufs = vec![];
-        bufs.extend([
-            instances.connex_number.desc(),
-            instances.stability.desc(),
-            instances.reactivity.desc(),
-            instances.energy.desc(),
-        ]);
+        bufs.extend(data.descs());
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Tile Pipeline"),
             layout: Some(&render_pipeline_layout),
@@ -156,7 +147,7 @@ impl TilePipeline {
 
         Self {
             pipeline: render_pipeline,
-            instances,
+            data,
             buffers: Buffers {
                 camera: camera_buffer,
                 tile_view: tile_view_buffer,

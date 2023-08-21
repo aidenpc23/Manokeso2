@@ -5,14 +5,12 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{
-    message::ClientMessage,
-    sync::TileInfo,
-    util::point::Point,
-    world::World,
-};
+use crate::{message::ClientMessage, sync::TileInfo, util::point::Point, world::World};
 
-use super::{config::Config, handle_input::handle_input, input::Input, state::ClientState};
+use super::{
+    config::Config, handle_input::handle_input, input::Input, state::ClientState,
+    TileUpdateData,
+};
 
 pub async fn run() {
     let world_pool = rayon::ThreadPoolBuilder::new()
@@ -68,8 +66,10 @@ pub async fn run() {
                     let ddelta = now - last_debug;
                     if ddelta > state.debug_stats.period {
                         last_debug = now;
-                        state.debug_stats.client_update_time = state.timer.avg().as_secs_f32() * 1000.0;
-                        state.debug_stats.world_update_time = state.world.view_info.time_taken.as_secs_f32() * 1000.0;
+                        state.debug_stats.client_update_time =
+                            state.timer.avg().as_secs_f32() * 1000.0;
+                        state.debug_stats.world_update_time =
+                            state.world.view_info.time_taken.as_secs_f32() * 1000.0;
                     }
 
                     if handle_input(&fdelta, &input, &mut state) {
@@ -99,24 +99,34 @@ pub async fn run() {
 }
 
 pub fn sync_board(state: &mut ClientState, input: &Input) {
-    if let Ok(mut view) = state.world.view_lock.try_lock() {
-        state.renderer.sync(&mut view);
+    if let Ok(view) = state.world.view_lock.try_lock() {
+        let mut info = view.info;
+        state.renderer.sync(
+            &mut info.render_info,
+            TileUpdateData {
+                connex_numbers: &view.connex_numbers,
+                stability: &view.stability,
+                reactivity: &view.reactivity,
+                energy: &view.energy,
+            },
+        );
 
         state.world.send(ClientMessage::RenderFinished());
         state.world.view_info = view.info.clone();
 
         let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
-        let Point { x, y } = mouse_world_pos - view.info.pos;
+        let rinfo = view.info.render_info;
+        let Point { x, y } = mouse_world_pos - rinfo.pos;
         state.hovered_tile = if x < 0.0
             || y < 0.0
-            || x >= view.info.slice.width as f32
-            || y >= view.info.slice.height as f32
+            || x >= rinfo.slice.width as f32
+            || y >= rinfo.slice.height as f32
         {
             None
         } else {
             let pos = Point::new(x as usize, y as usize);
-            let i = pos.index(view.info.slice.width);
-            let pos = pos + view.info.slice.start;
+            let i = pos.index(rinfo.slice.width);
+            let pos = pos + rinfo.slice.start;
             Some(TileInfo {
                 pos,
                 connex_number: view.connex_numbers[i],

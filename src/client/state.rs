@@ -20,11 +20,19 @@ use crate::{
     render::Renderer,
     rsc::{FPS, FRAME_TIME},
     sync::{BoardView, TileInfo, WorldInterface},
+    tile_render_data,
     util::timer::Timer,
 };
 
+tile_render_data!(TileRenderData, TileUpdateData, [
+    0 => connex_numbers:u32,
+    1 => stability:f32,
+    2 => reactivity:f32,
+    3 => energy:f32,
+]);
+
 pub struct ClientState {
-    pub renderer: Renderer,
+    pub renderer: Renderer<TileRenderData>,
     pub text: Vec<Text>,
     pub keybinds: Keybinds,
     pub frame_time: Duration,

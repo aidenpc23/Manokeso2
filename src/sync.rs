@@ -3,7 +3,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{util::point::Point, world::BoardSlice, message::{ClientMessage, WorldMessage}};
+use crate::{util::point::Point, world::BoardSlice, message::{ClientMessage, WorldMessage}, render::tile::data::RenderViewInfo};
 
 pub type BoardViewLock = Arc<Mutex<BoardView>>;
 
@@ -22,9 +22,7 @@ pub struct BoardView {
 
 #[derive(Clone, Copy)]
 pub struct BoardViewInfo {
-    pub pos: Point<f32>,
-    pub slice: BoardSlice,
-    pub dirty: bool,
+    pub render_info: RenderViewInfo,
     pub total_energy: f32,
     pub time_taken: Duration,
 }
@@ -42,9 +40,11 @@ impl BoardView {
             delta: Vec::new(),
             omega: Vec::new(),
             info: BoardViewInfo {
-                pos: Point { x: 0.0, y: 0.0 },
-                slice: BoardSlice::default(),
-                dirty: false,
+                render_info: RenderViewInfo {
+                    pos: Point { x: 0.0, y: 0.0 },
+                    slice: BoardSlice::default(),
+                    dirty: false,
+                },
                 total_energy: 0.0,
                 time_taken: Duration::ZERO,
             },

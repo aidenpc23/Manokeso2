@@ -1,15 +1,16 @@
+use std::num::NonZeroU64;
+
 use crate::{
     client::Camera,
     message::CameraView,
-    render::{
-        tile::{CameraUniform, ConstsUniform, InstanceField, TileViewUniform},
-        writer::StagingBufWriter,
-    },
+    render::tile::{CameraUniform, ConstsUniform, TileViewUniform},
     sync::BoardView,
     sync::WorldInterface,
 };
-use wgpu::{BindGroup, RenderPass, RenderPipeline};
+use wgpu::{util::StagingBelt, BindGroup, CommandEncoder, Device, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
+
+use super::data::{TileData, RenderViewInfo};
 
 pub const SHADER: &str = concat!(include_str!("./shader.wgsl"));
 
@@ -25,38 +26,34 @@ pub struct Uniforms {
     pub consts: ConstsUniform,
 }
 
-pub struct Instances {
-    pub connex_number: InstanceField<0, u32>,
-    pub stability: InstanceField<1, f32>,
-    pub reactivity: InstanceField<2, f32>,
-    pub energy: InstanceField<3, f32>,
-}
-
-pub struct TilePipeline {
+pub struct TilePipeline<T: TileData> {
     pub(super) pipeline: RenderPipeline,
-    pub(super) instances: Instances,
+    pub(super) data: T,
     pub(super) buffers: Buffers,
     pub(super) camera_bind_group: BindGroup,
     pub uniforms: Uniforms,
     pub(super) tiles_dirty: bool,
 }
 
-impl TilePipeline {
+impl<T: TileData> TilePipeline<T> {
     pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         render_pass.set_pipeline(&self.pipeline);
 
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
-        self.instances.connex_number.set_in(render_pass);
-        self.instances.stability.set_in(render_pass);
-        self.instances.reactivity.set_in(render_pass);
-        self.instances.energy.set_in(render_pass);
+        self.data.set_in(render_pass);
 
-        render_pass.draw(0..4, 0..self.instances.connex_number.len() as u32);
+        render_pass.draw(0..4, 0..self.data.len() as u32);
     }
 
-    pub fn sync(&mut self, view: &mut BoardView, writer: &mut StagingBufWriter) {
-        let info = &mut view.info;
+    pub fn sync<'a>(
+        &mut self,
+        device: &Device,
+        encoder: &mut CommandEncoder,
+        belt: &mut StagingBelt,
+        info: &mut RenderViewInfo,
+        data: T::UpdateData<'a>
+    ) {
         let tile_view_changed = self
             .uniforms
             .tile_view
@@ -67,23 +64,8 @@ impl TilePipeline {
             let width = info.slice.width;
             let size = width * info.slice.height;
 
-            let insts = &mut self.instances;
+            self.data.update_rows(device, encoder, belt, data, width, size);
 
-            insts.connex_number.update_rows(
-                writer,
-                view.connex_numbers.chunks_exact(width),
-                width,
-                size,
-            );
-            insts
-                .stability
-                .update_rows(writer, view.stability.chunks_exact(width), width, size);
-            insts
-                .reactivity
-                .update_rows(writer, view.reactivity.chunks_exact(width), width, size);
-            insts
-                .energy
-                .update_rows(writer, view.energy.chunks_exact(width), width, size);
             info.dirty = false;
             self.tiles_dirty = true;
         }
@@ -91,16 +73,27 @@ impl TilePipeline {
 
     pub fn update(
         &mut self,
-        writer: &mut StagingBufWriter,
+        device: &Device,
+        encoder: &mut CommandEncoder,
+        belt: &mut StagingBelt,
         world: &WorldInterface,
         camera: &Camera,
         window_size: &PhysicalSize<u32>,
     ) {
         if self.tiles_dirty {
             let slice = &[self.uniforms.tile_view];
-            writer
-                .mut_view::<TileViewUniform>(&self.buffers.tile_view, slice.len())
-                .copy_from_slice(bytemuck::cast_slice(slice));
+            let mut view = belt.write_buffer(
+                encoder,
+                &self.buffers.tile_view,
+                0,
+                unsafe {
+                    NonZeroU64::new_unchecked(
+                        (slice.len() * std::mem::size_of::<TileViewUniform>()) as u64,
+                    )
+                },
+                device,
+            );
+            view.copy_from_slice(bytemuck::cast_slice(slice));
             self.tiles_dirty = false;
         }
         if self.uniforms.camera.update(&camera, window_size) {
@@ -113,9 +106,18 @@ impl TilePipeline {
                 height,
             }));
             let slice = &[uniform];
-            writer
-                .mut_view::<CameraUniform>(&self.buffers.camera, slice.len())
-                .copy_from_slice(bytemuck::cast_slice(slice));
+            let mut view = belt.write_buffer(
+                encoder,
+                &self.buffers.camera,
+                0,
+                unsafe {
+                    NonZeroU64::new_unchecked(
+                        (slice.len() * std::mem::size_of::<CameraUniform>()) as u64,
+                    )
+                },
+                device,
+            );
+            view.copy_from_slice(bytemuck::cast_slice(slice));
         }
     }
 }

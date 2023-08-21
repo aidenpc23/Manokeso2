@@ -1,8 +1,7 @@
 mod renderer;
 mod surface;
-mod tile;
+pub mod tile;
 mod ui;
-mod writer;
 
 pub use renderer::*;
 pub use ui::text::TextElement;
