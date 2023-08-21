@@ -10,8 +10,6 @@ use winit::dpi::PhysicalSize;
 
 use super::data::{RenderViewInfo, TileData};
 
-pub const SHADER: &str = concat!(include_str!("./shader.wgsl"));
-
 pub struct Buffers {
     pub camera: wgpu::Buffer,
     pub tile_view: wgpu::Buffer,

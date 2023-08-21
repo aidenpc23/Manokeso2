@@ -1,20 +1,9 @@
-use std::{
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc,
-    },
-    time::Duration,
-};
-
-use winit::event_loop::EventLoop;
-
 use super::{
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
     ui::{layout, text::Text},
 };
-
 use crate::{
     message::{ClientMessage, WorldMessage},
     render::Renderer,
@@ -23,6 +12,14 @@ use crate::{
     tile_render_data,
     util::timer::Timer,
 };
+use std::{
+    sync::{
+        mpsc::{Receiver, Sender},
+        Arc,
+    },
+    time::Duration,
+};
+use winit::event_loop::EventLoop;
 
 tile_render_data!(TileRenderData, TileUpdateData, [
     0 => connex_numbers:u32,
@@ -30,6 +27,8 @@ tile_render_data!(TileRenderData, TileUpdateData, [
     2 => reactivity:f32,
     3 => energy:f32,
 ]);
+
+pub const TILE_SHADER: &str = concat!(include_str!("./rsc/tile.wgsl"));
 
 pub struct ClientState {
     pub renderer: Renderer<TileRenderData>,
@@ -61,7 +60,7 @@ impl ClientState {
         let view = BoardView::empty();
         let info = view.info.clone();
         Self {
-            renderer: Renderer::new(event_loop).await,
+            renderer: Renderer::new(event_loop, TILE_SHADER).await,
             keybinds,
             frame_time: FRAME_TIME,
             camera,

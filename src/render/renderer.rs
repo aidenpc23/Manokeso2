@@ -24,14 +24,14 @@ pub struct Renderer<T: TileData> {
 }
 
 impl<T: TileData> Renderer<T> {
-    pub async fn new(event_loop: &EventLoop<()>) -> Self {
+    pub async fn new(event_loop: &EventLoop<()>, tile_shader: &str) -> Self {
         let window = WindowBuilder::new()
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
 
         let render_surface = RenderSurface::init(&window).await;
-        let tile_pipeline = TilePipeline::new(&render_surface);
+        let tile_pipeline = TilePipeline::new(&render_surface, tile_shader);
         let ui_pipeline = UIPipeline::new(&render_surface);
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom

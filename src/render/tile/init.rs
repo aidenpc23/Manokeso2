@@ -7,17 +7,17 @@ use crate::render::surface::RenderSurface;
 
 use super::{
     data::TileData,
-    pipeline::{Buffers, TilePipeline, Uniforms, SHADER},
+    pipeline::{Buffers, TilePipeline, Uniforms},
     CameraUniform, ConstsUniform, TileViewUniform,
 };
 
 impl<T: TileData> TilePipeline<T> {
-    pub fn new(surface: &RenderSurface) -> Self {
+    pub fn new(surface: &RenderSurface, shader: &str) -> Self {
         let RenderSurface { device, config, .. } = surface;
         // shaders
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Tile Shader"),
-            source: wgpu::ShaderSource::Wgsl(SHADER.into()),
+            source: wgpu::ShaderSource::Wgsl(shader.into()),
         });
 
         let data = T::init(device);
