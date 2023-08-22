@@ -1,21 +1,5 @@
 // Vertex shader
 
-// struct VertexOutput {
-//     @builtin(position) clip_position: vec4<f32>,
-// };
-
-// @vertex
-// fn vs_main(
-//     @builtin(vertex_index) vi: u32,
-// ) -> VertexOutput {
-//     var out: VertexOutput;
-//     var pos = vec2<f32>(f32(vi % u32(2)), f32(vi / u32(2)));
-//     out.clip_position = vec4<f32>(pos.x, pos.y, 0.0, 1.0);
-//     return out;
-// }
-
-// Vertex shader
-
 struct VertexInput {
     @location(0) position: vec2<f32>,
     @location(1) tex_coords: vec2<f32>,

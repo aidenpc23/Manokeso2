@@ -28,7 +28,7 @@ tile_render_data!(TileRenderData, TileUpdateData, [
     3 => energy:f32,
 ]);
 
-pub const TILE_SHADER: &str = concat!(include_str!("./rsc/tile.wgsl"));
+pub const TILE_SHADER: &str = include_str!("./rsc/tile.wgsl");
 
 pub struct ClientState {
     pub renderer: Renderer<TileRenderData>,

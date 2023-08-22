@@ -2,7 +2,7 @@ use glyphon::{
     Attrs, Buffer, Color, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
     TextAtlas, TextBounds, TextRenderer,
 };
-use wgpu::{Device, MultisampleState, Queue, RenderPass, SurfaceConfiguration};
+use wgpu::{MultisampleState, RenderPass};
 use winit::dpi::PhysicalSize;
 
 use crate::{client::ui::text::Align, render::surface::RenderSurface, util::point::Point};
@@ -17,7 +17,14 @@ pub struct UIText {
 }
 
 impl UIText {
-    pub fn init(device: &Device, queue: &Queue, config: &SurfaceConfiguration) -> Self {
+    pub fn init(surface: &RenderSurface) -> Self {
+        let RenderSurface {
+            device,
+            config,
+            queue,
+            ..
+        } = surface;
+
         let font_system = FontSystem::new();
         let cache = SwashCache::new();
         let mut atlas = TextAtlas::new(&device, &queue, config.format);
