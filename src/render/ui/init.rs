@@ -9,7 +9,7 @@ use super::{
     pipeline::{UIPipeline, SHAPE_SHADER, TEXTURE_SHADER},
     text::UIText,
     uniform::WindowUniform,
-    vertex::{Vertex, TEXTURE_VERTICES},
+    vertex::{TextureVertex, TEXTURE_VERTICES},
 };
 
 impl UIPipeline {
@@ -142,7 +142,7 @@ impl UIPipeline {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
+                buffers: &[TextureVertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
