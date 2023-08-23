@@ -125,9 +125,10 @@ impl World {
         copy_swap_buf(&mut view.delta, &board.delta, &slice);
         copy_swap_buf(&mut view.omega, &board.omega, &slice);
 
+        let slice_start: Point<f32> = self.slice.start.into();
         view.info = BoardViewInfo {
             render_info: crate::render::tile::data::RenderViewInfo {
-                pos: self.board.pos + self.slice.start.into(),
+                pos: self.board.pos + slice_start,
                 slice: self.slice.clone(),
                 dirty: true,
             },
@@ -137,41 +138,22 @@ impl World {
     }
 
     fn calc_board_slice(&self, view: CameraView) -> BoardSlice {
-        // get positions in the world
-        let b = self.board.pos;
-        let bw = self.board.width;
-        let bh = self.board.height;
-        let (cw, ch) = (view.width, view.height);
+        let corner = Point::new(self.board.width, self.board.height);
         // get camera position relative to board
-        let x = (view.pos.x - b.x + 0.5) as i32;
-        let y = (view.pos.y - b.y + 0.5) as i32;
+        let cam_rel_pos: Point<i32> = (view.pos - self.board.pos).into();
         // calculate chunk size based on max camera dimension
-        let chunk_align = (cw.max(ch) as u32).max(1).ilog2();
+        let chunk_align = (view.width.max(view.height) as u32).max(1).ilog2();
         let chunk_size = 2i32.pow(chunk_align);
         let chunk_mask = !(chunk_size - 1);
         // align with chunks and add an extra chunk in each direction
         // s = start, e = end
-        let xs = (x & chunk_mask) - 1 * chunk_size;
-        let ys = (y & chunk_mask) - 1 * chunk_size;
-        let xe = (x & chunk_mask) + 2 * chunk_size;
-        let ye = (y & chunk_mask) + 2 * chunk_size;
-        // cut off values for bounds
-        let xs = (xs.max(0) as usize).min(bw);
-        let ys = (ys.max(0) as usize).min(bh);
-        let xe = (xe.max(0) as usize).min(bw);
-        let ye = (ye.max(0) as usize).min(bh);
+        let aligned_start = (cam_rel_pos & chunk_mask) - 1 * chunk_size;
+        let aligned_end = (cam_rel_pos & chunk_mask) + 2 * chunk_size;
+        // clamp to board dimensions
+        let bounded_start = aligned_start.clamp_usize(corner);
+        let bounded_end = aligned_end.clamp_usize(corner);
 
-        let width = xe - xs;
-        let height = ye - ys;
-        let size = width * height;
-
-        BoardSlice {
-            start: Point { x: xs, y: ys },
-            end: Point { x: xe, y: ye },
-            width,
-            height,
-            size,
-        }
+        BoardSlice::new(bounded_start, bounded_end)
     }
 }
 
@@ -182,6 +164,19 @@ pub struct BoardSlice {
     pub width: usize,
     pub height: usize,
     pub size: usize,
+}
+
+impl BoardSlice {
+    pub fn new(start: Point<usize>, end: Point<usize>) -> Self {
+        let diff = end - start;
+        Self {
+            start,
+            end,
+            width: diff.x,
+            height: diff.y,
+            size: diff.x * diff.y,
+        }
+    }
 }
 
 fn copy_swap_buf<T: Send + Sync + Copy>(dest: &mut Vec<T>, sb: &SwapBuffer<T>, slice: &BoardSlice) {

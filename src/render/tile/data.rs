@@ -9,6 +9,16 @@ pub struct RenderViewInfo {
     pub dirty: bool,
 }
 
+impl RenderViewInfo {
+    pub fn new() -> Self {
+        Self {
+            pos: Point { x: 0.0, y: 0.0 },
+            slice: BoardSlice::default(),
+            dirty: false,
+        }
+    }
+}
+
 pub trait TileData {
     type UpdateData<'a>;
     fn init(device: &Device) -> Self;
@@ -20,7 +30,7 @@ pub trait TileData {
         device: &Device,
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
-        row_chunks: Self::UpdateData<'a>,
+        row_chunks: &Self::UpdateData<'a>,
         width: usize,
         size: usize,
     );
@@ -68,7 +78,7 @@ macro_rules! tile_render_data {
                 device: &wgpu::Device,
                 encoder: &mut wgpu::CommandEncoder,
                 belt: &mut wgpu::util::StagingBelt,
-                data: Self::UpdateData<'a>,
+                data: &Self::UpdateData<'a>,
                 width: usize,
                 size: usize,
             ) {

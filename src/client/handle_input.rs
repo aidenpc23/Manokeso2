@@ -3,21 +3,14 @@ use std::time::Duration;
 use winit::event::MouseButton;
 
 use super::{
-    state::ClientState,
     input::Input,
     keybinds::{Action, Keybinds},
+    state::ClientState,
 };
 
-use crate::{
-    message::ClientMessage,
-    rsc::PLAYER_SPEED,
-};
+use crate::{message::ClientMessage, render::tile::data::RenderViewInfo, rsc::PLAYER_SPEED};
 
-pub fn handle_input(
-    delta: &Duration,
-    input: &Input,
-    state: &mut ClientState,
-) -> bool {
+pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) -> bool {
     let ainput = (input, &state.keybinds);
     if ainput.pressed(Action::Exit) {
         return true;

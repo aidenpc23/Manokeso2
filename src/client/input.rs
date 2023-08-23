@@ -20,7 +20,7 @@ pub struct Input {
 impl Input {
     pub fn new() -> Self {
         Self {
-            mouse_pixel_pos: Point::new(0.0, 0.0),
+            mouse_pixel_pos: Point::zero(),
             pressed: HashSet::new(),
             just_pressed: HashSet::new(),
             mouse_pressed: HashSet::new(),

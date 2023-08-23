@@ -44,7 +44,7 @@ impl<T: TileData> TilePipeline<T> {
         });
 
         // bind groups
-        let camera_bind_group_layout =
+        let bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -78,11 +78,11 @@ impl<T: TileData> TilePipeline<T> {
                         count: None,
                     },
                 ],
-                label: Some("camera_bind_group_layout"),
+                label: Some("tile_bind_group_layout"),
             });
 
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -97,26 +97,24 @@ impl<T: TileData> TilePipeline<T> {
                     resource: consts_buffer.as_entire_binding(),
                 },
             ],
-            label: Some("camera_bind_group"),
+            label: Some("tile_bind_group"),
         });
 
         // pipeline
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Tile Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout],
+                bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[],
             });
 
-        let mut bufs = vec![];
-        bufs.extend(data.descs());
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Tile Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &bufs,
+                buffers: &data.descs(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -158,7 +156,7 @@ impl<T: TileData> TilePipeline<T> {
                 tile_view: tile_view_uniform,
                 consts: consts_uniform,
             },
-            camera_bind_group,
+            bind_group,
             tiles_dirty: false,
         }
     }

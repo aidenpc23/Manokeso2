@@ -11,7 +11,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            pos: Point::new(0., 0.),
+            pos: Point::zero(),
             aspect: DEFAULT_ASPECT_RATIO,
             scale: 1.0,
         }

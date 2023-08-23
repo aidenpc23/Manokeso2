@@ -76,7 +76,7 @@ impl TileViewUniform {
         true
     }
     pub fn empty() -> Self {
-        Self::new(Point::new(0.0, 0.0), 0)
+        Self::new(Point::zero(), 0)
     }
 }
 

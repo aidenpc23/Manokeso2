@@ -26,7 +26,7 @@ pub struct TilePipeline<T: TileData> {
     pub(super) pipeline: RenderPipeline,
     pub(super) data: T,
     pub(super) buffers: Buffers,
-    pub(super) camera_bind_group: BindGroup,
+    pub(super) bind_group: BindGroup,
     pub uniforms: Uniforms,
     pub(super) tiles_dirty: bool,
 }
@@ -35,7 +35,7 @@ impl<T: TileData> TilePipeline<T> {
     pub fn draw<'a>(&'a self, render_pass: &mut RenderPass<'a>) {
         render_pass.set_pipeline(&self.pipeline);
 
-        render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
 
         self.data.set_in(render_pass);
 
@@ -47,8 +47,8 @@ impl<T: TileData> TilePipeline<T> {
         device: &Device,
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
-        info: &mut RenderViewInfo,
-        data: T::UpdateData<'a>,
+        info: &RenderViewInfo,
+        data: &T::UpdateData<'a>,
     ) {
         let tile_view_changed = self
             .uniforms
@@ -63,7 +63,6 @@ impl<T: TileData> TilePipeline<T> {
             self.data
                 .update_rows(device, encoder, belt, data, width, size);
 
-            info.dirty = false;
             self.tiles_dirty = true;
         }
     }

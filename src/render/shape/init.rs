@@ -32,9 +32,9 @@ impl ShapePipeline {
                 contents: bytemuck::cast_slice(&[ShapeInstance {
                     top_left: Point::new(0.25, 0.25),
                     bottom_right: Point::new(0.75, 0.75),
-                    radius: 3.0,
-                    inner_radius: 3.0,
-                    thickness: 10.0,
+                    radius: 10.0,
+                    inner_radius: 9.0,
+                    thickness: 1.0,
                 }]),
                 usage: wgpu::BufferUsages::VERTEX,
             }

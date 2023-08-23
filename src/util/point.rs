@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub, MulAssign, DivAssign, AddAssign, SubAssign};
+use std::ops::{Add, AddAssign, BitAnd, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[repr(C, packed)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable, PartialEq, Default)]
@@ -8,8 +8,17 @@ pub struct Point<T> {
 }
 
 impl<T> Point<T> {
-    pub fn new(x: T, y: T) -> Self {
+    pub const fn new(x: T, y: T) -> Self {
         Self { x, y }
+    }
+}
+
+impl<T: Default> Point<T> {
+    pub fn zero() -> Self {
+        Self {
+            x: T::default(),
+            y: T::default(),
+        }
     }
 }
 
@@ -104,6 +113,78 @@ impl<T: Mul<Output = T> + Copy> MulAssign<T> for Point<T> {
 
 impl Into<Point<f32>> for Point<usize> {
     fn into(self) -> Point<f32> {
-        return Point { x: self.x as f32, y: self.y as f32 }
+        return Point {
+            x: self.x as f32,
+            y: self.y as f32,
+        };
+    }
+}
+
+impl Into<Point<i32>> for Point<f32> {
+    fn into(self) -> Point<i32> {
+        return Point {
+            x: self.x as i32,
+            y: self.y as i32,
+        };
+    }
+}
+
+impl Into<Point<u32>> for Point<i32> {
+    fn into(self) -> Point<u32> {
+        return Point {
+            x: self.x as u32,
+            y: self.y as u32,
+        };
+    }
+}
+
+impl Into<Point<usize>> for Point<i32> {
+    fn into(self) -> Point<usize> {
+        return Point {
+            x: self.x as usize,
+            y: self.y as usize,
+        };
+    }
+}
+
+impl<T: Add<Output = T> + Copy> Add<T> for Point<T> {
+    type Output = Self;
+
+    fn add(self, rhs: T) -> Self::Output {
+        Self {
+            x: self.x + rhs,
+            y: self.y + rhs,
+        }
+    }
+}
+
+impl<T: Sub<Output = T> + Copy> Sub<T> for Point<T> {
+    type Output = Self;
+
+    fn sub(self, rhs: T) -> Self::Output {
+        Self {
+            x: self.x - rhs,
+            y: self.y - rhs,
+        }
+    }
+}
+
+impl<T: BitAnd<Output = T> + Copy> BitAnd<T> for Point<T> {
+    type Output = Self;
+
+    fn bitand(self, rhs: T) -> Self::Output {
+        Self {
+            x: self.x & rhs,
+            y: self.y & rhs,
+        }
+    }
+}
+
+impl Point<i32> {
+    pub fn clamp_usize(&self, max: Point<usize>) -> Point<usize> {
+        return Point {
+            x: (self.x.max(0) as usize).min(max.x),
+            y: (self.y.max(0) as usize).min(max.y),
+        };
     }
 }

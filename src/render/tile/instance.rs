@@ -33,15 +33,15 @@ impl<T: bytemuck::Pod + Send + Default + Sync> InstanceField<T> {
         }
     }
 
-    pub fn update_rows(
+    pub fn update_rows<'a, I>(
         &mut self,
         device: &Device,
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
-        row_chunks: std::slice::ChunksExact<T>,
+        row_chunks: I,
         width: usize,
         size: usize,
-    ) {
+    ) where I : IntoIterator<Item = &'a [T]> {
         if size != self.len {
             self.len = size;
             self.buffer = Self::init_buf(device, &self.label, self.len);
@@ -59,7 +59,7 @@ impl<T: bytemuck::Pod + Send + Default + Sync> InstanceField<T> {
         view.chunks_exact_mut(width * std::mem::size_of::<T>())
             .zip(row_chunks)
             .for_each(|(data, row)| {
-                data.copy_from_slice(bytemuck::cast_slice(&row));
+                data.copy_from_slice(bytemuck::cast_slice(row));
             });
     }
 

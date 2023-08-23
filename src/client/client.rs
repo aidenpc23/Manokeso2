@@ -5,7 +5,9 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{message::ClientMessage, sync::TileInfo, util::point::Point, world::World, render::TextElement};
+use crate::{
+    message::ClientMessage, render::TextElement, sync::TileInfo, util::point::Point, world::World,
+};
 
 use super::{
     config::Config, handle_input::handle_input, input::Input, state::ClientState, TileUpdateData,
@@ -49,7 +51,7 @@ pub async fn run() {
             }
             Event::RedrawRequested(_) => {
                 state.renderer.start_encoder();
-                state.renderer.render();
+                state.renderer.draw();
             }
             Event::MainEventsCleared => {
                 let now = Instant::now();
@@ -79,7 +81,8 @@ pub async fn run() {
 
                     state.renderer.start_encoder();
                     sync_board(&mut state, &input);
-                    let text_elements: Vec<TextElement> = state.text.iter().map(|t| t.into_element(&state)).collect();
+                    let text_elements: Vec<TextElement> =
+                        state.text.iter().map(|t| t.into_element(&state)).collect();
                     if let Some(cam_view) =
                         state
                             .renderer
@@ -87,7 +90,7 @@ pub async fn run() {
                     {
                         state.world.send(ClientMessage::CameraUpdate(cam_view));
                     }
-                    state.renderer.render();
+                    state.renderer.draw();
 
                     resized = false;
 
@@ -104,13 +107,14 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
         let mut info = view.info;
         state.renderer.sync(
             &mut info.render_info,
-            TileUpdateData {
+            &TileUpdateData {
                 connex_numbers: &view.connex_numbers,
                 stability: &view.stability,
                 reactivity: &view.reactivity,
                 energy: &view.energy,
             },
         );
+        info.render_info.dirty = false;
 
         state.world.send(ClientMessage::RenderFinished());
         state.world.view_info = view.info.clone();
@@ -118,13 +122,11 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
         let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
         let rinfo = view.info.render_info;
         let Point { x, y } = mouse_world_pos - rinfo.pos;
-        state.hovered_tile = if x < 0.0
-            || y < 0.0
-            || x >= rinfo.slice.width as f32
-            || y >= rinfo.slice.height as f32
+        state.hovered_tile = if x >= 0.0
+            && y >= 0.0
+            && x < rinfo.slice.width as f32
+            && y < rinfo.slice.height as f32
         {
-            None
-        } else {
             let pos = Point::new(x as usize, y as usize);
             let i = pos.index(rinfo.slice.width);
             let pos = pos + rinfo.slice.start;
@@ -140,6 +142,8 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
                 delta: view.delta[i],
                 omega: view.omega[i],
             })
+        } else {
+            None
         };
     }
 }

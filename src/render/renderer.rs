@@ -13,18 +13,19 @@ use super::{
     tile::{
         data::{RenderViewInfo, TileData},
         pipeline::TilePipeline,
-    }, TextElement,
+    },
+    TextElement,
 };
 
 pub struct Renderer<T: TileData> {
     pub window: Window,
     pub render_surface: RenderSurface,
-    pub(super) encoder: Option<CommandEncoder>,
-    pub(super) tile_pipeline: TilePipeline<T>,
-    pub(super) text_pipeline: TextPipeline,
-    pub(super) shape_pipeline: ShapePipeline,
-    pub(super) texture_pipeline: TexturePipeline,
-    pub(super) staging_belt: StagingBelt,
+    encoder: Option<CommandEncoder>,
+    tile_pipeline: TilePipeline<T>,
+    shape_pipeline: ShapePipeline,
+    texture_pipeline: TexturePipeline,
+    text_pipeline: TextPipeline,
+    staging_belt: StagingBelt,
 }
 
 impl<T: TileData> Renderer<T> {
@@ -35,23 +36,19 @@ impl<T: TileData> Renderer<T> {
             .unwrap();
 
         let render_surface = RenderSurface::new(&window).await;
-        let tile_pipeline = TilePipeline::new(&render_surface, tile_shader);
-        let text_pipeline = TextPipeline::new(&render_surface);
-        let shape_pipeline = ShapePipeline::new(&render_surface);
-        let texture_pipeline = TexturePipeline::new(&render_surface);
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom
         let staging_belt = StagingBelt::new(4096 * 4);
 
         Self {
             window,
-            render_surface,
             encoder: None,
-            tile_pipeline,
-            shape_pipeline,
-            text_pipeline,
-            texture_pipeline,
+            tile_pipeline: TilePipeline::new(&render_surface, tile_shader),
+            shape_pipeline: ShapePipeline::new(&render_surface),
+            text_pipeline: TextPipeline::new(&render_surface),
+            texture_pipeline: TexturePipeline::new(&render_surface),
             staging_belt,
+            render_surface,
         }
     }
 
@@ -63,7 +60,7 @@ impl<T: TileData> Renderer<T> {
         ));
     }
 
-    pub fn sync<'a>(&mut self, info: &mut RenderViewInfo, data: T::UpdateData<'a>) {
+    pub fn sync<'a>(&mut self, info: &RenderViewInfo, data: &T::UpdateData<'a>) {
         let mut encoder = self.encoder.take().expect("encoder not started");
         self.tile_pipeline.sync(
             &self.render_surface.device,
@@ -102,7 +99,7 @@ impl<T: TileData> Renderer<T> {
         camera_view
     }
 
-    pub fn render(&mut self) {
+    pub fn draw(&mut self) {
         let output = self.render_surface.surface.get_current_texture().unwrap();
         let view = output
             .texture
@@ -122,7 +119,7 @@ impl<T: TileData> Renderer<T> {
                 depth_stencil_attachment: None,
             });
             self.tile_pipeline.draw(render_pass);
-            self.shape_pipeline.draw(render_pass);
+            // self.shape_pipeline.draw(render_pass);
             // self.texture_pipeline.draw(render_pass);
             self.text_pipeline.draw(render_pass);
         }
