@@ -1,23 +1,23 @@
 use glyphon::{
-    Attrs, Buffer, Color, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
-    TextAtlas, TextBounds, TextRenderer,
+    Attrs, Color, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
+    TextAtlas, TextBounds, TextRenderer, Buffer,
 };
 use wgpu::{MultisampleState, RenderPass};
 use winit::dpi::PhysicalSize;
 
 use crate::{client::ui::text::Align, render::surface::RenderSurface, util::point::Point};
 
-pub struct UIText {
-    pub renderer: TextRenderer,
-    pub font_system: FontSystem,
-    pub atlas: TextAtlas,
-    pub cache: SwashCache,
+pub struct TextPipeline {
+    pub renderer: glyphon::TextRenderer,
+    pub font_system: glyphon::FontSystem,
+    pub atlas: glyphon::TextAtlas,
+    pub cache: glyphon::SwashCache,
     pub text_buffers: Vec<glyphon::Buffer>,
     pub old_text: Vec<TextElement>,
 }
 
-impl UIText {
-    pub fn init(surface: &RenderSurface) -> Self {
+impl TextPipeline {
+    pub fn new(surface: &RenderSurface) -> Self {
         let RenderSurface {
             device,
             config,
@@ -46,7 +46,6 @@ impl UIText {
 
     pub fn update(
         &mut self,
-        size: &PhysicalSize<u32>,
         surface: &RenderSurface,
         text: &[TextElement],
     ) {
@@ -94,8 +93,8 @@ impl UIText {
                 &mut self.font_system,
                 &mut self.atlas,
                 Resolution {
-                    width: size.width,
-                    height: size.height,
+                    width: surface.config.width,
+                    height: surface.config.height,
                 },
                 areas,
                 &mut self.cache,

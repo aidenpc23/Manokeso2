@@ -69,7 +69,7 @@ impl<T: bytemuck::Pod + Send + Default + Sync> InstanceField<T> {
 
     fn init_buf(device: &Device, label: &str, size: usize) -> wgpu::Buffer {
         device.create_buffer(&BufferDescriptor {
-            label: Some(&(label.to_owned() + "Instance Buffer")),
+            label: Some(&(label.to_owned() + " Instance Buffer")),
             usage: BufferUsages::VERTEX | BufferUsages::COPY_DST,
             size: (size * std::mem::size_of::<T>()) as u64,
             mapped_at_creation: false,

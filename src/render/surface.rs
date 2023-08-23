@@ -10,7 +10,7 @@ pub struct RenderSurface {
 }
 
 impl RenderSurface {
-    pub async fn init(window: &Window) -> RenderSurface {
+    pub async fn new(window: &Window) -> RenderSurface {
         let size = window.inner_size();
 
         // ==============================================

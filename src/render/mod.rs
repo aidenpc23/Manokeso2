@@ -1,7 +1,9 @@
 mod renderer;
+mod shape;
 mod surface;
+mod text;
+mod texture;
 pub mod tile;
-mod ui;
 
 pub use renderer::*;
-pub use ui::text::TextElement;
+pub use text::pipeline::TextElement;

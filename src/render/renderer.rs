@@ -6,12 +6,14 @@ use winit::{
 };
 
 use super::{
+    shape::pipeline::ShapePipeline,
     surface::RenderSurface,
+    text::pipeline::TextPipeline,
+    texture::pipeline::TexturePipeline,
     tile::{
         data::{RenderViewInfo, TileData},
         pipeline::TilePipeline,
-    },
-    ui::{pipeline::UIPipeline, text::TextElement},
+    }, TextElement,
 };
 
 pub struct Renderer<T: TileData> {
@@ -19,7 +21,9 @@ pub struct Renderer<T: TileData> {
     pub render_surface: RenderSurface,
     pub(super) encoder: Option<CommandEncoder>,
     pub(super) tile_pipeline: TilePipeline<T>,
-    pub(super) ui_pipeline: UIPipeline,
+    pub(super) text_pipeline: TextPipeline,
+    pub(super) shape_pipeline: ShapePipeline,
+    pub(super) texture_pipeline: TexturePipeline,
     pub(super) staging_belt: StagingBelt,
 }
 
@@ -30,9 +34,11 @@ impl<T: TileData> Renderer<T> {
             .build(&event_loop)
             .unwrap();
 
-        let render_surface = RenderSurface::init(&window).await;
+        let render_surface = RenderSurface::new(&window).await;
         let tile_pipeline = TilePipeline::new(&render_surface, tile_shader);
-        let ui_pipeline = UIPipeline::new(&render_surface);
+        let text_pipeline = TextPipeline::new(&render_surface);
+        let shape_pipeline = ShapePipeline::new(&render_surface);
+        let texture_pipeline = TexturePipeline::new(&render_surface);
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom
         let staging_belt = StagingBelt::new(4096 * 4);
@@ -42,7 +48,9 @@ impl<T: TileData> Renderer<T> {
             render_surface,
             encoder: None,
             tile_pipeline,
-            ui_pipeline,
+            shape_pipeline,
+            text_pipeline,
+            texture_pipeline,
             staging_belt,
         }
     }
@@ -88,7 +96,8 @@ impl<T: TileData> Renderer<T> {
         );
         self.encoder = Some(encoder);
 
-        self.ui_pipeline.update(size, &self.render_surface, text);
+        self.text_pipeline.update(&self.render_surface, text);
+        self.shape_pipeline.update(&self.render_surface);
 
         camera_view
     }
@@ -113,7 +122,9 @@ impl<T: TileData> Renderer<T> {
                 depth_stencil_attachment: None,
             });
             self.tile_pipeline.draw(render_pass);
-            self.ui_pipeline.draw(render_pass);
+            self.shape_pipeline.draw(render_pass);
+            // self.texture_pipeline.draw(render_pass);
+            self.text_pipeline.draw(render_pass);
         }
 
         self.staging_belt.finish();
@@ -123,7 +134,7 @@ impl<T: TileData> Renderer<T> {
         output.present();
         self.staging_belt.recall();
 
-        self.ui_pipeline.text.atlas.trim();
+        self.text_pipeline.atlas.trim();
     }
 
     pub fn pixel_to_render(&self, pos: Point<f32>) -> Point<f32> {
