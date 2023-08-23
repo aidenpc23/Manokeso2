@@ -4,12 +4,13 @@ use itertools::izip;
 use noise::{NoiseFn, OpenSimplex};
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},
-    Rng, random,
+    Rng,
 };
 
 use super::swap_buffer::SwapBuffer;
 
 impl<T: Copy> SwapBuffer<T> {
+    #[allow(dead_code)]
     pub fn from_rand<R>(rng: &mut R, width: usize, height: usize, range: [T; 2]) -> SwapBuffer<T>
     where
         T: SampleUniform,
@@ -64,7 +65,7 @@ impl SwapBufferGen for (usize, usize) {
     ) -> SwapBuffer<f32> {
         SwapBuffer::from_arr(
             izip!(
-                simplex_simplex_noise2(
+                simplex_simplex_noise(
                     self.0,
                     self.1,
                     [0.0, 1.0],
@@ -74,7 +75,7 @@ impl SwapBufferGen for (usize, usize) {
                     freqfreq
                 ),
                 simplex_noise(self.0, self.1, [0., 0.5], cut2, freq2),
-                simplex_simplex_noise2(
+                simplex_simplex_noise(
                     self.0,
                     self.1,
                     [0., 1.25],
@@ -128,25 +129,6 @@ pub fn simplex_noise<T: NoiseNum>(
 }
 
 pub fn simplex_simplex_noise(
-    width: usize,
-    height: usize,
-    range: [f32; 2],
-    cut: [f64; 2],
-    frequency: f64,
-    freqfreq: f64,
-) -> Vec<f32> {
-    let noise1 = simplex_noise(width, height, range, cut, frequency);
-    let noise2 = simplex_noise(width, height, [0.1, 1.0], [0.0, 0.7], freqfreq);
-
-    noise1
-        .iter()
-        .zip(noise2)
-        .into_iter()
-        .map(|(a, b)| a * b)
-        .collect()
-}
-
-pub fn simplex_simplex_noise2(
     width: usize,
     height: usize,
     range: [f32; 2],

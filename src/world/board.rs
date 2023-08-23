@@ -3,7 +3,7 @@ use crate::{
     util::point::Point,
 };
 
-use super::{gen::SwapBufferGen, swap_buffer::SwapBuffer};
+use super::{gen::SwapBufferGen, swap_buffer::SwapBuffer, encode_alpha};
 
 pub struct Board {
     pub pos: Point<f32>,
@@ -33,7 +33,7 @@ impl Board {
         );
         let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
         let energy = gen.gen_map(ENERGY_RANGE, 0.01);
-        let alpha = SwapBuffer::from_arr(vec![0; width * height], width);
+        let alpha = SwapBuffer::from_arr(vec![encode_alpha(0, 0, 0.0, 0.0, 0.0); width * height], width);
         let beta = SwapBuffer::from_arr(vec![0; width * height], width);
         let gamma = SwapBuffer::from_arr(vec![0.0; width * height], width);
         let delta = SwapBuffer::from_arr(vec![0.0; width * height], width);
