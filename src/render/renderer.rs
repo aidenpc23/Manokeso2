@@ -14,7 +14,7 @@ use super::{
         data::{RenderViewInfo, TileData},
         pipeline::TilePipeline,
     },
-    TextElement,
+    ui::RenderableUI,
 };
 
 pub struct Renderer<T: TileData> {
@@ -75,11 +75,11 @@ impl<T: TileData> Renderer<T> {
     pub fn update(
         &mut self,
         camera: &Camera,
-        text: &[TextElement],
-        resize: bool,
+        ui: &RenderableUI,
+        resized: bool,
     ) -> Option<CameraView> {
         let size = &self.window.inner_size();
-        if resize {
+        if resized {
             self.render_surface.resize(size);
         }
 
@@ -93,8 +93,8 @@ impl<T: TileData> Renderer<T> {
         );
         self.encoder = Some(encoder);
 
-        self.text_pipeline.update(&self.render_surface, text);
-        self.shape_pipeline.update(&self.render_surface);
+        self.text_pipeline.update(&self.render_surface, &ui.text);
+        self.shape_pipeline.update(&self.render_surface, &ui.rounded_rects, resized);
 
         camera_view
     }
@@ -119,7 +119,7 @@ impl<T: TileData> Renderer<T> {
                 depth_stencil_attachment: None,
             });
             self.tile_pipeline.draw(render_pass);
-            // self.shape_pipeline.draw(render_pass);
+            self.shape_pipeline.draw(render_pass);
             // self.texture_pipeline.draw(render_pass);
             self.text_pipeline.draw(render_pass);
         }

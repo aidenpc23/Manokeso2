@@ -2,7 +2,7 @@ use super::{
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
-    ui::{layout, text::Text},
+    ui::{ui::GameUI, layout},
 };
 use crate::{
     message::{ClientMessage, WorldMessage},
@@ -32,7 +32,7 @@ pub const TILE_SHADER: &str = include_str!("./rsc/tile.wgsl");
 
 pub struct ClientState {
     pub renderer: Renderer<TileRenderData>,
-    pub text: Vec<Text>,
+    pub ui: GameUI,
     pub keybinds: Keybinds,
     pub frame_time: Duration,
     pub camera: Camera,
@@ -75,7 +75,7 @@ impl ClientState {
                 view_lock: Arc::new(view.into()),
                 view_info: info,
             },
-            text: layout::board(),
+            ui: layout::board(),
             debug_stats: DebugStats::new(),
         }
     }

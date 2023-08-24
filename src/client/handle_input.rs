@@ -8,7 +8,7 @@ use super::{
     state::ClientState,
 };
 
-use crate::{message::ClientMessage, render::tile::data::RenderViewInfo, rsc::PLAYER_SPEED};
+use crate::{message::ClientMessage, rsc::PLAYER_SPEED};
 
 pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) -> bool {
     let ainput = (input, &state.keybinds);

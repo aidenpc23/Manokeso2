@@ -3,11 +3,11 @@ use wgpu::{
     BufferUsages,
 };
 
-use crate::{render::surface::RenderSurface, util::point::Point};
+use crate::render::{primitive::RoundedRectInstance, surface::RenderSurface};
 
 use super::{
     pipeline::{ShapeBuffers, ShapePipeline, SHAPE_SHADER},
-    uniform::WindowUniform, instance::ShapeInstance,
+    uniform::WindowUniform, instance::RoundedRectBuffer,
 };
 
 impl ShapePipeline {
@@ -26,25 +26,13 @@ impl ShapePipeline {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let instance_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&[ShapeInstance {
-                    top_left: Point::new(0.25, 0.25),
-                    bottom_right: Point::new(0.75, 0.75),
-                    radius: 10.0,
-                    inner_radius: 9.0,
-                    thickness: 1.0,
-                }]),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
+        let instance_buffer = RoundedRectBuffer::new(device);
 
         // bind groups
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
+                visibility: wgpu::ShaderStages::VERTEX,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -75,7 +63,7 @@ impl ShapePipeline {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[ShapeInstance::desc()],
+                buffers: &[RoundedRectInstance::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -89,7 +77,7 @@ impl ShapePipeline {
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
+                front_face: wgpu::FrontFace::Cw,
                 cull_mode: Some(wgpu::Face::Back),
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,

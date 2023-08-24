@@ -1,11 +1,14 @@
 use crate::{util::point::Point, world::decode_alpha};
 
-use super::text::{Align, Text};
+use super::{
+    text::{Align, Text},
+    ui::GameUI, shape::{RoundedRect, UIPoint},
+};
 
 pub const PADDING: f32 = 10.0;
 
-pub fn board() -> Vec<Text> {
-    vec![
+pub fn board() -> GameUI {
+    let text = vec![
         Text {
             content: |state| {
                 if let Some(tile) = &state.hovered_tile {
@@ -37,9 +40,9 @@ pub fn board() -> Vec<Text> {
                     "no tile selected".to_string()
                 }
             },
-            pos: |(_, _)| Point { x: 10.0, y: 10.0 },
+            pos: |(_, _)| Point { x: 20.0, y: 15.0 },
             align: Align::Left,
-            bounds: |(w, h)| (w / 3.0, h),
+            bounds: |(w, h)| (w / 3.0 - 10.0, h),
         },
         Text {
             content: |state| format!("total energy: {}", state.world.view_info.total_energy),
@@ -68,5 +71,18 @@ pub fn board() -> Vec<Text> {
             align: Align::Right,
             bounds: |(w, h)| (w / 3.0, h),
         },
-    ]
+    ];
+    let shapes = vec![RoundedRect {
+        top_left: UIPoint::anchor_offset(0.0, 0.0, 10.0, 10.0),
+        bottom_right: UIPoint::anchor_offset(1.0/3.0, 0.0, 0.0, 275.0),
+        colors: [
+            [0.0, 0.0, 0.0, 0.5],
+            [0.0, 0.0, 0.0, 0.5],
+            [0.0, 0.0, 0.0, 0.5],
+            [0.0, 0.0, 0.0, 0.5],
+        ],
+        radius: 20.0,
+        ..Default::default()
+    }];
+    GameUI { text, shapes }
 }

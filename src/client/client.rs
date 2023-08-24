@@ -6,7 +6,7 @@ use winit::{
 };
 
 use crate::{
-    message::ClientMessage, render::TextElement, sync::TileInfo, util::point::Point, world::World,
+    message::ClientMessage, sync::TileInfo, util::point::Point, world::World,
 };
 
 use super::{
@@ -81,13 +81,8 @@ pub async fn run() {
 
                     state.renderer.start_encoder();
                     sync_board(&mut state, &input);
-                    let text_elements: Vec<TextElement> =
-                        state.text.iter().map(|t| t.into_element(&state)).collect();
-                    if let Some(cam_view) =
-                        state
-                            .renderer
-                            .update(&state.camera, &text_elements, resized)
-                    {
+                    let ui = state.ui.compile(&state);
+                    if let Some(cam_view) = state.renderer.update(&state.camera, &ui, resized) {
                         state.world.send(ClientMessage::CameraUpdate(cam_view));
                     }
                     state.renderer.draw();

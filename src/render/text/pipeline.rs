@@ -1,10 +1,13 @@
 use glyphon::{
-    Attrs, Color, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
-    TextAtlas, TextBounds, TextRenderer, Buffer,
+    Attrs, Buffer, Color, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache, TextArea,
+    TextAtlas, TextBounds, TextRenderer,
 };
 use wgpu::{MultisampleState, RenderPass};
 
-use crate::{client::ui::text::Align, render::surface::RenderSurface, util::point::Point};
+use crate::{
+    client::ui::text::Align,
+    render::{primitive::TextElement, surface::RenderSurface},
+};
 
 pub struct TextPipeline {
     pub renderer: glyphon::TextRenderer,
@@ -43,11 +46,7 @@ impl TextPipeline {
         self.renderer.render(&self.atlas, pass).unwrap();
     }
 
-    pub fn update(
-        &mut self,
-        surface: &RenderSurface,
-        text: &[TextElement],
-    ) {
+    pub fn update(&mut self, surface: &RenderSurface, text: &[TextElement]) {
         let buffers = &mut self.text_buffers;
         if buffers.len() < text.len() {
             self.old_text.resize(text.len(), TextElement::empty());
@@ -110,23 +109,4 @@ fn measure(buffer: &glyphon::Buffer) -> (f32, f32) {
         });
 
     (width, total_lines as f32 * buffer.metrics().line_height)
-}
-
-#[derive(PartialEq, Clone)]
-pub struct TextElement {
-    pub content: String,
-    pub align: Align,
-    pub pos: Point<f32>,
-    pub bounds: (f32, f32),
-}
-
-impl TextElement {
-    pub fn empty() -> Self {
-        Self {
-            content: String::new(),
-            align: Align::Left,
-            pos: Point::default(),
-            bounds: (0.0, 0.0),
-        }
-    }
 }

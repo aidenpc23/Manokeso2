@@ -1,4 +1,4 @@
-use crate::{client::ClientState, render::TextElement, util::point::Point};
+use crate::{client::ClientState,  util::point::Point, render::primitive::TextElement};
 
 pub type TextUpdater = fn(&ClientState) -> String;
 
@@ -10,7 +10,7 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn into_element(&self, state: &ClientState) -> TextElement {
+    pub fn into_primitive(&self, state: &ClientState) -> TextElement {
         let size = state.renderer.window.inner_size();
         let bounds = (size.width as f32, size.height as f32);
         let text_bounds = (self.bounds)(bounds);
