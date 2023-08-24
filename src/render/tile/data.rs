@@ -31,7 +31,6 @@ pub trait TileData {
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
         row_chunks: &Self::UpdateData<'a>,
-        width: usize,
         size: usize,
     );
 }
@@ -79,7 +78,6 @@ macro_rules! tile_render_data {
                 encoder: &mut wgpu::CommandEncoder,
                 belt: &mut wgpu::util::StagingBelt,
                 data: &Self::UpdateData<'a>,
-                width: usize,
                 size: usize,
             ) {
                 self.len = size;
@@ -88,8 +86,7 @@ macro_rules! tile_render_data {
                         device,
                         encoder,
                         belt,
-                        data.$name.chunks_exact(width),
-                        width,
+                        data.$name,
                         size,
                     );
                 )*

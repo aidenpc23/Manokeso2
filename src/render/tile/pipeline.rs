@@ -57,11 +57,8 @@ impl<T: TileData> TilePipeline<T> {
 
         // don't update tile buffers if paused and board section hasn't changed
         if info.dirty || tile_view_changed {
-            let width = info.slice.width;
-            let size = width * info.slice.height;
-
             self.data
-                .update_rows(device, encoder, belt, data, width, size);
+                .update_rows(device, encoder, belt, data, info.slice.size);
 
             self.tiles_dirty = true;
         }

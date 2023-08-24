@@ -33,15 +33,14 @@ impl<T: bytemuck::Pod + Send + Default + Sync> InstanceField<T> {
         }
     }
 
-    pub fn update_rows<'a, I>(
+    pub fn update_rows(
         &mut self,
         device: &Device,
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
-        row_chunks: I,
-        width: usize,
+        row_chunks: &[T],
         size: usize,
-    ) where I : IntoIterator<Item = &'a [T]> {
+    ) {
         if size != self.len {
             self.len = size;
             self.buffer = Self::init_buf(device, &self.label, self.len);
@@ -56,11 +55,7 @@ impl<T: bytemuck::Pod + Send + Default + Sync> InstanceField<T> {
             unsafe { NonZeroU64::new_unchecked((size * std::mem::size_of::<T>()) as u64) },
             device,
         );
-        view.chunks_exact_mut(width * std::mem::size_of::<T>())
-            .zip(row_chunks)
-            .for_each(|(data, row)| {
-                data.copy_from_slice(bytemuck::cast_slice(row));
-            });
+        view.copy_from_slice(bytemuck::cast_slice(row_chunks));
     }
 
     pub fn set_in<'a>(&'a self, render_pass: &mut RenderPass<'a>) {

@@ -3,7 +3,6 @@ use glyphon::{
     TextAtlas, TextBounds, TextRenderer, Buffer,
 };
 use wgpu::{MultisampleState, RenderPass};
-use winit::dpi::PhysicalSize;
 
 use crate::{client::ui::text::Align, render::surface::RenderSurface, util::point::Point};
 
