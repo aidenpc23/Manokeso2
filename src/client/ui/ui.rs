@@ -1,6 +1,6 @@
 use crate::{client::ClientState, render::ui::RenderableUI};
 
-use super::{shape::RoundedRect, text::Text};
+use super::element::{RoundedRect, Text};
 
 pub struct GameUI {
     pub text: Vec<Text>,

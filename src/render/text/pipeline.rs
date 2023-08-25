@@ -5,7 +5,7 @@ use glyphon::{
 use wgpu::{MultisampleState, RenderPass};
 
 use crate::{
-    client::ui::text::Align,
+    client::ui::element::Align,
     render::{primitive::TextElement, surface::RenderSurface},
 };
 
@@ -57,7 +57,7 @@ impl TextPipeline {
         for ((buffer, text), old) in buffers.iter_mut().zip(text).zip(&mut self.old_text) {
             if text != old {
                 *old = text.clone();
-                buffer.set_size(&mut self.font_system, text.bounds.0, text.bounds.1);
+                buffer.set_size(&mut self.font_system, f32::MAX, f32::MAX);
                 buffer.set_text(
                     &mut self.font_system,
                     &text.content,
@@ -69,18 +69,33 @@ impl TextPipeline {
         let color = Color::rgb(255, 255, 255);
         let areas = buffers.iter().zip(text).map(|(buffer, text)| {
             let width = measure(&buffer).0;
-            let left = text.pos.x
+            let mut left = text.pos.x
                 - match text.align {
                     Align::Left => 0.0,
                     Align::Center => width / 2.0,
                     Align::Right => width,
                 };
+            let x = text.pos.x;
+            let w = text.bounds.0;
+            let x_bounds = match text.align {
+                Align::Left => (x, x + w),
+                Align::Center => (x - w / 2.0, x + w / 2.0),
+                Align::Right => (x - w, x),
+            };
+            if left < x_bounds.0 {
+                left = x_bounds.0;
+            }
             TextArea {
                 buffer: &buffer,
                 left,
                 top: text.pos.y,
                 scale: 1.0,
-                bounds: TextBounds::default(),
+                bounds: TextBounds {
+                    left: x_bounds.0 as i32,
+                    top: text.pos.y as i32,
+                    right: x_bounds.1 as i32,
+                    bottom: (text.pos.y + text.bounds.1) as i32,
+                },
                 default_color: color,
             }
         });

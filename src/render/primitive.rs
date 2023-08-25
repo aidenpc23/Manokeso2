@@ -1,4 +1,4 @@
-use crate::{util::point::Point, client::ui::text::Align};
+use crate::{util::point::Point, client::ui::element::Align};
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
