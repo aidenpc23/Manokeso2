@@ -73,6 +73,11 @@ impl Board {
         self.stability.swap_cell(pos1, pos2);
         self.reactivity.swap_cell(pos1, pos2);
         self.energy.swap_cell(pos1, pos2);
+        self.gamma.swap_cell(pos1, pos2);
+        self.alpha.swap_cell(pos1, pos2);
+        self.beta.swap_cell(pos1, pos2);
+        self.omega.swap_cell(pos1, pos2);
+        self.delta.swap_cell(pos1, pos2);
 
         self.dirty = true;
     }

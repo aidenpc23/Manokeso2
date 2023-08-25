@@ -1,3 +1,5 @@
+use crate::world::CONX_MAP;
+
 mod client;
 mod message;
 mod render;

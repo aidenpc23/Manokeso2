@@ -5,6 +5,12 @@ const STABILITY_OFFSET: f32 = 1000.0;
 const ENERGY_OFFSET: f32 = 10000.0;
 const REACTIVITY_OFFSET: f32 = 500.0;
 
+use lazy_static::lazy_static;
+
+lazy_static!{
+    pub static ref ZERO_ALPHA: u64 = encode_alpha(0, 0, 0.0, 0.0, 0.0);
+}
+
 fn clamp(val: i32, min: i32, max: i32) -> i32 {
     val.max(min).min(max)
 }

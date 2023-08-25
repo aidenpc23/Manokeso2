@@ -11,7 +11,6 @@ pub enum Action {
     MoveDown,
     MoveRight,
     Pause,
-    AddEnergy,
     Step,
 }
 
@@ -25,7 +24,6 @@ pub fn default_keybinds() -> Keybinds {
         (Action::MoveDown, Key::S),
         (Action::MoveRight, Key::D),
         (Action::Pause, Key::Space),
-        (Action::AddEnergy, Key::B),
         (Action::Step, Key::X),
     ])
 }

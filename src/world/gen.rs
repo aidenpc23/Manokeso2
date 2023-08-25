@@ -101,7 +101,7 @@ pub fn simplex_noise<T: NoiseNum>(
     cut: [f64; 2],
     frequency: f64,
 ) -> Vec<T> {
-    let open_simplex = OpenSimplex::new(rand::random());
+    let open_simplex = OpenSimplex::new(1);
     let mut result = Vec::new();
 
     let mut smax: f64 = f64::MIN;

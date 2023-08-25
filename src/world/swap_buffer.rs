@@ -1,3 +1,5 @@
+use std::ops::AddAssign;
+
 use rayon::prelude::*;
 
 pub struct SwapBuffer<T> {
@@ -6,7 +8,7 @@ pub struct SwapBuffer<T> {
     pub w: Vec<T>,
 }
 
-impl<T: Sync + Send + Copy> SwapBuffer<T> {
+impl<T: Sync + Send + Copy + AddAssign> SwapBuffer<T> {
     pub fn swap(&mut self) {
         std::mem::swap(&mut self.r, &mut self.w);
     }
@@ -18,12 +20,6 @@ impl<T: Sync + Send + Copy> SwapBuffer<T> {
     }
     pub fn swap_cell(&mut self, pos1: usize, pos2: usize) {
         self.r.swap(pos1, pos2);
-    }
-    pub fn get(&self, pos: usize) -> &T {
-        &self.r[pos]
-    }
-    pub fn set(&mut self, pos: usize, val: T) {
-        self.r[pos] = val;
     }
 }
 
