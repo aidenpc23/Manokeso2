@@ -8,6 +8,7 @@ bytemuck = {version="1.13.1", features=["derive"]}
 dirs = "5.0.1"
 glyphon = {git = "https://github.com/grovesNL/glyphon"}
 itertools = "0.11.0"
+lazy_static = "1.4.0"
 log = "0.4.18"
 noise = "0.8.2"
 pollster = "0.3.0"

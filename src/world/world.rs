@@ -1,4 +1,5 @@
 use std::{
+    ops::AddAssign,
     sync::mpsc::{Receiver, Sender},
     time::{Duration, Instant},
 };
@@ -9,10 +10,10 @@ use rayon::{
 };
 
 use crate::{
-    message::{CameraView, ClientMessage, WorldMessage},
-    rsc::{UPDATE_TIME, UPS},
+    message::{CameraView, ClientMessage, TileChange, WorldMessage},
+    rsc::{CONNEX_NUMBER_RANGE, STABILITY_RANGE, UPDATE_TIME, UPS, REACTIVITY_RANGE},
     sync::{BoardViewInfo, BoardViewLock},
-    util::{point::Point, timer::Timer},
+    util::{math::SaturatingAdd, point::Point, timer::Timer},
 };
 
 use super::{board::Board, swap_buffer::SwapBuffer};
@@ -37,8 +38,8 @@ impl World {
         sender: Sender<WorldMessage>,
         receiver: Receiver<ClientMessage>,
     ) -> Self {
-        let width = 1000;
-        let height = 1000;
+        let width = 708;
+        let height = 708;
         let board = Board::new(
             Point::new(-(width as f32) / 2.0, -(height as f32) / 2.0),
             width,
@@ -87,9 +88,34 @@ impl World {
                 ClientMessage::Swap(pos1, pos2) => {
                     self.board.swap(pos1, pos2);
                 }
-                ClientMessage::AddEnergy(pos) => {
+                ClientMessage::ChangeTile(pos, change) => {
                     let i = pos.index(self.board.width);
-                    self.board.energy.set(i, self.board.energy.get(i) + 10.0);
+                    match change {
+                        TileChange::ConnexNumber(amt) => {
+                            self.board.connex_numbers.r[i] = self.board.connex_numbers.r[i]
+                                .sat_add(amt)
+                                .clamp(CONNEX_NUMBER_RANGE[0], CONNEX_NUMBER_RANGE[1]);
+                        }
+                        TileChange::Stability(amt) => {
+                            self.board.stability.r[i] = (self.board.stability.r[i] + amt)
+                                .clamp(STABILITY_RANGE[0], STABILITY_RANGE[1]);
+                        }
+                        TileChange::Energy(amt) => {
+                            self.board.energy.r[i] += amt;
+                            self.board.energy.r[i] = self.board.energy.r[i].max(0.0);
+                        }
+                        TileChange::Reactivity(amt) => {
+                            self.board.reactivity.r[i] = (self.board.reactivity.r[i] + amt)
+                                .clamp(REACTIVITY_RANGE[0], REACTIVITY_RANGE[1]);
+                            if self.board.reactivity.r[i].abs() < 0.001 {
+                                self.board.reactivity.r[i] = 0.0;
+                            }
+                        }
+                        TileChange::Omega(amt) => {
+                            self.board.omega.r[i] += amt;
+                            self.board.omega.r[i] = self.board.omega.r[i].max(0.0);
+                        }
+                    }
                     self.board.dirty = true;
                 }
                 ClientMessage::Pause(set) => self.paused = set,
@@ -179,7 +205,11 @@ impl BoardSlice {
     }
 }
 
-fn copy_swap_buf<T: Send + Sync + Copy>(dest: &mut Vec<T>, sb: &SwapBuffer<T>, slice: &BoardSlice) {
+fn copy_swap_buf<T: Send + Sync + Copy + AddAssign>(
+    dest: &mut Vec<T>,
+    sb: &SwapBuffer<T>,
+    slice: &BoardSlice,
+) {
     if dest.len() != slice.size {
         *dest = Vec::with_capacity(slice.size);
         unsafe { dest.set_len(slice.size) }

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use winit::event::MouseButton;
+use winit::event::{MouseButton, VirtualKeyCode as Key};
 
 use super::{
     input::Input,
@@ -8,7 +8,7 @@ use super::{
     state::ClientState,
 };
 
-use crate::{message::ClientMessage, render::tile::data::RenderViewInfo, rsc::PLAYER_SPEED};
+use crate::{message::{ClientMessage, TileChange::*}, rsc::PLAYER_SPEED};
 
 pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) -> bool {
     let ainput = (input, &state.keybinds);
@@ -55,9 +55,63 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) ->
         state.held_tile = None;
     }
 
-    if ainput.just_pressed(Action::AddEnergy) {
+    if input.just_pressed(Key::Y) {
         if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::AddEnergy(tile.pos));
+            state.world.send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(1)));
+        }
+    }
+
+    if input.just_pressed(Key::H) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(-1)));
+        }
+    }
+
+    if input.just_pressed(Key::U) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Stability(0.1)));
+        }
+    }
+
+    if input.just_pressed(Key::J) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Stability(-0.1)));
+        }
+    }
+
+    if input.just_pressed(Key::I) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Reactivity(0.1)));
+        }
+    }
+
+    if input.just_pressed(Key::K) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Reactivity(-0.1)));
+        }
+    }
+
+    if input.just_pressed(Key::O) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Energy(20.0)));
+        }
+    }
+
+    if input.just_pressed(Key::L) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Energy(-20.0)));
+        }
+    }
+
+    if input.just_pressed(Key::P) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Omega(0.1)));
+        }
+    }
+
+    if input.just_pressed(Key::Semicolon) {
+        if let Some(tile) = state.hovered_tile {
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Omega(-0.1)));
         }
     }
 
