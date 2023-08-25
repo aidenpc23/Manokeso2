@@ -7,7 +7,7 @@ use rayon::prelude::{
 use crate::rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE};
 
 use super::{
-    connex_ref::CONX_MAP,
+    refs::CONX_MAP,
     util::{decode_alpha, decode_beta, encode_alpha, encode_beta},
     Board, ZERO_ALPHA,
 };
@@ -282,7 +282,7 @@ impl Board {
             .enumerate()
             .for_each(|(i, (en, an, bn, on))| {
                 let ci = c.r[i];
-                let si = s.r[i];
+                let cindex = c.r[i] as usize;
                 let ei = e.r[i];
                 let ri = r.r[i];
                 let ai = a.r[i];
@@ -292,10 +292,9 @@ impl Board {
                 let y = i / self.width;
 
                 let csub = ci.saturating_sub(1);
-                let eff_cycle_spd = (csub / 20).min(4);
-                let (g1, g2, g3) = (
+                let (g1, _g2, g3) = (
                     (csub % 5),
-                    ((csub / (5 - eff_cycle_spd)) % 5),
+                    ((csub / 5) % 5),
                     ((csub / 25) + 1),
                 );
 
@@ -331,7 +330,7 @@ impl Board {
                     let gfactor = (g3 - 1) as f32 + (1.0 - 0.04 * (g3 - 1) as f32);
                     let en_move = gfactor * VAR_NAME;
 
-                    let (ccost, cnc) = if CONX_MAP[&ci].3 {
+                    let (ccost, cnc) = if CONX_MAP[cindex].3 {
                         (
                             (ci as f32 * gfactor).powf(2.305865) * do_conn as f32,
                             if ri == 0.0 {
@@ -344,17 +343,17 @@ impl Board {
                         (0.0, 0)
                     };
 
-                    let (scost, sc) = if CONX_MAP.get(&ci).unwrap().2 {
+                    let (scost, sc) = if CONX_MAP[cindex].2 {
                         (gfactor * 10.0 * do_stab, 0.1 * ri * g3 as f32 * do_stab)
                     } else {
                         (0.0, 0.0)
                     };
-                    let (ecost, ec) = if CONX_MAP.get(&ci).unwrap().1 {
+                    let (ecost, ec) = if CONX_MAP[cindex].1 {
                         (en_move, en_move)
                     } else {
                         (0.0, 0.0)
                     };
-                    let (rcost, rc) = if CONX_MAP.get(&ci).unwrap().0 {
+                    let (rcost, rc) = if CONX_MAP[cindex].0 {
                         (gfactor * 10.0 * do_reac, 0.1 * ri * g3 as f32 * do_reac)
                     } else {
                         (0.0, 0.0)
@@ -378,7 +377,7 @@ impl Board {
                         *an = ai;
                     }
 
-                    if ci % 20 == 0 {
+                    if CONX_MAP[cindex].4 {
                         *on = oi + g3.pow(2) as f32 * 0.1;
                     } else {
                         *on = oi;
