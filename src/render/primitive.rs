@@ -1,4 +1,4 @@
-use crate::{util::point::Point, client::ui::text::Align};
+use crate::{util::point::Point, client::ui::element::Align};
 
 pub struct UIPrimatives {
     pub text: Vec<TextElement>,

@@ -1,9 +1,6 @@
 use crate::{client::ClientState, render::primitive::UIPrimatives, util::point::Point};
 
-use super::{
-    shape::{RoundedRect, UIPoint},
-    text::Text,
-};
+use super::element::{RoundedRect, Text, UIPoint};
 
 pub struct GameUI {
     pub text: Vec<Text>,

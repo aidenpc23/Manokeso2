@@ -1,11 +1,9 @@
 use crate::{util::point::Point, world::decode_alpha};
 
 use super::{
-    text::{Align, Text},
-    ui::GameUI, shape::{RoundedRect, UIPoint},
+    element::{Align, Text},
+    ui::GameUI, element::{RoundedRect, UIPoint},
 };
-
-pub const PADDING: f32 = 10.0;
 
 pub fn board() -> GameUI {
     let text = vec![
@@ -42,16 +40,16 @@ pub fn board() -> GameUI {
             },
             pos: |(_, _)| Point { x: 20.0, y: 15.0 },
             align: Align::Left,
-            bounds: |(w, h)| (w / 3.0 - 10.0, h),
+            bounds: |(w, h)| (w / 3.0 - 30.0, h),
         },
         Text {
             content: |state| format!("total energy: {}", state.world.view_info.total_energy),
             pos: |(w, _)| Point {
                 x: w / 2.0,
-                y: PADDING,
+                y: 15.0,
             },
             align: Align::Center,
-            bounds: |(w, h)| (w / 3.0, h),
+            bounds: |(w, h)| (w / 3.0 - 20.0, h),
         },
         Text {
             content: |state| {
@@ -65,11 +63,11 @@ pub fn board() -> GameUI {
                 )
             },
             pos: |(w, _)| Point {
-                x: w - PADDING,
-                y: PADDING,
+                x: w - 20.0,
+                y: 15.0,
             },
             align: Align::Right,
-            bounds: |(w, h)| (w / 3.0, h),
+            bounds: |(w, h)| (w / 3.0 - 30.0, h),
         },
     ];
     let shapes = vec![RoundedRect {
