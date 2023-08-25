@@ -134,6 +134,7 @@ impl World {
             },
             total_energy: self.board.total_energy,
             time_taken: self.timer.avg(),
+            pos: self.board.pos,
         }
     }
 

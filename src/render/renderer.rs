@@ -6,6 +6,7 @@ use winit::{
 };
 
 use super::{
+    primitive::UIPrimatives,
     shape::pipeline::ShapePipeline,
     surface::RenderSurface,
     text::pipeline::TextPipeline,
@@ -14,7 +15,6 @@ use super::{
         data::{RenderViewInfo, TileData},
         pipeline::TilePipeline,
     },
-    ui::RenderableUI,
 };
 
 pub struct Renderer<T: TileData> {
@@ -75,7 +75,7 @@ impl<T: TileData> Renderer<T> {
     pub fn update(
         &mut self,
         camera: &Camera,
-        ui: &RenderableUI,
+        ui: &UIPrimatives,
         resized: bool,
     ) -> Option<CameraView> {
         let size = &self.window.inner_size();
@@ -94,7 +94,8 @@ impl<T: TileData> Renderer<T> {
         self.encoder = Some(encoder);
 
         self.text_pipeline.update(&self.render_surface, &ui.text);
-        self.shape_pipeline.update(&self.render_surface, &ui.rounded_rects, resized);
+        self.shape_pipeline
+            .update(&self.render_surface, &ui.rounded_rects, resized);
 
         camera_view
     }
@@ -147,5 +148,17 @@ impl<T: TileData> Renderer<T> {
             .uniforms
             .camera
             .render_to_world(self.pixel_to_render(pos))
+    }
+
+    pub fn render_to_pixel(&self, pos: Point<f32>) -> Point<f32> {
+        let size = self.window.inner_size();
+        Point {
+            x: (pos.x + 1.0) / 2.0 * size.width as f32,
+            y: (-pos.y + 1.0) / 2.0 * size.height as f32
+        }
+    }
+
+    pub fn world_to_pixel(&self, pos: Point<f32>) -> Point<f32> {
+        self.render_to_pixel(self.tile_pipeline.uniforms.camera.world_to_render(pos))
     }
 }

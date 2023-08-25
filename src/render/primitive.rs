@@ -1,5 +1,10 @@
 use crate::{util::point::Point, client::ui::text::Align};
 
+pub struct UIPrimatives {
+    pub text: Vec<TextElement>,
+    pub rounded_rects: Vec<RoundedRectInstance>,
+}
+
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct RoundedRectInstance {

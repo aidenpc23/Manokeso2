@@ -25,6 +25,7 @@ pub struct BoardViewInfo {
     pub render_info: RenderViewInfo,
     pub total_energy: f32,
     pub time_taken: Duration,
+    pub pos: Point<f32>,
 }
 
 impl BoardView {
@@ -43,6 +44,7 @@ impl BoardView {
                 render_info: RenderViewInfo::new(),
                 total_energy: 0.0,
                 time_taken: Duration::ZERO,
+                pos: Point::zero(),
             },
         }
     }

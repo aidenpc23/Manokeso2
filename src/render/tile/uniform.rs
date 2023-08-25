@@ -38,6 +38,10 @@ impl CameraUniform {
         coords / self.proj + self.pos
     }
 
+    pub fn world_to_render(&self, coords: Point<f32>) -> Point<f32> {
+        (coords - self.pos) * self.proj
+    }
+
     fn calc_proj(camera: &Camera, size: &PhysicalSize<u32>) -> Point<f32> {
         let win_aspect = size.width as f32 / size.height as f32;
         let mut proj = if win_aspect > camera.aspect {
