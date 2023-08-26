@@ -21,6 +21,9 @@ impl Point<f32> {
         Self { x: 0.0, y: -1.0 },
     ];
 
+    pub const X_UNIT: Self = Point { x: 1.0, y: 0.0 };
+    pub const Y_UNIT: Self = Point { x: 0.0, y: 1.0 };
+
     pub fn dist(&self, other: Point<f32>) -> f32 {
         ((other.x - self.x).powi(2) + (other.y - self.y).powi(2)).sqrt()
     }

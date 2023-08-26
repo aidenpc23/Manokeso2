@@ -175,22 +175,22 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
         let end: Point<i32> = (player_rel_pos + state.player.size / 2.0).floor().into();
         for x in start.x..=end.x {
             for y in start.y..=end.y {
-                if x < 0 || y < 0 || x > slice.end.x as i32 || y >= slice.end.y as i32 {
+                if x < 0 || y < 0 || x >= slice.end.x as i32 || y >= slice.end.y as i32 {
                     continue;
                 }
                 if x != player_tile.x && y != player_tile.y {
-                    let pos = Point { x: x as usize, y: y as usize };
-                    let rel_pos = pos - view.info.render_info.slice.start;
+                    let tile = Point { x: x as usize, y: y as usize };
+                    let rel_pos = tile - view.info.render_info.slice.start;
                     let i = rel_pos.index(view.info.render_info.slice.width);
                     let cn = view.connex_numbers[i];
                     let s = view.stability[i];
                     if cn > 10 && s > 0.8 {
-                        let mut corner: Point<f32> = pos.into();
+                        let mut corner: Point<f32> = tile.into();
                         if x < player_tile.x {
-                            corner += Point::new(1.0, 0.0);
+                            corner += Point::X_UNIT;
                         }
                         if y < player_tile.y {
-                            corner += Point::new(0.0, 1.0);
+                            corner += Point::Y_UNIT;
                         }
                         let dist = player_rel_pos.dist(corner);
                         if dist < rad {
