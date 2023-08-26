@@ -21,11 +21,11 @@ impl Point<f32> {
         Self { x: 0.0, y: -1.0 },
     ];
 
-    pub const CORNERS: [Self; 4] = [
+    pub const POS_CORNERS: [Self; 4] = [
+        Self { x: 0.0, y: 0.0 },
+        Self { x: 0.0, y: 1.0 },
+        Self { x: 1.0, y: 0.0 },
         Self { x: 1.0, y: 1.0 },
-        Self { x: -1.0, y: 1.0 },
-        Self { x: -1.0, y: -1.0 },
-        Self { x: 1.0, y: -1.0 },
     ];
 
     pub fn dist(&self, other: Point<f32>) -> f32 {

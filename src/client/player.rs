@@ -13,7 +13,7 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             pos: Point { x: 0.0, y: 0.0 },
-            size: 4.0,
+            size: 4.7,
             colors: [
                 [1.0, 0.0, 0.0, 1.0],
                 [1.0, 0.0, 0.0, 1.0],

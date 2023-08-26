@@ -137,16 +137,19 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
         } else {
             None
         };
+
+    // collisions (move to another function)
+
     if view.connex_numbers.len() != 0 {
         let rad = state.player.size / 2.0;
         let player_rel_pos = state.player.pos - view.info.pos;
-        // let player_tile: Point<usize> = player_rel_pos.into();
-        // let start: Point<usize> = (player_rel_pos - state.player.size / 2.0).into();
-        // let end: Point<usize> = (player_rel_pos + state.player.size / 2.0).into();
-        let edges = Point::<f32>::CARDINAL_DIRECTIONS.map(|v| player_rel_pos + v * rad);
+        let player_edges = Point::<f32>::CARDINAL_DIRECTIONS.map(|v| player_rel_pos + v * rad);
         let slice = view.info.render_info.slice;
+
+        // cardinal edges
+
         for i in 0..4 {
-            let mut edge = edges[i];
+            let mut edge = player_edges[i];
             let tile: Point<usize> = edge.into();
             let tile_i = (tile - slice.start).index(slice.width);
             let cn = view.connex_numbers[tile_i];
@@ -160,48 +163,37 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
                 state.player.pos += (edge - a) * -dir.abs();
             }
         }
+
+        // corners
+
+        let player_rel_pos = state.player.pos - view.info.pos;
+        let player_tile: Point<usize> = player_rel_pos.into();
+        let start: Point<usize> = (player_rel_pos - state.player.size / 2.0).into();
+        let end: Point<usize> = (player_rel_pos + state.player.size / 2.0).into();
+        for x in start.x..=end.x {
+            for y in start.y..=end.y {
+                if x != player_tile.x && y != player_tile.y {
+                    let pos = Point { x, y };
+                    let rel_pos = pos - view.info.render_info.slice.start;
+                    let i = rel_pos.index(view.info.render_info.slice.width);
+                    let cn = view.connex_numbers[i];
+                    let s = view.stability[i];
+                    if cn > 10 && s > 0.8 {
+                        let mut corner: Point<f32> = pos.into();
+                        if x < player_tile.x {
+                            corner += Point::new(1.0, 0.0);
+                        }
+                        if y < player_tile.y {
+                            corner += Point::new(0.0, 1.0);
+                        }
+                        let dist = player_rel_pos.dist(corner);
+                        if dist < rad {
+                            let move_dist = rad - dist;
+                            state.player.pos += (player_rel_pos - corner).norm() * move_dist;
+                        }
+                    }
+                }
+            }
+        }
     }
-    // if view.connex_numbers.len() != 0 {
-    //     for x in start.x..=end.x {
-    //         for y in start.y..=end.y {
-    //             let pos = Point { x, y };
-    //             let rel_pos = pos - view.info.render_info.slice.start;
-    //             let i = rel_pos.index(view.info.render_info.slice.width);
-    //             let cn = view.connex_numbers[i];
-    //             let s = view.stability[i];
-    //             if cn > 10 && s > 0.8 {
-    //                 let mut tile_pos: Point<f32> = pos.into();
-    //                 if player_tile.x == pos.x {
-    //                     state.player.pos.y += if player_pos.y > tile_pos.y {
-    //                         tile_pos.y += 1.0;
-    //                         tile_pos.y - (player_pos.y - rad)
-    //                     } else {
-    //                         tile_pos.y - (player_pos.y + rad)
-    //                     };
-    //                 } else if player_tile.y == pos.y {
-    //                     state.player.pos.x += if player_pos.x > tile_pos.x {
-    //                         tile_pos.x += 1.0;
-    //                         tile_pos.x - (player_pos.x - rad)
-    //                     } else {
-    //                         tile_pos.x - (player_pos.x + rad)
-    //                     };
-    //                 } else {
-    //                     let corners = [
-    //                         tile_pos,
-    //                         tile_pos + Point::new(1.0, 0.0),
-    //                         tile_pos + Point::new(0.0, 1.0),
-    //                         tile_pos + 1.0,
-    //                     ];
-    //                     for corner in corners {
-    //                         let dist = player_pos.dist(corner);
-    //                         if dist < rad {
-    //                             let move_dist = rad - dist;
-    //                             state.player.pos += (player_pos - corner).norm() * move_dist;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 }
