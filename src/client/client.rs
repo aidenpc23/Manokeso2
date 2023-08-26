@@ -150,6 +150,9 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
 
         for i in 0..4 {
             let mut edge = player_edges[i];
+            if edge.x < 0.0 || edge.y < 0.0 || edge.x >= slice.end.x as f32 || edge.y >= slice.end.y as f32 {
+                continue;
+            }
             let tile: Point<usize> = edge.into();
             let tile_i = (tile - slice.start).index(slice.width);
             let cn = view.connex_numbers[tile_i];
@@ -167,13 +170,16 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
         // corners
 
         let player_rel_pos = state.player.pos - view.info.pos;
-        let player_tile: Point<usize> = player_rel_pos.into();
-        let start: Point<usize> = (player_rel_pos - state.player.size / 2.0).into();
-        let end: Point<usize> = (player_rel_pos + state.player.size / 2.0).into();
+        let player_tile: Point<i32> = player_rel_pos.floor().into();
+        let start: Point<i32> = (player_rel_pos - state.player.size / 2.0).floor().into();
+        let end: Point<i32> = (player_rel_pos + state.player.size / 2.0).floor().into();
         for x in start.x..=end.x {
             for y in start.y..=end.y {
+                if x < 0 || y < 0 || x > slice.end.x as i32 || y >= slice.end.y as i32 {
+                    continue;
+                }
                 if x != player_tile.x && y != player_tile.y {
-                    let pos = Point { x, y };
+                    let pos = Point { x: x as usize, y: y as usize };
                     let rel_pos = pos - view.info.render_info.slice.start;
                     let i = rel_pos.index(view.info.render_info.slice.width);
                     let cn = view.connex_numbers[i];

@@ -21,13 +21,6 @@ impl Point<f32> {
         Self { x: 0.0, y: -1.0 },
     ];
 
-    pub const POS_CORNERS: [Self; 4] = [
-        Self { x: 0.0, y: 0.0 },
-        Self { x: 0.0, y: 1.0 },
-        Self { x: 1.0, y: 0.0 },
-        Self { x: 1.0, y: 1.0 },
-    ];
-
     pub fn dist(&self, other: Point<f32>) -> f32 {
         ((other.x - self.x).powi(2) + (other.y - self.y).powi(2)).sqrt()
     }
@@ -44,6 +37,13 @@ impl Point<f32> {
         Self {
             x: self.x.abs(),
             y: self.y.abs(),
+        }
+    }
+
+    pub fn floor(&self) -> Self {
+        Self {
+            x: self.x.floor(),
+            y: self.y.floor(),
         }
     }
 }
