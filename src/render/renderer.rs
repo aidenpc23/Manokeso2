@@ -72,10 +72,9 @@ impl<T: TileData> Renderer<T> {
         self.encoder = Some(encoder);
     }
 
-    pub fn update(
+    pub fn update_world(
         &mut self,
         camera: &Camera,
-        ui: &UIPrimatives,
         resized: bool,
     ) -> Option<CameraView> {
         let size = &self.window.inner_size();
@@ -93,11 +92,17 @@ impl<T: TileData> Renderer<T> {
         );
         self.encoder = Some(encoder);
 
+        camera_view
+    }
+
+    pub fn update_ui(
+        &mut self,
+        ui: &UIPrimatives,
+        resized: bool,
+    ) {
         self.text_pipeline.update(&self.render_surface, &ui.text);
         self.shape_pipeline
             .update(&self.render_surface, &ui.rounded_rects, resized);
-
-        camera_view
     }
 
     pub fn draw(&mut self) {

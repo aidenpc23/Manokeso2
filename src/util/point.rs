@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, BitAnd, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, BitAnd, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[repr(C, packed)]
 #[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable, PartialEq, Default)]
@@ -10,6 +10,41 @@ pub struct Point<T> {
 impl<T> Point<T> {
     pub const fn new(x: T, y: T) -> Self {
         Self { x, y }
+    }
+}
+
+impl Point<f32> {
+    pub const CARDINAL_DIRECTIONS: [Self; 4] = [
+        Self { x: 1.0, y: 0.0 },
+        Self { x: 0.0, y: 1.0 },
+        Self { x: -1.0, y: 0.0 },
+        Self { x: 0.0, y: -1.0 },
+    ];
+
+    pub const CORNERS: [Self; 4] = [
+        Self { x: 1.0, y: 1.0 },
+        Self { x: -1.0, y: 1.0 },
+        Self { x: -1.0, y: -1.0 },
+        Self { x: 1.0, y: -1.0 },
+    ];
+
+    pub fn dist(&self, other: Point<f32>) -> f32 {
+        ((other.x - self.x).powi(2) + (other.y - self.y).powi(2)).sqrt()
+    }
+
+    pub fn norm(self) -> Point<f32> {
+        self / self.mag()
+    }
+
+    pub fn mag(&self) -> f32 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+
+    pub fn abs(&self) -> Self {
+        Self {
+            x: self.x.abs(),
+            y: self.y.abs(),
+        }
     }
 }
 
@@ -104,6 +139,17 @@ impl<T: Mul<Output = T> + Copy> Mul<T> for Point<T> {
     }
 }
 
+impl<T: Div<Output = T> + Copy> Div<T> for Point<T> {
+    type Output = Self;
+
+    fn div(self, rhs: T) -> Self::Output {
+        Self {
+            x: self.x / rhs,
+            y: self.y / rhs,
+        }
+    }
+}
+
 impl<T: Mul<Output = T> + Copy> MulAssign<T> for Point<T> {
     fn mul_assign(&mut self, rhs: T) {
         self.x = self.x * rhs;
@@ -139,6 +185,15 @@ impl Into<Point<u32>> for Point<i32> {
 }
 
 impl Into<Point<usize>> for Point<i32> {
+    fn into(self) -> Point<usize> {
+        return Point {
+            x: self.x as usize,
+            y: self.y as usize,
+        };
+    }
+}
+
+impl Into<Point<usize>> for Point<f32> {
     fn into(self) -> Point<usize> {
         return Point {
             x: self.x as usize,
@@ -186,5 +241,15 @@ impl Point<i32> {
             x: (self.x.max(0) as usize).min(max.x),
             y: (self.y.max(0) as usize).min(max.y),
         };
+    }
+}
+
+impl<T: Neg<Output = T>> Neg for Point<T> {
+    type Output = Point<T>;
+    fn neg(self) -> Self::Output {
+        Self {
+            x: -self.x,
+            y: -self.y,
+        }
     }
 }

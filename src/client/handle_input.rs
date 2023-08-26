@@ -20,13 +20,14 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) ->
 
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
+        state.camera_scroll = state.camera_scroll.clamp(-50.0, 30.0);
         state.camera.scale = (state.camera_scroll * 0.1).exp();
     }
 
     let delta_mult = delta.as_millis() as f32;
     let move_dist = PLAYER_SPEED * delta_mult / state.camera.scale;
 
-    let pos = &mut state.camera.pos;
+    let pos = &mut state.player.pos;
     if ainput.pressed(Action::MoveUp) {
         pos.y += move_dist;
     }

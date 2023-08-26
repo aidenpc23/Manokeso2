@@ -5,9 +5,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::{
-    message::ClientMessage, sync::TileInfo, util::point::Point, world::World,
-};
+use crate::{message::ClientMessage, sync::TileInfo, util::point::Point, world::World};
 
 use super::{
     config::Config, handle_input::handle_input, input::Input, state::ClientState, TileUpdateData,
@@ -81,10 +79,12 @@ pub async fn run() {
 
                     state.renderer.start_encoder();
                     sync_board(&mut state, &input);
-                    let ui = state.ui.compile(&state);
-                    if let Some(cam_view) = state.renderer.update(&state.camera, &ui, resized) {
+                    state.camera.pos = state.player.pos;
+                    if let Some(cam_view) = state.renderer.update_world(&state.camera, resized) {
                         state.world.send(ClientMessage::CameraUpdate(cam_view));
                     }
+                    let ui = state.ui.compile(&state);
+                    state.renderer.update_ui(&ui, resized);
                     state.renderer.draw();
 
                     resized = false;
@@ -98,30 +98,27 @@ pub async fn run() {
 }
 
 pub fn sync_board(state: &mut ClientState, input: &Input) {
-    if let Ok(view) = state.world.view_lock.try_lock() {
-        let mut info = view.info;
-        state.renderer.sync(
-            &mut info.render_info,
-            &TileUpdateData {
-                connex_numbers: &view.connex_numbers,
-                stability: &view.stability,
-                reactivity: &view.reactivity,
-                energy: &view.energy,
-            },
-        );
-        info.render_info.dirty = false;
+    let view = state.world.view_lock.lock().expect("un bro momento");
+    let mut info = view.info;
+    state.renderer.sync(
+        &mut info.render_info,
+        &TileUpdateData {
+            connex_numbers: &view.connex_numbers,
+            stability: &view.stability,
+            reactivity: &view.reactivity,
+            energy: &view.energy,
+        },
+    );
+    info.render_info.dirty = false;
 
-        state.world.send(ClientMessage::RenderFinished());
-        state.world.view_info = view.info.clone();
+    state.world.send(ClientMessage::RenderFinished());
+    state.world.view_info = view.info.clone();
 
-        let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
-        let rinfo = view.info.render_info;
-        let Point { x, y } = mouse_world_pos - rinfo.pos;
-        state.hovered_tile = if x >= 0.0
-            && y >= 0.0
-            && x < rinfo.slice.width as f32
-            && y < rinfo.slice.height as f32
-        {
+    let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
+    let rinfo = view.info.render_info;
+    let Point { x, y } = mouse_world_pos - rinfo.pos;
+    state.hovered_tile =
+        if x >= 0.0 && y >= 0.0 && x < rinfo.slice.width as f32 && y < rinfo.slice.height as f32 {
             let pos = Point::new(x as usize, y as usize);
             let i = pos.index(rinfo.slice.width);
             let pos = pos + rinfo.slice.start;
@@ -140,5 +137,71 @@ pub fn sync_board(state: &mut ClientState, input: &Input) {
         } else {
             None
         };
+    if view.connex_numbers.len() != 0 {
+        let rad = state.player.size / 2.0;
+        let player_rel_pos = state.player.pos - view.info.pos;
+        // let player_tile: Point<usize> = player_rel_pos.into();
+        // let start: Point<usize> = (player_rel_pos - state.player.size / 2.0).into();
+        // let end: Point<usize> = (player_rel_pos + state.player.size / 2.0).into();
+        let edges = Point::<f32>::CARDINAL_DIRECTIONS.map(|v| player_rel_pos + v * rad);
+        let slice = view.info.render_info.slice;
+        for i in 0..4 {
+            let mut edge = edges[i];
+            let tile: Point<usize> = edge.into();
+            let tile_i = (tile - slice.start).index(slice.width);
+            let cn = view.connex_numbers[tile_i];
+            let s = view.stability[tile_i];
+            if cn > 10 && s > 0.8 {
+                let dir = Point::<f32>::CARDINAL_DIRECTIONS[i];
+                if dir.x < 0.0 || dir.y < 0.0 {
+                    edge = edge - 1.0;
+                }
+                let a: Point<f32> = tile.into();
+                state.player.pos += (edge - a) * -dir.abs();
+            }
+        }
     }
+    // if view.connex_numbers.len() != 0 {
+    //     for x in start.x..=end.x {
+    //         for y in start.y..=end.y {
+    //             let pos = Point { x, y };
+    //             let rel_pos = pos - view.info.render_info.slice.start;
+    //             let i = rel_pos.index(view.info.render_info.slice.width);
+    //             let cn = view.connex_numbers[i];
+    //             let s = view.stability[i];
+    //             if cn > 10 && s > 0.8 {
+    //                 let mut tile_pos: Point<f32> = pos.into();
+    //                 if player_tile.x == pos.x {
+    //                     state.player.pos.y += if player_pos.y > tile_pos.y {
+    //                         tile_pos.y += 1.0;
+    //                         tile_pos.y - (player_pos.y - rad)
+    //                     } else {
+    //                         tile_pos.y - (player_pos.y + rad)
+    //                     };
+    //                 } else if player_tile.y == pos.y {
+    //                     state.player.pos.x += if player_pos.x > tile_pos.x {
+    //                         tile_pos.x += 1.0;
+    //                         tile_pos.x - (player_pos.x - rad)
+    //                     } else {
+    //                         tile_pos.x - (player_pos.x + rad)
+    //                     };
+    //                 } else {
+    //                     let corners = [
+    //                         tile_pos,
+    //                         tile_pos + Point::new(1.0, 0.0),
+    //                         tile_pos + Point::new(0.0, 1.0),
+    //                         tile_pos + 1.0,
+    //                     ];
+    //                     for corner in corners {
+    //                         let dist = player_pos.dist(corner);
+    //                         if dist < rad {
+    //                             let move_dist = rad - dist;
+    //                             state.player.pos += (player_pos - corner).norm() * move_dist;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }

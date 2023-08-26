@@ -16,7 +16,7 @@ impl GameUI {
         if let Some(tile) = state.hovered_tile {
             let pos: Point<f32> = tile.pos.into();
             let start = pos + state.world.view_info.pos;
-            let end = start + Point { x: 1.0, y: 1.0 };
+            let end = start + 1.0;
             let mut start = state.renderer.world_to_pixel(start);
             let mut end = state.renderer.world_to_pixel(end);
             let y = end.y;
@@ -47,7 +47,7 @@ impl GameUI {
         if let Some(tile) = state.held_tile {
             let pos: Point<f32> = tile.pos.into();
             let start = pos + state.world.view_info.pos;
-            let end = start + Point { x: 1.0, y: 1.0 };
+            let end = start + 1.0;
             let mut start = state.renderer.world_to_pixel(start);
             let mut end = state.renderer.world_to_pixel(end);
             let y = end.y;
@@ -69,6 +69,9 @@ impl GameUI {
                 .to_primitive(),
             );
         }
+
+        primatives.rounded_rects.append(&mut state.player.to_primitives(&state.renderer));
+
         primatives
     }
 }

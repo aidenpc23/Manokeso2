@@ -2,7 +2,8 @@ use super::{
     camera::Camera,
     config::Config,
     keybinds::{default_keybinds, Keybinds},
-    ui::{ui::GameUI, layout},
+    player::Player,
+    ui::{layout, ui::GameUI},
 };
 use crate::{
     message::{ClientMessage, WorldMessage},
@@ -10,7 +11,7 @@ use crate::{
     rsc::{FPS, FRAME_TIME},
     sync::{BoardView, TileInfo, WorldInterface},
     tile_render_data,
-    util::timer::Timer,
+    util::{timer::Timer, point::Point},
 };
 use std::{
     sync::{
@@ -43,6 +44,7 @@ pub struct ClientState {
     pub timer: Timer,
     pub world: WorldInterface,
     pub debug_stats: DebugStats,
+    pub player: Player,
 }
 
 impl ClientState {
@@ -77,6 +79,7 @@ impl ClientState {
             },
             ui: layout::board(),
             debug_stats: DebugStats::new(),
+            player: Player::default(),
         }
     }
 }

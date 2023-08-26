@@ -4,6 +4,7 @@ mod config;
 mod handle_input;
 mod input;
 mod keybinds;
+mod player;
 mod state;
 pub mod ui;
 
