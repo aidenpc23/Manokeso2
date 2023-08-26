@@ -20,7 +20,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) ->
 
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
-        state.camera_scroll = state.camera_scroll.clamp(-50.0, 30.0);
+        // state.camera_scroll = state.camera_scroll.clamp(-50.0, 30.0);
         state.camera.scale = (state.camera_scroll * 0.1).exp();
     }
 

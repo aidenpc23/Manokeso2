@@ -215,9 +215,11 @@ fn copy_swap_buf<T: Send + Sync + Copy + AddAssign>(
         *dest = Vec::with_capacity(slice.size);
         unsafe { dest.set_len(slice.size) }
     }
-    dest.par_chunks_exact_mut(slice.width)
-        .zip(sb.par_rows(slice.start.y, slice.end.y))
-        .for_each(|(data, row)| {
-            data.copy_from_slice(&row[slice.start.x..slice.end.x]);
-        });
+    if slice.size != 0 {
+        dest.par_chunks_exact_mut(slice.width)
+            .zip(sb.par_rows(slice.start.y, slice.end.y))
+            .for_each(|(data, row)| {
+                data.copy_from_slice(&row[slice.start.x..slice.end.x]);
+            });
+    }
 }
