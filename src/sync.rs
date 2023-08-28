@@ -18,7 +18,7 @@ pub struct BoardView {
     pub alpha: Vec<u64>,
     pub beta: Vec<u64>,
     pub gamma: Vec<f32>,
-    pub delta: Vec<f32>,
+    pub delta: Vec<u64>,
     pub omega: Vec<f32>,
     pub render_info: RenderViewInfo,
     pub total_energy: f32,
@@ -55,7 +55,7 @@ pub struct TileInfo {
     pub alpha: u64,
     pub beta: u64,
     pub gamma: f32,
-    pub delta: f32,
+    pub delta: u64,
     pub omega: f32,
 }
 

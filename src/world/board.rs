@@ -1,3 +1,8 @@
+use std::fs::File;
+use std::io::{Write, Read, Error};
+
+use serde::{Serialize, Deserialize};
+
 use crate::{
     rsc::{ENERGY_RANGE, REACTIVITY_RANGE},
     util::point::Point,
@@ -5,6 +10,8 @@ use crate::{
 
 use super::{gen::SwapBufferGen, swap_buffer::SwapBuffer, encode_alpha};
 
+
+#[derive(Serialize, Deserialize)]
 pub struct Board {
     pub pos: Point<f32>,
     pub width: usize,
@@ -16,8 +23,8 @@ pub struct Board {
     pub alpha: SwapBuffer<u64>,
     pub beta: SwapBuffer<u64>,
     pub gamma: SwapBuffer<f32>,
-    pub delta: SwapBuffer<f32>,
     pub omega: SwapBuffer<f32>,
+    pub delta: SwapBuffer<u64>,
     pub dirty: bool,
     pub total_energy: f32,
 }
@@ -25,6 +32,8 @@ pub struct Board {
 impl Board {
     pub fn new(pos: Point<f32>, width: usize, height: usize) -> Board {
         let mut gen = (width, height);
+
+        let mut rng = rand::thread_rng();
 
         let stability = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.06);
         let connex_numbers = SwapBuffer::from_arr(
@@ -36,8 +45,9 @@ impl Board {
         let alpha = SwapBuffer::from_arr(vec![encode_alpha(0, 0, 0.0, 0.0, 0.0); width * height], width);
         let beta = SwapBuffer::from_arr(vec![0; width * height], width);
         let gamma = SwapBuffer::from_arr(vec![0.0; width * height], width);
-        let delta = SwapBuffer::from_arr(vec![0.0; width * height], width);
         let omega = SwapBuffer::from_arr(vec![0.0; width * height], width);
+        // let delta = SwapBuffer::from_rand(&mut rand::thread_rng(), width, height, [0, 10000000000]);
+        let delta = SwapBuffer::gen_delta(&mut rng, width, height);
 
         let total_energy = energy.read().iter().sum();
 
@@ -52,8 +62,8 @@ impl Board {
             alpha,
             beta,
             gamma,
-            delta,
             omega,
+            delta,
             total_energy,
             dirty: true,
         }

@@ -47,6 +47,13 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
         state.held_tile = state.hovered_tile;
     }
 
+    if input.just_pressed(Key::T) {
+        state.world.send(ClientMessage::Save());
+    }
+    if input.just_pressed(Key::G) {
+        state.world.send(ClientMessage::Load());
+    }
+
     if input.mouse_just_released(MouseButton::Left) {
         if let Some(tile1) = state.held_tile {
             if let Some(tile2) = state.hovered_tile {
@@ -106,13 +113,13 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
 
     if input.just_pressed(Key::P) {
         if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Omega(0.1)));
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Delta(1)));
         }
     }
 
     if input.just_pressed(Key::Semicolon) {
         if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Omega(-0.1)));
+            state.world.send(ClientMessage::ChangeTile(tile.pos, Delta(-1)));
         }
     }
 

@@ -20,7 +20,7 @@ pub fn board() -> GameUI {
                             "alpha: {:?}\n",
                             "beta: {:?}\n",
                             "gamma: {:?}\n",
-                            "delta: {:?}\n",
+                            "delta: {:b}\n",
                             "omega: {:?}\n",
                         ),
                         tile.pos,

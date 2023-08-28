@@ -2,12 +2,12 @@ use rayon::prelude::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator,
 };
 
-use crate::rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE};
+use crate::{rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE}, util::SaturatingAdd};
 
 use super::{
     refs::CONX_MAP,
     util::{decode_alpha, decode_beta, encode_alpha, encode_beta},
-    Board, ZERO_ALPHA,
+    Board, ZERO_ALPHA, get_bit,
 };
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
@@ -19,6 +19,7 @@ const OMEGA_FLOW_RATE: f32 = 1.0 / 200.0;
 const VAR_NAME: f32 = 2.5;
 
 pub const CARDINAL_DIRECTIONS: [(i32, i32); 5] = [(0, 2), (0, -2), (-2, 0), (2, 0), (0, 0)];
+pub const CARDINAL_DIRECTIONS_SHORT: [(i32, i32); 4] = [(0, 1), (0, -1), (-1, 0), (1, 0)];
 
 impl Board {
     pub fn update(&mut self) {
@@ -28,8 +29,8 @@ impl Board {
         self.convolve_gamma();
         self.convolve_omega();
         self.update_alpha_beta();
-        self.update_gamma();
-        self.apply_alpha_beta();
+        self.update_gamma_delta();
+        self.apply_alpha_beta_delta();
         self.apply_bounds();
 
         self.dirty = true;
@@ -198,22 +199,24 @@ impl Board {
         e.swap();
     }
 
-    fn update_gamma(&mut self) {
+    fn update_gamma_delta(&mut self) {
         let c = &mut self.connex_numbers;
         let s = &mut self.stability;
         let e = &mut self.energy;
         let r = &mut self.reactivity;
         let g = &mut self.gamma;
+        let d = &mut self.delta;
 
-        (&mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut g.w)
+        (&mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut g.w, &mut d.w)
             .into_par_iter()
             .enumerate()
-            .for_each(|(i, (cn, sn, en, rn, gn))| {
+            .for_each(|(i, (cn, sn, en, rn, gn, dn))| {
                 let ci = c.r[i];
                 let si = s.r[i];
                 let ei = e.r[i];
                 let ri = r.r[i];
                 let gi = g.r[i];
+                let di = d.r[i];
 
                 let cost_mult = (ci as f32 * 0.35) + 1.0;
                 let gamma_cost = cost_mult * cost_mult;
@@ -225,6 +228,9 @@ impl Board {
                 } else {
                     *gn = gi;
                 }
+                
+                let x = i % self.width;
+                let y = i / self.width;
 
                 if *gn > gamma_cost {
                     let csub = ci.saturating_sub(1);
@@ -250,6 +256,14 @@ impl Board {
 
                     let r_adjustments = [-0.5, -0.25, 0.0, 0.25, 0.5];
                     *rn = ri + r_adjustments[g2 as usize] * (1.0 - s.r[i]);
+                    
+                    *dn = di;
+                    for dir in CARDINAL_DIRECTIONS_SHORT {
+                        let i2 = (y.sat_add(dir.1).min(self.height-1)) * self.width + (x.sat_add(dir.0).min(self.width-1));
+                        if i != i2 {
+                            *dn ^= d.r[i2];
+                        }
+                    }
 
                     *gn -= gamma_cost;
                 } else {
@@ -257,6 +271,46 @@ impl Board {
                     *sn = si;
                     *en = ei;
                     *rn = ri;
+                    *dn = di;
+                }
+
+                if (y + 1) < self.height{
+                    let i2 = (y + 1) * self.width + x;
+                    if get_bit(d.r[i2], 7) && !get_bit(d.r[i2], 6) && e.r[i2] >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2] - 50.0;
+                        *dn = d.r[i2];
+                    }
+
+                    if get_bit(d.r[i], 6) && !get_bit(d.r[i], 7) && *en >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2];
+                        *dn = d.r[i2];
+                    }
+                }
+
+                if y > 0 {
+                    let i2 = (y - 1) * self.width + x;
+                    if get_bit(d.r[i], 7) && !get_bit(d.r[i], 6) && *en >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2];
+                        *dn = d.r[i2];
+                    }
+
+
+                    if get_bit(d.r[i2], 6) && !get_bit(d.r[i2], 7) && e.r[i2] >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2] - 50.0;
+                        *dn = d.r[i2];
+                    }
                 }
             });
 
@@ -265,6 +319,7 @@ impl Board {
         e.swap();
         r.swap();
         g.swap();
+        d.swap();
     }
 
     fn spawnab_update_conx(&mut self) {
@@ -275,6 +330,8 @@ impl Board {
         let a = &mut self.alpha;
         let b = &mut self.beta;
         let o = &mut self.omega;
+        let d = &self.delta;
+
         (&mut e.w, &mut a.w, &mut b.w, &mut o.w)
             .into_par_iter()
             .enumerate()
@@ -286,6 +343,8 @@ impl Board {
                 let ai = a.r[i];
                 let bi = b.r[i];
                 let oi = o.r[i];
+                let di = d.r[i];
+
                 let x = i % self.width;
                 let y = i / self.width;
 
@@ -361,9 +420,14 @@ impl Board {
 
                     let awave = decode_alpha(ai);
                     *bn = g1 as u64;
-                    if ei >= cost {
+                    if ei >= cost && !get_bit(di, 4) {
+                        let mult = if get_bit(di, 5) {
+                            2
+                        } else {
+                            1
+                        };
                         *an = encode_alpha(
-                            awave.0 + g3 as u64,
+                            awave.0 + g3 as u64 * mult,
                             awave.1 + cnc,
                             awave.2 + sc,
                             awave.3 + ec,
@@ -393,24 +457,28 @@ impl Board {
         o.swap();
     }
 
-    fn apply_alpha_beta(&mut self) {
+    fn apply_alpha_beta_delta(&mut self) {
+        let d = &mut self.delta;
         let c = &mut self.connex_numbers;
         let s = &mut self.stability;
         let e = &mut self.energy;
         let r = &mut self.reactivity;
         let a = &mut self.alpha;
         let b = &mut self.beta;
+        let g = &mut self.gamma;
 
-        (&mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut a.w, &mut b.w)
+        (&mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut a.w, &mut b.w, &mut g.w, &mut d.w)
             .into_par_iter()
             .enumerate()
-            .for_each(|(i, (cn, sn, en, rn, an, bn))| {
+            .for_each(|(i, (cn, sn, en, rn, an, bn, gn, dn))| {
+                let di = d.r[i];
                 let ci = c.r[i];
                 let si = s.r[i];
                 let ei = e.r[i];
                 let ri = r.r[i];
                 let ai = a.r[i];
                 let bi = b.r[i];
+                let gi = g.r[i];
 
                 let (counter, cnc, sc, ec, rc) = decode_alpha(ai);
                 if counter == 0 && ai != *ZERO_ALPHA {
@@ -448,6 +516,77 @@ impl Board {
                     *an = ai;
                     *bn = bi;
                 }
+                *dn = di;
+                
+                let x = i % self.width;
+                let y = i / self.width;
+                
+                if (x + 1) < self.width {
+                    let i2 = y * self.width + x + 1;
+                    if get_bit(d.r[i2], 8) && !get_bit(d.r[i2], 9) && e.r[i2] >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2] - 50.0;
+                        *dn = d.r[i2];
+                    }
+
+                    if get_bit(d.r[i], 9) && !get_bit(d.r[i], 8) && *en >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2];
+                        *dn = d.r[i2];
+                    }
+                }
+
+                if x > 0 {
+                    let i2 = y * self.width + x - 1;
+                    if get_bit(d.r[i], 8) && !get_bit(d.r[i], 9) && *en >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2];
+                        *dn = d.r[i2];
+                    }
+
+
+                    if get_bit(d.r[i2], 9) && !get_bit(d.r[i2], 8) && e.r[i2] >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2] - 50.0;
+                        *dn = d.r[i2];
+                    }
+                }
+
+                let y_start = y.saturating_sub(1);
+                let y_end = (y + 2).min(self.height);
+                let x_start = x.saturating_sub(1);
+                let x_end = (x + 2).min(self.width);
+
+                for dy in y_start..y_end {
+                    for dx in x_start..x_end {
+                        let i2 = dy * self.width + dx;
+                        if get_bit(d.r[i2], 2) {
+                            *cn = c.r[i2];
+                            *sn = s.r[i2];
+                            *rn = r.r[i2];
+                        }
+                    }
+                }
+
+                if get_bit(di, 0) {
+                    *sn = 1.0;
+                }
+                if get_bit(di, 1) {
+                    *rn = 0.0;
+                }
+                if get_bit(di, 3) {
+                    *gn = 0.0;
+                } else {
+                    *gn = gi;
+                }
             });
         c.swap();
         s.swap();
@@ -455,6 +594,8 @@ impl Board {
         r.swap();
         a.swap();
         b.swap();
+        g.swap();
+        d.swap();
     }
 
     fn update_omega(&mut self) {
@@ -474,12 +615,16 @@ impl Board {
 
                 let mut absorbed_reactivity = 0.0;
                 let mut released_reactivity = 0.0;
+                let y_start = y.saturating_sub(1);
+                let y_end = (y + 2).min(self.height);
+                let x_start = x.saturating_sub(1);
+                let x_end = (x + 2).min(self.width);
 
-                for dx in -1..=1 {
-                    for dy in -1..=1 {
-                        let i2 = (y as i32 + dy) * self.width as i32 + x as i32 + dx;
+                for dy in y_start..y_end {
+                    for dx in x_start..x_end {
+                        let i2 = dy * self.width + dx;
                         let u_i2 = i2 as usize;
-                        if i2 >= 0 && u_i2 < self.width * self.width && (x != 0 || y != 0) {
+                        if x != 0 || y != 0 {
                             let pseudo_cap = oi.min(1.0);
                             let pseudo_cap2 = o.r[u_i2].min(1.0);
                             let other = ri * pseudo_cap2;

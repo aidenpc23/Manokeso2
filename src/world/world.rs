@@ -1,7 +1,7 @@
 use std::{
     ops::AddAssign,
     sync::mpsc::{Receiver, Sender},
-    time::{Duration, Instant},
+    time::{Duration, Instant}, io::{Error, Write, Read}, fs::File, borrow::BorrowMut,
 };
 
 use rayon::{
@@ -85,6 +85,12 @@ impl World {
                 ClientMessage::Swap(pos1, pos2) => {
                     self.board.swap(pos1, pos2);
                 }
+                ClientMessage::Save() => {
+                    self.save_to_file("resources/save.bin").expect("Error saving file!");
+                }
+                ClientMessage::Load() => {
+                    Self::load_from_file(&mut self.board, "resources/save.bin").expect("Error loading file!");
+                }
                 ClientMessage::ChangeTile(pos, change) => {
                     let i = pos.index(self.board.width);
                     match change {
@@ -108,9 +114,9 @@ impl World {
                                 self.board.reactivity.r[i] = 0.0;
                             }
                         }
-                        TileChange::Omega(amt) => {
-                            self.board.omega.r[i] += amt;
-                            self.board.omega.r[i] = self.board.omega.r[i].max(0.0);
+                        TileChange::Delta(amt) => {
+                            self.board.delta.r[i] = self.board.delta.r[i]
+                                .sat_add(amt);
                         }
                     }
                     self.board.dirty = true;
@@ -125,6 +131,22 @@ impl World {
                 ClientMessage::ViewSwap(view) => self.view = Some(view),
             }
         }
+    }
+    
+    pub fn save_to_file(&self, file_path: &str) -> Result<(), Error> {
+        let encoded: Vec<u8> = bincode::serialize(&self.board).unwrap();
+        let mut file = File::create(file_path)?;
+        file.write_all(&encoded)?;
+        Ok(())
+    }
+
+    pub fn load_from_file(board: &mut Board, file_path: &str) -> Result<(), Error> {
+        let mut file = File::open(file_path)?;
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)?;
+        *board = bincode::deserialize(&buffer).unwrap();
+        board.dirty = true;
+        Ok(())
     }
 
     fn sync_board(&mut self) {

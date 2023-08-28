@@ -1,13 +1,15 @@
 use std::ops::{Add, AddAssign, BitAnd, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use serde::{Serialize, Deserialize};
+
 #[repr(C, packed)]
-#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable, PartialEq, Default)]
-pub struct Point<T> {
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable, PartialEq, Default, Serialize, Deserialize)]
+pub struct Point<T: Copy> {
     pub x: T,
     pub y: T,
 }
 
-impl<T> Point<T> {
+impl<T: Copy> Point<T> {
     pub const fn new(x: T, y: T) -> Self {
         Self { x, y }
     }
@@ -51,7 +53,7 @@ impl Point<f32> {
     }
 }
 
-impl<T: Default> Point<T> {
+impl<T: Default + Copy> Point<T> {
     pub fn zero() -> Self {
         Self {
             x: T::default(),
@@ -66,7 +68,7 @@ impl<T: Add<Output = T> + Mul<Output = T> + Copy> Point<T> {
     }
 }
 
-impl<T: Add<Output = T>> Add for Point<T> {
+impl<T: Add<Output = T> + Copy> Add for Point<T> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -84,7 +86,7 @@ impl<T: Add<Output = T> + Copy> AddAssign for Point<T> {
     }
 }
 
-impl<T: Sub<Output = T>> Sub for Point<T> {
+impl<T: Sub<Output = T> + Copy> Sub for Point<T> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -102,7 +104,7 @@ impl<T: Sub<Output = T> + Copy> SubAssign for Point<T> {
     }
 }
 
-impl<T: Mul<Output = T>> Mul for Point<T> {
+impl<T: Mul<Output = T> + Copy> Mul for Point<T> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -113,7 +115,7 @@ impl<T: Mul<Output = T>> Mul for Point<T> {
     }
 }
 
-impl<T: Div<Output = T>> Div for Point<T> {
+impl<T: Div<Output = T> + Copy> Div for Point<T> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
@@ -247,7 +249,7 @@ impl Point<i32> {
     }
 }
 
-impl<T: Neg<Output = T>> Neg for Point<T> {
+impl<T: Neg<Output = T> + Copy> Neg for Point<T> {
     type Output = Point<T>;
     fn neg(self) -> Self::Output {
         Self {
