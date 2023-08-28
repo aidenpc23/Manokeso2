@@ -157,7 +157,6 @@ impl<T: TileData> TilePipeline<T> {
                 consts: consts_uniform,
             },
             bind_group,
-            tiles_dirty: false,
         }
     }
 }

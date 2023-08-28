@@ -5,16 +5,18 @@ use winit::event::{MouseButton, VirtualKeyCode as Key};
 use super::{
     input::Input,
     keybinds::{Action, Keybinds},
-    state::ClientState,
+    state::Client,
 };
 
 use crate::message::{ClientMessage, TileChange::*};
 
-pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
-    let ainput = (input, &state.keybinds);
+pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
+    let ainput = (input, &client.keybinds);
     if ainput.pressed(Action::Exit) {
-        state.exit = true;
+        client.exit = true;
     }
+
+    let state = &mut client.state;
 
     // camera stuff
 
@@ -28,7 +30,7 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
 
     // interactions
 
-    if !state.paused || state.player.creative {
+    if !client.paused || state.player.creative {
         let pos = &mut state.player.pos;
         let delta_mult = delta.as_millis() as f32;
         let move_dist = state.player.speed * delta_mult / state.camera.scale;
@@ -47,13 +49,13 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
         }
 
         if input.mouse_just_pressed(MouseButton::Left) {
-            state.selected_tile = state.hovered_tile;
+            state.selected_tile = client.hovered_tile;
         }
 
         if input.mouse_just_pressed(MouseButton::Right) {
             if let Some(tile1) = state.selected_tile {
-                if let Some(tile2) = state.hovered_tile {
-                    state.world.send(ClientMessage::Swap(tile1.pos, tile2.pos, state.player.creative));
+                if let Some(tile2) = client.hovered_tile {
+                    client.world.send(ClientMessage::Swap(tile1.pos, tile2.pos, state.player.creative));
                 }
             }
             state.selected_tile = None;
@@ -62,94 +64,94 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
 
     if state.player.creative {
         if input.just_pressed(Key::T) {
-            state.world.send(ClientMessage::Save());
+            client.world.send(ClientMessage::Save());
         }
         if input.just_pressed(Key::G) {
-            state.world.send(ClientMessage::Load());
+            client.world.send(ClientMessage::Load());
         }
 
         if input.just_pressed(Key::Y) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(1)));
             }
         }
 
         if input.just_pressed(Key::H) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(-1)));
             }
         }
 
         if input.just_pressed(Key::U) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Stability(0.1)));
             }
         }
 
         if input.just_pressed(Key::J) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Stability(-0.1)));
             }
         }
 
         if input.just_pressed(Key::I) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Reactivity(0.1)));
             }
         }
 
         if input.just_pressed(Key::K) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Reactivity(-0.1)));
             }
         }
 
         if input.just_pressed(Key::O) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Energy(20.0)));
             }
         }
 
         if input.just_pressed(Key::L) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Energy(-20.0)));
             }
         }
 
         if input.just_pressed(Key::P) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Delta(1)));
             }
         }
 
         if input.just_pressed(Key::Semicolon) {
-            if let Some(tile) = state.hovered_tile {
-                state
+            if let Some(tile) = client.hovered_tile {
+                client
                     .world
                     .send(ClientMessage::ChangeTile(tile.pos, Delta(-1)));
             }
         }
 
         if ainput.just_pressed(Action::Step) {
-            state.world.send(ClientMessage::Step());
+            client.world.send(ClientMessage::Step());
         }
     }
 
@@ -164,8 +166,8 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
     }
 
     if ainput.just_pressed(Action::Pause) {
-        state.paused = !state.paused;
-        state.world.send(ClientMessage::Pause(state.paused));
+        client.paused = !client.paused;
+        client.world.send(ClientMessage::Pause(client.paused));
     }
 }
 

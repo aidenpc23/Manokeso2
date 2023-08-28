@@ -5,12 +5,13 @@ use std::{
 
 use crate::{
     message::{ClientMessage, WorldMessage},
-    render::tile::data::RenderViewInfo,
     util::point::Point,
 };
 
 #[derive(Debug)]
 pub struct BoardView {
+    pub board_pos: Point<f32>,
+
     pub connex_numbers: Vec<u32>,
     pub stability: Vec<f32>,
     pub reactivity: Vec<f32>,
@@ -20,15 +21,16 @@ pub struct BoardView {
     pub gamma: Vec<f32>,
     pub delta: Vec<u64>,
     pub omega: Vec<f32>,
-    pub render_info: RenderViewInfo,
+
+    pub slice: BoardSlice,
     pub total_energy: f32,
     pub time_taken: Duration,
-    pub pos: Point<f32>,
 }
 
 impl BoardView {
     pub fn empty() -> Self {
         Self {
+            board_pos: Point::zero(),
             connex_numbers: Vec::new(),
             stability: Vec::new(),
             reactivity: Vec::new(),
@@ -38,13 +40,41 @@ impl BoardView {
             gamma: Vec::new(),
             delta: Vec::new(),
             omega: Vec::new(),
-            render_info: RenderViewInfo::new(),
+            slice: BoardSlice::empty(),
             total_energy: 0.0,
             time_taken: Duration::ZERO,
-            pos: Point::zero(),
         }
     }
 }
+
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub struct BoardSlice {
+    pub world_pos: Point<f32>,
+    pub start: Point<usize>,
+    pub end: Point<usize>,
+    pub width: usize,
+    pub height: usize,
+    pub size: usize,
+}
+
+impl BoardSlice {
+    pub fn new(world_pos: Point<f32>, start: Point<usize>, end: Point<usize>) -> Self {
+        let diff = end - start;
+        Self {
+            world_pos,
+            start,
+            end,
+            width: diff.x,
+            height: diff.y,
+            size: diff.x * diff.y,
+        }
+    }
+
+    pub fn empty() -> Self {
+        return Self::new(Point::zero(), Point::zero(), Point::zero());
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct TileInfo {
     pub pos: Point<usize>,

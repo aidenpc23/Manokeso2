@@ -1,26 +1,13 @@
 use wgpu::{util::StagingBelt, CommandEncoder, Device, RenderPass, VertexBufferLayout};
 
-use crate::{util::point::Point, world::BoardSlice};
+use crate::view::BoardSlice;
 
-#[derive(Clone, Copy, Debug)]
-pub struct RenderViewInfo {
-    pub pos: Point<f32>,
-    pub slice: BoardSlice,
-    pub dirty: bool,
-}
-
-impl RenderViewInfo {
-    pub fn new() -> Self {
-        Self {
-            pos: Point { x: 0.0, y: 0.0 },
-            slice: BoardSlice::default(),
-            dirty: false,
-        }
-    }
+pub trait TileUpdateData {
+    fn slice(&self) -> &BoardSlice;
 }
 
 pub trait TileData {
-    type UpdateData<'a>;
+    type UpdateData<'a> : TileUpdateData;
     fn init(device: &Device) -> Self;
     fn descs(&self) -> Vec<VertexBufferLayout>;
     fn set_in<'a>(&'a self, render_pass: &mut RenderPass<'a>);
@@ -45,9 +32,15 @@ macro_rules! tile_render_data {
             )*
         }
         pub struct $vname<'a> {
+            pub slice: &'a crate::view::BoardSlice,
             $(
                 pub $name: &'a [$type],
             )*
+        }
+        impl<'a> crate::render::tile::data::TileUpdateData for $vname<'a> {
+            fn slice(&self) -> &crate::view::BoardSlice {
+                self.slice
+            }
         }
         impl crate::render::tile::data::TileData for $sname {
             type UpdateData<'a> = $vname<'a>;

@@ -1,6 +1,4 @@
 use std::{
-    fs::File,
-    io::{Error, Read, Write},
     ops::AddAssign,
     sync::mpsc::{Receiver, Sender},
     time::{Duration, Instant},
@@ -13,9 +11,8 @@ use rayon::{
 
 use crate::{
     message::{CameraView, ClientMessage, TileChange, WorldMessage},
-    render::tile::data::RenderViewInfo,
     rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE, UPDATE_TIME, UPS},
-    sync::BoardView,
+    view::{BoardView, BoardSlice},
     util::{math::SaturatingAdd, point::Point, timer::Timer},
 };
 
@@ -51,7 +48,7 @@ impl World {
         Self {
             board,
             view: Some(BoardView::empty()),
-            slice: BoardSlice::default(),
+            slice: BoardSlice::empty(),
             slice_change: false,
             update_time: UPDATE_TIME,
             paused: true,
@@ -161,15 +158,10 @@ impl World {
             copy_swap_buf(&mut view.delta, &board.delta, &slice);
             copy_swap_buf(&mut view.omega, &board.omega, &slice);
 
-            let slice_start: Point<f32> = self.slice.start.into();
-            view.render_info = RenderViewInfo {
-                pos: self.board.pos + slice_start,
-                slice: self.slice.clone(),
-                dirty: true,
-            };
+            view.slice = self.slice.clone();
             view.total_energy = self.board.total_energy;
             view.time_taken = self.timer.avg();
-            view.pos = self.board.pos;
+            view.board_pos = self.board.pos;
             self.sender.send(WorldMessage::ViewSwap(view)).expect("D:");
         }
     }
@@ -190,29 +182,9 @@ impl World {
         let bounded_start = aligned_start.clamp_usize(corner);
         let bounded_end = aligned_end.clamp_usize(corner);
 
-        BoardSlice::new(bounded_start, bounded_end)
-    }
-}
+        let start_f32: Point<f32> = bounded_start.into();
 
-#[derive(PartialEq, Default, Clone, Copy, Debug)]
-pub struct BoardSlice {
-    pub start: Point<usize>,
-    pub end: Point<usize>,
-    pub width: usize,
-    pub height: usize,
-    pub size: usize,
-}
-
-impl BoardSlice {
-    pub fn new(start: Point<usize>, end: Point<usize>) -> Self {
-        let diff = end - start;
-        Self {
-            start,
-            end,
-            width: diff.x,
-            height: diff.y,
-            size: diff.x * diff.y,
-        }
+        BoardSlice::new(self.board.pos + start_f32, bounded_start, bounded_end)
     }
 }
 

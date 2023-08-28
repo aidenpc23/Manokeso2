@@ -1,5 +1,5 @@
 use crate::{
-    client::ClientState,
+    client::Client,
     render::primitive::{RoundedRectInstance, TextElement},
     util::point::Point,
 };
@@ -66,7 +66,7 @@ impl UIPoint {
     }
 }
 
-pub type TextUpdater = fn(&ClientState) -> String;
+pub type TextUpdater = fn(&Client) -> String;
 
 pub struct Text {
     pub content: TextUpdater,
@@ -76,7 +76,7 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn into_primitive(&self, state: &ClientState) -> TextElement {
+    pub fn into_primitive(&self, state: &Client) -> TextElement {
         let size = state.renderer.window.inner_size();
         let bounds = (size.width as f32, size.height as f32);
         let text_bounds = (self.bounds)(bounds);

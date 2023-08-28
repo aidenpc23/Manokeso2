@@ -8,8 +8,8 @@ use super::{
 pub fn board() -> GameUI {
     let text = vec![
         Text {
-            content: |state| {
-                if let Some(tile) = &state.hovered_tile {
+            content: |client| {
+                if let Some(tile) = &client.hovered_tile {
                     let mut str = format!(
                         concat!(
                             "connex number: {}\n",
@@ -20,10 +20,10 @@ pub fn board() -> GameUI {
                         ),
                         tile.connex_number, tile.stability, tile.reactivity, tile.energy, tile.gamma
                     );
-                    if state.debug {
+                    if client.debug {
                         str = format!("tile pos: {:?}\n", tile.pos) + &str;
                     }
-                    if state.player.creative {
+                    if client.state.player.creative {
                         str.push_str(&format!(
                             concat!(
                                 "alpha: {:?}\n",
@@ -47,7 +47,7 @@ pub fn board() -> GameUI {
             bounds: |(w, h)| (w / 3.0 - 30.0, h),
         },
         Text {
-            content: |state| format!("total energy: {}", state.world.view.total_energy),
+            content: |client| format!("total energy: {}", client.world.view.total_energy),
             pos: |(w, _)| Point {
                 x: w / 2.0,
                 y: 15.0,
@@ -56,15 +56,15 @@ pub fn board() -> GameUI {
             bounds: |(w, h)| (w / 3.0 - 20.0, h),
         },
         Text {
-            content: |state| {
-                if state.debug {
-                    let adp_info = state.renderer.render_surface.adapter.get_info();
+            content: |client| {
+                if client.debug {
+                    let adp_info = client.renderer.render_surface.adapter.get_info();
                     format!(
                         "adapter: {}\nbackend: {:?}\nclient update: {:.3}ms\nworld update: {:.3}ms",
                         adp_info.name,
                         adp_info.backend,
-                        state.debug_stats.client_update_time,
-                        state.debug_stats.world_update_time,
+                        client.debug_stats.client_update_time,
+                        client.debug_stats.world_update_time,
                     )
                 } else {
                     String::new()

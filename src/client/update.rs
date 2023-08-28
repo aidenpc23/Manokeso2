@@ -1,10 +1,10 @@
 use std::time::Instant;
 
-use crate::{sync::TileInfo, util::point::Point};
+use crate::{view::TileInfo, util::point::Point};
 
-use super::{input::Input, ClientState};
+use super::{input::Input, Client};
 
-pub fn update(state: &mut ClientState, input: &Input, now: Instant) {
+pub fn update(state: &mut Client, input: &Input, now: Instant) {
     let view = &mut state.world.view;
 
     let ddelta = now - state.last_debug;
@@ -15,13 +15,12 @@ pub fn update(state: &mut ClientState, input: &Input, now: Instant) {
     }
 
     let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
-    let rinfo = view.render_info;
-    let Point { x, y } = mouse_world_pos - rinfo.pos;
+    let Point { x, y } = mouse_world_pos - view.slice.world_pos;
     state.hovered_tile =
-        if x >= 0.0 && y >= 0.0 && x < rinfo.slice.width as f32 && y < rinfo.slice.height as f32 {
+        if x >= 0.0 && y >= 0.0 && x < view.slice.width as f32 && y < view.slice.height as f32 {
             let pos = Point::new(x as usize, y as usize);
-            let i = pos.index(rinfo.slice.width);
-            let pos = pos + rinfo.slice.start;
+            let i = pos.index(view.slice.width);
+            let pos = pos + view.slice.start;
             Some(TileInfo {
                 pos,
                 connex_number: view.connex_numbers[i],
@@ -38,21 +37,22 @@ pub fn update(state: &mut ClientState, input: &Input, now: Instant) {
             None
         };
 
-    if !state.player.creative {
+    if !state.state.player.creative {
         handle_collisions(state);
     }
 }
 
-pub fn handle_collisions(state: &mut ClientState) {
+pub fn handle_collisions(state: &mut Client) {
     let view = &mut state.world.view;
+    let player = &mut state.state.player;
 
     if view.connex_numbers.len() != 0 {
         // cardinal edges
 
-        let rad = state.player.size / 2.0;
-        let player_rel_pos = state.player.pos - view.pos;
+        let rad = player.size / 2.0;
+        let player_rel_pos = player.pos - view.board_pos;
         let player_edges = Point::<f32>::CARDINAL_DIRECTIONS.map(|v| player_rel_pos + v * rad);
-        let slice = view.render_info.slice;
+        let slice = view.slice;
         for i in 0..4 {
             let mut edge = player_edges[i];
             let board_edge = edge.x < 0.0
@@ -75,16 +75,16 @@ pub fn handle_collisions(state: &mut ClientState) {
                     edge = edge - 1.0;
                 }
                 let a: Point<f32> = tile_pos.into();
-                state.player.pos += (edge - a) * -dir.abs();
+                player.pos += (edge - a) * -dir.abs();
             }
         }
 
         // corners
 
-        let player_rel_pos = state.player.pos - view.pos;
+        let player_rel_pos = player.pos - view.board_pos;
         let player_tile: Point<i32> = player_rel_pos.floor().into();
-        let start: Point<i32> = (player_rel_pos - state.player.size / 2.0).floor().into();
-        let end: Point<i32> = (player_rel_pos + state.player.size / 2.0).floor().into();
+        let start: Point<i32> = (player_rel_pos - player.size / 2.0).floor().into();
+        let end: Point<i32> = (player_rel_pos + player.size / 2.0).floor().into();
         for x in start.x..=end.x {
             for y in start.y..=end.y {
                 if x < 0 || y < 0 || x >= slice.end.x as i32 || y >= slice.end.y as i32 {
@@ -95,8 +95,8 @@ pub fn handle_collisions(state: &mut ClientState) {
                         x: x as usize,
                         y: y as usize,
                     };
-                    let rel_pos = tile - view.render_info.slice.start;
-                    let i = rel_pos.index(view.render_info.slice.width);
+                    let rel_pos = tile - view.slice.start;
+                    let i = rel_pos.index(view.slice.width);
                     let cn = view.connex_numbers[i];
                     let s = view.stability[i];
                     if cn > 10 && s > 0.8 {
@@ -110,7 +110,7 @@ pub fn handle_collisions(state: &mut ClientState) {
                         let dist = player_rel_pos.dist(corner);
                         if dist < rad {
                             let move_dist = rad - dist;
-                            state.player.pos += (player_rel_pos - corner).norm() * move_dist;
+                            player.pos += (player_rel_pos - corner).norm() * move_dist;
                         }
                     }
                 }

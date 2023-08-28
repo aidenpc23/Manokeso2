@@ -1,8 +1,10 @@
-use crate::{client::Camera, message::CameraView, rsc::CLEAR_COLOR, util::point::Point};
+use crate::{
+    client::Camera, message::CameraView, rsc::CLEAR_COLOR, util::point::Point,
+};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
-    window::{Window, WindowBuilder, Fullscreen},
+    window::{Fullscreen, Window, WindowBuilder},
 };
 
 use super::{
@@ -11,10 +13,7 @@ use super::{
     surface::RenderSurface,
     text::pipeline::TextPipeline,
     texture::pipeline::TexturePipeline,
-    tile::{
-        data::{RenderViewInfo, TileData},
-        pipeline::TilePipeline,
-    },
+    tile::{data::TileData, pipeline::TilePipeline},
 };
 
 pub struct Renderer<T: TileData> {
@@ -64,23 +63,7 @@ impl<T: TileData> Renderer<T> {
         ));
     }
 
-    pub fn sync<'a>(&mut self, info: &RenderViewInfo, data: &T::UpdateData<'a>) {
-        let mut encoder = self.encoder.take().expect("encoder not started");
-        self.tile_pipeline.sync(
-            &self.render_surface.device,
-            &mut encoder,
-            &mut self.staging_belt,
-            info,
-            data,
-        );
-        self.encoder = Some(encoder);
-    }
-
-    pub fn update_world(
-        &mut self,
-        camera: &Camera,
-        resized: bool,
-    ) -> Option<CameraView> {
+    pub fn update_world<'a>(&mut self, data: Option<T::UpdateData<'a>>, camera: &Camera, resized: bool) -> Option<CameraView> {
         let size = &self.window.inner_size();
         if resized {
             self.render_surface.resize(size);
@@ -91,6 +74,7 @@ impl<T: TileData> Renderer<T> {
             &self.render_surface.device,
             &mut encoder,
             &mut self.staging_belt,
+            data,
             camera,
             size,
         );
@@ -99,11 +83,7 @@ impl<T: TileData> Renderer<T> {
         camera_view
     }
 
-    pub fn update_ui(
-        &mut self,
-        ui: &UIPrimatives,
-        resized: bool,
-    ) {
+    pub fn update_ui(&mut self, ui: &UIPrimatives, resized: bool) {
         self.text_pipeline.update(&self.render_surface, &ui.text);
         self.shape_pipeline
             .update(&self.render_surface, &ui.rounded_rects, resized);
@@ -163,7 +143,7 @@ impl<T: TileData> Renderer<T> {
         let size = self.window.inner_size();
         Point {
             x: (pos.x + 1.0) / 2.0 * size.width as f32,
-            y: (-pos.y + 1.0) / 2.0 * size.height as f32
+            y: (-pos.y + 1.0) / 2.0 * size.height as f32,
         }
     }
 

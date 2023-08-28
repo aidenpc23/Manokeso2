@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    config::Config, handle_input::handle_input, input::Input, state::ClientState, update::update,
+    config::Config, handle_input::handle_input, input::Input, state::Client, update::update,
     TileUpdateData,
 };
 
@@ -25,7 +25,7 @@ pub async fn run() {
     let (ws, wr) = channel();
 
     let event_loop = EventLoop::new();
-    let mut state = ClientState::new(Config::load(), &event_loop, cs, wr).await;
+    let mut state = Client::new(Config::load(), &event_loop, cs, wr).await;
 
     world_pool.spawn(move || {
         World::new(ws, cr).run();
@@ -79,35 +79,41 @@ pub async fn run() {
     });
 }
 
-pub fn receive_messages(state: &mut ClientState) {
+pub fn receive_messages(state: &mut Client) {
     for msg in state.world.receiver.try_iter() {
         match msg {
             WorldMessage::ViewSwap(mut view) => {
                 std::mem::swap(&mut view, &mut state.world.view);
                 state.world.send(ClientMessage::ViewSwap(view));
+                state.tiles_dirty = true;
             }
         }
     }
 }
 
-pub fn render(state: &mut ClientState, resized: bool) {
-    state.renderer.start_encoder();
-    let view = &mut state.world.view;
-    state.renderer.sync(
-        &mut view.render_info,
-        &TileUpdateData {
-            connex_numbers: &view.connex_numbers,
-            stability: &view.stability,
-            reactivity: &view.reactivity,
-            energy: &view.energy,
+pub fn render(client: &mut Client, resized: bool) {
+    client.renderer.start_encoder();
+    let view = &mut client.world.view;
+    client.state.camera.pos = client.state.player.pos;
+    if let Some(cam_view) = client.renderer.update_world(
+        if client.tiles_dirty {
+            Some(TileUpdateData {
+                slice: &view.slice,
+                connex_numbers: &view.connex_numbers,
+                stability: &view.stability,
+                reactivity: &view.reactivity,
+                energy: &view.energy,
+            })
+        } else {
+            None
         },
-    );
-    view.render_info.dirty = false;
-    state.camera.pos = state.player.pos;
-    if let Some(cam_view) = state.renderer.update_world(&state.camera, resized) {
-        state.world.send(ClientMessage::CameraUpdate(cam_view));
+        &client.state.camera,
+        resized,
+    ) {
+        client.world.send(ClientMessage::CameraUpdate(cam_view));
     }
-    let ui = state.ui.compile(&state);
-    state.renderer.update_ui(&ui, resized);
-    state.renderer.draw();
+    client.tiles_dirty = false;
+    let ui = client.ui.compile(&client);
+    client.renderer.update_ui(&ui, resized);
+    client.renderer.draw();
 }

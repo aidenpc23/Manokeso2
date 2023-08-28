@@ -9,7 +9,7 @@ use crate::{
     message::{ClientMessage, WorldMessage},
     render::Renderer,
     rsc::{FPS, FRAME_TIME},
-    sync::{BoardView, TileInfo, WorldInterface},
+    view::{BoardView, TileInfo, WorldInterface},
     tile_render_data,
     util::timer::Timer,
 };
@@ -28,26 +28,24 @@ tile_render_data!(TileRenderData, TileUpdateData, [
 
 pub const TILE_SHADER: &str = include_str!("./rsc/tile.wgsl");
 
-pub struct ClientState {
+pub struct Client {
+    pub state: ClientState,
     pub renderer: Renderer<TileRenderData>,
     pub ui: GameUI,
     pub keybinds: Keybinds,
     pub frame_time: Duration,
-    pub camera: Camera,
-    pub camera_scroll: f32,
-    pub selected_tile: Option<TileInfo>,
     pub hovered_tile: Option<TileInfo>,
     pub paused: bool,
     pub timer: Timer,
     pub world: WorldInterface,
-    pub player: Player,
     pub debug_stats: DebugStats,
     pub last_debug: Instant,
+    pub tiles_dirty: bool,
     pub exit: bool,
     pub debug: bool,
 }
 
-impl ClientState {
+impl Client {
     pub async fn new(
         config: Config,
         event_loop: &EventLoop<()>,
@@ -58,16 +56,13 @@ impl ClientState {
         if let Some(config_keybinds) = config.keybinds {
             keybinds.extend(config_keybinds);
         }
-        let camera = Camera::default();
         let view = BoardView::empty();
         let fullscreen = config.fullscreen.unwrap_or(false);
         Self {
+            state: ClientState::new(),
             renderer: Renderer::new(event_loop, TILE_SHADER, fullscreen).await,
             keybinds,
             frame_time: FRAME_TIME,
-            camera,
-            camera_scroll: 0.0,
-            selected_tile: None,
             hovered_tile: None,
             paused: true,
             timer: Timer::new(Duration::from_secs(1), FPS as usize),
@@ -78,10 +73,28 @@ impl ClientState {
             },
             ui: layout::board(),
             debug_stats: DebugStats::new(),
-            player: Player::default(),
             last_debug: Instant::now(),
+            tiles_dirty: false,
             debug: true,
             exit: false,
+        }
+    }
+}
+
+pub struct ClientState {
+    pub selected_tile: Option<TileInfo>,
+    pub camera: Camera,
+    pub camera_scroll: f32,
+    pub player: Player,
+}
+
+impl ClientState {
+    pub fn new() -> Self {
+        Self {
+            camera: Camera::default(),
+            camera_scroll: 0.0,
+            selected_tile: None,
+            player: Player::default(),
         }
     }
 }

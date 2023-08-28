@@ -1,4 +1,4 @@
-use crate::{util::point::Point, sync::BoardView};
+use crate::{util::point::Point, view::BoardView};
 
 #[derive(Debug)]
 pub struct CameraView {

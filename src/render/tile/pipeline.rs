@@ -8,7 +8,7 @@ use crate::{
 use wgpu::{util::StagingBelt, BindGroup, CommandEncoder, Device, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
 
-use super::data::{RenderViewInfo, TileData};
+use super::data::{TileData, TileUpdateData};
 
 pub struct Buffers {
     pub camera: wgpu::Buffer,
@@ -28,7 +28,6 @@ pub struct TilePipeline<T: TileData> {
     pub(super) buffers: Buffers,
     pub(super) bind_group: BindGroup,
     pub uniforms: Uniforms,
-    pub(super) tiles_dirty: bool,
 }
 
 impl<T: TileData> TilePipeline<T> {
@@ -42,51 +41,38 @@ impl<T: TileData> TilePipeline<T> {
         render_pass.draw(0..4, 0..self.data.len() as u32);
     }
 
-    pub fn sync<'a>(
+    pub fn update<'a>(
         &mut self,
         device: &Device,
         encoder: &mut CommandEncoder,
         belt: &mut StagingBelt,
-        info: &RenderViewInfo,
-        data: &T::UpdateData<'a>,
-    ) {
-        let tile_view_changed = self
-            .uniforms
-            .tile_view
-            .update(info.pos, info.slice.width as u32);
-
-        // don't update tile buffers if paused and board section hasn't changed
-        if info.dirty || tile_view_changed {
-            self.data
-                .update_rows(device, encoder, belt, data, info.slice.size);
-
-            self.tiles_dirty = true;
-        }
-    }
-
-    pub fn update(
-        &mut self,
-        device: &Device,
-        encoder: &mut CommandEncoder,
-        belt: &mut StagingBelt,
+        data: Option<T::UpdateData<'a>>,
         camera: &Camera,
         window_size: &PhysicalSize<u32>,
     ) -> Option<CameraView> {
-        if self.tiles_dirty {
-            let slice = &[self.uniforms.tile_view];
-            let mut view = belt.write_buffer(
-                encoder,
-                &self.buffers.tile_view,
-                0,
-                unsafe {
-                    NonZeroU64::new_unchecked(
-                        (slice.len() * std::mem::size_of::<TileViewUniform>()) as u64,
-                    )
-                },
-                device,
-            );
-            view.copy_from_slice(bytemuck::cast_slice(slice));
-            self.tiles_dirty = false;
+        if let Some(data) = data {
+            let slice = data.slice();
+            self.data
+                .update_rows(device, encoder, belt, &data, slice.size);
+            if self
+                .uniforms
+                .tile_view
+                .update(slice.world_pos, slice.width as u32)
+            {
+                let slice = &[self.uniforms.tile_view];
+                let mut view = belt.write_buffer(
+                    encoder,
+                    &self.buffers.tile_view,
+                    0,
+                    unsafe {
+                        NonZeroU64::new_unchecked(
+                            (slice.len() * std::mem::size_of::<TileViewUniform>()) as u64,
+                        )
+                    },
+                    device,
+                );
+                view.copy_from_slice(bytemuck::cast_slice(slice));
+            }
         }
         let mut camera_view = None;
         if self.uniforms.camera.update(&camera, window_size) {

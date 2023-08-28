@@ -2,7 +2,7 @@ mod client;
 mod message;
 mod render;
 mod rsc;
-mod sync;
+mod view;
 mod util;
 mod world;
 
