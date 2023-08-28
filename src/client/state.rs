@@ -11,14 +11,11 @@ use crate::{
     rsc::{FPS, FRAME_TIME},
     sync::{BoardView, TileInfo, WorldInterface},
     tile_render_data,
-    util::{timer::Timer, point::Point},
+    util::timer::Timer,
 };
 use std::{
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc,
-    },
-    time::Duration,
+    sync::mpsc::{Receiver, Sender},
+    time::{Duration, Instant},
 };
 use winit::event_loop::EventLoop;
 
@@ -45,6 +42,8 @@ pub struct ClientState {
     pub world: WorldInterface,
     pub debug_stats: DebugStats,
     pub player: Player,
+    pub last_debug: Instant,
+    pub exit: bool,
 }
 
 impl ClientState {
@@ -60,7 +59,6 @@ impl ClientState {
         }
         let camera = Camera::default();
         let view = BoardView::empty();
-        let info = view.info.clone();
         Self {
             renderer: Renderer::new(event_loop, TILE_SHADER).await,
             keybinds,
@@ -74,12 +72,13 @@ impl ClientState {
             world: WorldInterface {
                 sender,
                 receiver,
-                view_lock: Arc::new(view.into()),
-                view_info: info,
+                view,
             },
             ui: layout::board(),
             debug_stats: DebugStats::new(),
             player: Player::default(),
+            last_debug: Instant::now(),
+            exit: false,
         }
     }
 }

@@ -43,7 +43,7 @@ pub fn board() -> GameUI {
             bounds: |(w, h)| (w / 3.0 - 30.0, h),
         },
         Text {
-            content: |state| format!("total energy: {}", state.world.view_info.total_energy),
+            content: |state| format!("total energy: {}", state.world.view.total_energy),
             pos: |(w, _)| Point {
                 x: w / 2.0,
                 y: 15.0,

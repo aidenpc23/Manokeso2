@@ -1,5 +1,3 @@
-use std::arch::x86_64::__get_cpuid_max;
-
 use rayon::prelude::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator,
 };

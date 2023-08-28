@@ -1,12 +1,15 @@
 use std::{
-    sync::{Arc, Mutex, mpsc::{Sender, Receiver}},
+    sync::mpsc::{Receiver, Sender},
     time::Duration,
 };
 
-use crate::{util::point::Point, message::{ClientMessage, WorldMessage}, render::tile::data::RenderViewInfo};
+use crate::{
+    message::{ClientMessage, WorldMessage},
+    render::tile::data::RenderViewInfo,
+    util::point::Point,
+};
 
-pub type BoardViewLock = Arc<Mutex<BoardView>>;
-
+#[derive(Debug)]
 pub struct BoardView {
     pub connex_numbers: Vec<u32>,
     pub stability: Vec<f32>,
@@ -17,11 +20,6 @@ pub struct BoardView {
     pub gamma: Vec<f32>,
     pub delta: Vec<f32>,
     pub omega: Vec<f32>,
-    pub info: BoardViewInfo,
-}
-
-#[derive(Clone, Copy)]
-pub struct BoardViewInfo {
     pub render_info: RenderViewInfo,
     pub total_energy: f32,
     pub time_taken: Duration,
@@ -40,12 +38,10 @@ impl BoardView {
             gamma: Vec::new(),
             delta: Vec::new(),
             omega: Vec::new(),
-            info: BoardViewInfo {
-                render_info: RenderViewInfo::new(),
-                total_energy: 0.0,
-                time_taken: Duration::ZERO,
-                pos: Point::zero(),
-            },
+            render_info: RenderViewInfo::new(),
+            total_energy: 0.0,
+            time_taken: Duration::ZERO,
+            pos: Point::zero(),
         }
     }
 }
@@ -66,8 +62,7 @@ pub struct TileInfo {
 pub struct WorldInterface {
     pub sender: Sender<ClientMessage>,
     pub receiver: Receiver<WorldMessage>,
-    pub view_lock: BoardViewLock,
-    pub view_info: BoardViewInfo,
+    pub view: BoardView,
 }
 
 impl WorldInterface {

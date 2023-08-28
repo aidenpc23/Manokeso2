@@ -10,10 +10,10 @@ use super::{
 
 use crate::{message::{ClientMessage, TileChange::*}, rsc::PLAYER_SPEED};
 
-pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) -> bool {
+pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
     let ainput = (input, &state.keybinds);
     if ainput.pressed(Action::Exit) {
-        return true;
+        state.exit = true;
     }
 
     // camera stuff
@@ -124,8 +124,6 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) ->
     if ainput.just_pressed(Action::Step) {
         state.world.send(ClientMessage::Step());
     }
-
-    return false;
 }
 
 trait ActionInput {

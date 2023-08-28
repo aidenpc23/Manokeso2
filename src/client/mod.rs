@@ -7,6 +7,7 @@ mod keybinds;
 mod player;
 mod state;
 pub mod ui;
+mod update;
 
 pub use camera::*;
 pub use client::*;

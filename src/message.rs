@@ -1,4 +1,4 @@
-use crate::util::point::Point;
+use crate::{util::point::Point, sync::BoardView};
 
 #[derive(Debug)]
 pub struct CameraView {
@@ -14,7 +14,7 @@ pub enum ClientMessage {
     Swap(Point<usize>, Point<usize>),
     Pause(bool),
     Step(),
-    RenderFinished(),
+    ViewSwap(BoardView),
 }
 
 #[derive(Debug)]
@@ -26,4 +26,6 @@ pub enum TileChange {
     Omega(f32)
 }
 
-pub enum WorldMessage {}
+pub enum WorldMessage {
+    ViewSwap(BoardView)
+}

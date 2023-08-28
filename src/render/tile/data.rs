@@ -2,7 +2,7 @@ use wgpu::{util::StagingBelt, CommandEncoder, Device, RenderPass, VertexBufferLa
 
 use crate::{util::point::Point, world::BoardSlice};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct RenderViewInfo {
     pub pos: Point<f32>,
     pub slice: BoardSlice,

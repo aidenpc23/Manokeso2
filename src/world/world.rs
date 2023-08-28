@@ -11,8 +11,9 @@ use rayon::{
 
 use crate::{
     message::{CameraView, ClientMessage, TileChange, WorldMessage},
-    rsc::{CONNEX_NUMBER_RANGE, STABILITY_RANGE, UPDATE_TIME, UPS, REACTIVITY_RANGE},
-    sync::{BoardViewInfo, BoardViewLock},
+    render::tile::data::RenderViewInfo,
+    rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE, UPDATE_TIME, UPS},
+    sync::BoardView,
     util::{math::SaturatingAdd, point::Point, timer::Timer},
 };
 
@@ -20,7 +21,7 @@ use super::{board::Board, swap_buffer::SwapBuffer};
 
 pub struct World {
     pub board: Board,
-    pub board_view: BoardViewLock,
+    pub view: Option<BoardView>,
     pub slice: BoardSlice,
     pub slice_change: bool,
     pub update_time: Duration,
@@ -33,11 +34,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(
-        board_view: BoardViewLock,
-        sender: Sender<WorldMessage>,
-        receiver: Receiver<ClientMessage>,
-    ) -> Self {
+    pub fn new(sender: Sender<WorldMessage>, receiver: Receiver<ClientMessage>) -> Self {
         let width = 708;
         let height = 708;
         let board = Board::new(
@@ -47,7 +44,7 @@ impl World {
         );
         Self {
             board,
-            board_view,
+            view: Some(BoardView::empty()),
             slice: BoardSlice::default(),
             slice_change: false,
             update_time: UPDATE_TIME,
@@ -75,7 +72,7 @@ impl World {
                     self.board.update();
                     self.timer.stop();
                 }
-                if (self.slice_change || self.board.dirty) && self.client_ready {
+                if self.slice_change || self.board.dirty {
                     self.sync_board();
                 }
             }
@@ -125,42 +122,40 @@ impl World {
                     self.slice_change = self.slice != new;
                     self.slice = new;
                 }
-                ClientMessage::RenderFinished() => self.client_ready = true,
+                ClientMessage::ViewSwap(view) => self.view = Some(view),
             }
         }
     }
 
     fn sync_board(&mut self) {
-        let board = &mut self.board;
-        let slice = &mut self.slice;
-        board.dirty = false;
-        self.slice_change = false;
+        if let Some(mut view) = self.view.take() {
+            let board = &mut self.board;
+            let slice = &mut self.slice;
+            board.dirty = false;
+            self.slice_change = false;
 
-        let mut view = self
-            .board_view
-            .lock()
-            .expect("Failed to get tile view lock");
+            copy_swap_buf(&mut view.connex_numbers, &board.connex_numbers, &slice);
+            copy_swap_buf(&mut view.stability, &board.stability, &slice);
+            copy_swap_buf(&mut view.reactivity, &board.reactivity, &slice);
+            copy_swap_buf(&mut view.energy, &board.energy, &slice);
+            copy_swap_buf(&mut view.alpha, &board.alpha, &slice);
+            copy_swap_buf(&mut view.beta, &board.beta, &slice);
+            copy_swap_buf(&mut view.gamma, &board.gamma, &slice);
+            copy_swap_buf(&mut view.delta, &board.delta, &slice);
+            copy_swap_buf(&mut view.omega, &board.omega, &slice);
 
-        copy_swap_buf(&mut view.connex_numbers, &board.connex_numbers, &slice);
-        copy_swap_buf(&mut view.stability, &board.stability, &slice);
-        copy_swap_buf(&mut view.reactivity, &board.reactivity, &slice);
-        copy_swap_buf(&mut view.energy, &board.energy, &slice);
-        copy_swap_buf(&mut view.alpha, &board.alpha, &slice);
-        copy_swap_buf(&mut view.beta, &board.beta, &slice);
-        copy_swap_buf(&mut view.gamma, &board.gamma, &slice);
-        copy_swap_buf(&mut view.delta, &board.delta, &slice);
-        copy_swap_buf(&mut view.omega, &board.omega, &slice);
-
-        let slice_start: Point<f32> = self.slice.start.into();
-        view.info = BoardViewInfo {
-            render_info: crate::render::tile::data::RenderViewInfo {
+            let slice_start: Point<f32> = self.slice.start.into();
+            view.render_info = RenderViewInfo {
                 pos: self.board.pos + slice_start,
                 slice: self.slice.clone(),
                 dirty: true,
-            },
-            total_energy: self.board.total_energy,
-            time_taken: self.timer.avg(),
-            pos: self.board.pos,
+            };
+            view.total_energy = self.board.total_energy;
+            view.time_taken = self.timer.avg();
+            view.pos = self.board.pos;
+            self.sender
+                .send(WorldMessage::ViewSwap(view))
+                .expect("D:");
         }
     }
 
@@ -184,7 +179,7 @@ impl World {
     }
 }
 
-#[derive(PartialEq, Default, Clone, Copy)]
+#[derive(PartialEq, Default, Clone, Copy, Debug)]
 pub struct BoardSlice {
     pub start: Point<usize>,
     pub end: Point<usize>,

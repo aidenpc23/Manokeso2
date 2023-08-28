@@ -15,7 +15,7 @@ impl GameUI {
         };
         if let Some(tile) = state.hovered_tile {
             let pos: Point<f32> = tile.pos.into();
-            let start = pos + state.world.view_info.pos;
+            let start = pos + state.world.view.pos;
             let end = start + 1.0;
             let mut start = state.renderer.world_to_pixel(start);
             let mut end = state.renderer.world_to_pixel(end);
@@ -46,7 +46,7 @@ impl GameUI {
         }
         if let Some(tile) = state.held_tile {
             let pos: Point<f32> = tile.pos.into();
-            let start = pos + state.world.view_info.pos;
+            let start = pos + state.world.view.pos;
             let end = start + 1.0;
             let mut start = state.renderer.world_to_pixel(start);
             let mut end = state.renderer.world_to_pixel(end);
