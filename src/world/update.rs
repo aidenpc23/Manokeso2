@@ -262,12 +262,16 @@ impl Board {
                     *rn = ri + r_adjustments[g2 as usize] * (1.0 - s.r[i]);
 
                     *dn = di;
-                    for dir in CARDINAL_DIRECTIONS_SHORT {
-                        let i2 = (y.sat_add(dir.1).min(self.height - 1)) * self.width
-                            + (x.sat_add(dir.0).min(self.width - 1));
-                        if i != i2 {
-                            *dn ^= d.r[i2];
+                    
+                    let dcost = 20.0 * ci as f32;
+                    if *en > dcost {
+                        for dir in CARDINAL_DIRECTIONS_SHORT {
+                            let i2 = (y.sat_add(dir.1).min(self.height-1)) * self.width + (x.sat_add(dir.0).min(self.width-1));
+                            if i != i2 {
+                                *dn ^= d.r[i2];
+                            }
                         }
+                        *en -= dcost;
                     }
 
                     *gn -= gamma_cost;
@@ -281,14 +285,6 @@ impl Board {
 
                 if (y + 1) < self.height {
                     let i2 = (y + 1) * self.width + x;
-                    if get_bit(d.r[i2], 7) && !get_bit(d.r[i2], 6) && e.r[i2] >= 50.0 {
-                        *cn = c.r[i2];
-                        *sn = s.r[i2];
-                        *rn = r.r[i2];
-                        *en = e.r[i2] - 50.0;
-                        *dn = d.r[i2];
-                    }
-
                     if get_bit(d.r[i], 6) && !get_bit(d.r[i], 7) && *en >= 50.0 {
                         *cn = c.r[i2];
                         *sn = s.r[i2];
@@ -296,23 +292,32 @@ impl Board {
                         *en = e.r[i2];
                         *dn = d.r[i2];
                     }
+
+                    if get_bit(d.r[i2], 7) && !get_bit(d.r[i2], 6) && e.r[i2] >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2] - 50.0;
+                        *dn = d.r[i2];
+                    }
                 }
 
                 if y > 0 {
                     let i2 = (y - 1) * self.width + x;
-                    if get_bit(d.r[i], 7) && !get_bit(d.r[i], 6) && *en >= 50.0 {
-                        *cn = c.r[i2];
-                        *sn = s.r[i2];
-                        *rn = r.r[i2];
-                        *en = e.r[i2];
-                        *dn = d.r[i2];
-                    }
 
                     if get_bit(d.r[i2], 6) && !get_bit(d.r[i2], 7) && e.r[i2] >= 50.0 {
                         *cn = c.r[i2];
                         *sn = s.r[i2];
                         *rn = r.r[i2];
                         *en = e.r[i2] - 50.0;
+                        *dn = d.r[i2];
+                    }
+
+                    if get_bit(d.r[i], 7) && !get_bit(d.r[i], 6) && *en >= 50.0 {
+                        *cn = c.r[i2];
+                        *sn = s.r[i2];
+                        *rn = r.r[i2];
+                        *en = e.r[i2];
                         *dn = d.r[i2];
                     }
                 }
