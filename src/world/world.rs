@@ -189,7 +189,7 @@ impl World {
         // get camera position relative to board
         let cam_rel_pos: Point<i32> = (view.pos - self.board.pos).into();
         // calculate chunk size based on max camera dimension
-        let chunk_align = (view.width.max(view.height) as u32).max(1).ilog2();
+        let chunk_align = (view.width.max(view.height) as u32).max(1).ilog2().max(5);
         let chunk_size = 2i32.pow(chunk_align);
         let chunk_mask = !(chunk_size - 1);
         // align with chunks and add an extra chunk in each direction

@@ -156,6 +156,10 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
     if state.player.admin {
         if input.just_pressed(Key::B) {
             state.player.creative = !state.player.creative;
+            if !state.player.creative {
+                state.camera_scroll = state.camera_scroll.clamp(0.0, 30.0);
+                state.camera.scale = (state.camera_scroll * 0.1).exp();
+            }
         }
     }
 
