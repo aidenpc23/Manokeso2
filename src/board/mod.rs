@@ -1,7 +1,6 @@
 mod board;
 mod gen;
 mod refs;
-mod save;
 mod swap_buffer;
 mod update;
 mod util;

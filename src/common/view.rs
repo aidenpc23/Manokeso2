@@ -1,12 +1,5 @@
-use std::{
-    sync::mpsc::{Receiver, Sender},
-    time::Duration,
-};
-
-use crate::{
-    message::{WorkerCommand, WorkerResponse},
-    util::point::Point,
-};
+use crate::util::point::Point;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct BoardView {
@@ -75,7 +68,7 @@ impl BoardSlice {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct TileInfo {
     pub pos: Point<usize>,
     pub connex_number: u32,
@@ -87,18 +80,4 @@ pub struct TileInfo {
     pub gamma: f32,
     pub delta: u64,
     pub omega: f32,
-}
-
-pub struct WorkerInterface {
-    pub sender: Sender<WorkerCommand>,
-    pub receiver: Receiver<WorkerResponse>,
-    pub view: BoardView,
-}
-
-impl WorkerInterface {
-    pub fn send(&self, message: WorkerCommand) {
-        if let Err(err) = self.sender.send(message) {
-            println!("Failed to send message to server: {:?}", err);
-        }
-    }
 }

@@ -2,6 +2,7 @@ use crate::util::point::Point;
 
 const DEFAULT_ASPECT_RATIO: f32 = 16. / 9.;
 
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Camera {
     pub pos: Point<f32>,
     pub aspect: f32,

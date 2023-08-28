@@ -1,10 +1,9 @@
 mod board;
 mod client;
-mod message;
 mod render;
 mod rsc;
 mod util;
-mod view;
+mod common;
 
 fn main() {
     pollster::block_on(client::Client::run());

@@ -3,12 +3,12 @@ use std::time::Duration;
 use winit::event::{MouseButton, VirtualKeyCode as Key};
 
 use super::{
+    client::Client,
     input::Input,
     keybinds::{Action, Keybinds},
-    state::Client,
 };
 
-use crate::message::{WorkerCommand, TileChange::*};
+use crate::common::message::{TileChange::*, WorkerCommand};
 
 pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
     let ainput = (input, &client.keybinds);
@@ -55,7 +55,11 @@ pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
         if input.mouse_just_pressed(MouseButton::Right) {
             if let Some(tile1) = state.selected_tile {
                 if let Some(tile2) = client.hovered_tile {
-                    client.worker.send(WorkerCommand::Swap(tile1.pos, tile2.pos, state.player.creative));
+                    client.worker.send(WorkerCommand::Swap(
+                        tile1.pos,
+                        tile2.pos,
+                        state.player.creative,
+                    ));
                 }
             }
             state.selected_tile = None;
@@ -64,10 +68,12 @@ pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
 
     if state.player.creative {
         if input.just_pressed(Key::T) {
-            client.worker.send(WorkerCommand::Save());
+            let name = "save".to_string();
+            client.worker.send(WorkerCommand::Save(name, state.clone()));
         }
         if input.just_pressed(Key::G) {
-            client.worker.send(WorkerCommand::Load());
+            let name = "save".to_string();
+            client.worker.send(WorkerCommand::Load(name));
         }
 
         if input.just_pressed(Key::Y) {

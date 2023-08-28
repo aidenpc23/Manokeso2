@@ -1,5 +1,5 @@
 use crate::{
-    client::Camera, message::CameraView, rsc::CLEAR_COLOR, util::point::Point,
+    client::Camera, common::message::CameraView, rsc::CLEAR_COLOR, util::point::Point,
 };
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{

@@ -1,4 +1,4 @@
-use crate::{util::point::Point, view::BoardView};
+use crate::{client::ClientState, common::view::BoardView, util::point::Point};
 
 #[derive(Debug)]
 pub struct CameraView {
@@ -13,8 +13,8 @@ pub enum WorkerCommand {
     ChangeTile(Point<usize>, TileChange),
     Swap(Point<usize>, Point<usize>, bool),
     Pause(bool),
-    Save(),
-    Load(),
+    Save(String, ClientState),
+    Load(String),
     Step(),
     ViewSwap(BoardView),
 }
@@ -25,9 +25,10 @@ pub enum TileChange {
     Stability(f32),
     Energy(f32),
     Reactivity(f32),
-    Delta(i32)
+    Delta(i32),
 }
 
 pub enum WorkerResponse {
-    ViewSwap(BoardView)
+    ViewSwap(BoardView),
+    Loaded(ClientState),
 }

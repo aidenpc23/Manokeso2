@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 
 use crate::{
     client::Camera,
-    message::CameraView,
+    common::message::CameraView,
     render::tile::{CameraUniform, ConstsUniform, TileViewUniform},
 };
 use wgpu::{util::StagingBelt, BindGroup, CommandEncoder, Device, RenderPass, RenderPipeline};

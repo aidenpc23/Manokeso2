@@ -5,25 +5,22 @@ use std::{
 
 use crate::rsc::GAME_NAME;
 
-use super::Board;
-
-pub fn save_game(name: &str, board: &Board) -> Result<(), SaveError> {
+pub fn save<T: serde::Serialize>(name: &str, data: &T) -> Result<(), SaveError> {
     let dir = save_dir();
     create_dir_all(dir.clone()).map_err(|e| SaveError::CreateDir(e))?;
     let mut file = File::create(dir.join(name)).map_err(|e| SaveError::CreateFile(e))?;
-    let encoded: Vec<u8> = bincode::serialize(board).map_err(|e| SaveError::Serialize(e))?;
+    let encoded: Vec<u8> = bincode::serialize(data).map_err(|e| SaveError::Serialize(e))?;
     file.write_all(&encoded).map_err(|e| SaveError::WriteFile(e))?;
     Ok(())
 }
 
-pub fn load_game(board: &mut Board, name: &str) -> Result<(), LoadError> {
+pub fn load<T: serde::de::DeserializeOwned>(name: &str) -> Result<T, LoadError> {
     let mut file = File::open(save_dir().join(name)).map_err(|e| LoadError::OpenFile(e))?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer)
         .map_err(|e| LoadError::ReadFile(e))?;
-    *board = bincode::deserialize(&buffer).map_err(|e| LoadError::Deserialize(e))?;
-    board.dirty = true;
-    Ok(())
+    let data = bincode::deserialize(&buffer).map_err(|e| LoadError::Deserialize(e))?;
+    Ok(data)
 }
 
 fn save_dir() -> PathBuf {

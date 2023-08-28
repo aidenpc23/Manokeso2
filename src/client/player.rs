@@ -1,7 +1,13 @@
-use crate::{render::{Renderer, tile::data::TileData, primitive::RoundedRectInstance}, util::point::Point, client::ui::element::UIPoint, rsc::{DEFAULT_PLAYER_SPEED, DEFAULT_PLAYER_SIZE}};
+use crate::{
+    client::ui::element::UIPoint,
+    render::{primitive::RoundedRectInstance, tile::data::TileData, Renderer},
+    rsc::{DEFAULT_PLAYER_SIZE, DEFAULT_PLAYER_SPEED},
+    util::point::Point,
+};
 
 use super::ui::element::RoundedRect;
 
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Player {
     pub pos: Point<f32>,
     pub size: f32,
@@ -30,10 +36,7 @@ impl Default for Player {
 }
 
 impl Player {
-    pub fn to_primitives<T: TileData>(
-        &self,
-        renderer: &Renderer<T>,
-    ) -> Vec<RoundedRectInstance> {
+    pub fn to_primitives<T: TileData>(&self, renderer: &Renderer<T>) -> Vec<RoundedRectInstance> {
         let radius = self.size / 2.0;
         let point_rad = Point {
             x: radius,
@@ -59,6 +62,7 @@ impl Player {
             radius: (end - start).x / 2.0,
             colors: self.colors,
             ..Default::default()
-        }.to_primitive()]
+        }
+        .to_primitive()]
     }
 }

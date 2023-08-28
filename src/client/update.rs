@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{view::TileInfo, util::point::Point};
+use crate::{common::view::TileInfo, util::point::Point};
 
 use super::{input::Input, Client};
 

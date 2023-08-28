@@ -1,6 +1,6 @@
 use wgpu::{util::StagingBelt, CommandEncoder, Device, RenderPass, VertexBufferLayout};
 
-use crate::view::BoardSlice;
+use crate::common::view::BoardSlice;
 
 pub trait TileUpdateData {
     fn slice(&self) -> &BoardSlice;
@@ -32,13 +32,13 @@ macro_rules! tile_render_data {
             )*
         }
         pub struct $vname<'a> {
-            pub slice: &'a crate::view::BoardSlice,
+            pub slice: &'a crate::common::view::BoardSlice,
             $(
                 pub $name: &'a [$type],
             )*
         }
         impl<'a> crate::render::tile::data::TileUpdateData for $vname<'a> {
-            fn slice(&self) -> &crate::view::BoardSlice {
+            fn slice(&self) -> &crate::common::view::BoardSlice {
                 self.slice
             }
         }

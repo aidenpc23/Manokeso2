@@ -1,6 +1,5 @@
 use std::{
     ops::AddAssign,
-    sync::mpsc::{Receiver, Sender},
     time::{Duration, Instant},
 };
 
@@ -10,21 +9,21 @@ use rayon::{
 };
 
 use crate::{
-    message::{CameraView, WorkerCommand, TileChange, WorkerResponse},
+    client::ClientState,
+    common::{
+        interface::ClientInterface,
+        message::{CameraView, TileChange, WorkerCommand, WorkerResponse},
+        save::{load, save},
+        view::BoardSlice,
+    },
     rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE, UPDATE_TIME, UPS},
-    view::{BoardView, BoardSlice},
     util::{math::SaturatingAdd, point::Point, timer::Timer},
 };
 
-use super::{
-    board::Board,
-    save::{load_game, save_game},
-    swap_buffer::SwapBuffer,
-};
+use super::{board::Board, swap_buffer::SwapBuffer};
 
 pub struct BoardWorker {
     pub board: Board,
-    pub view: Option<BoardView>,
     pub slice: BoardSlice,
     pub slice_change: bool,
     pub update_time: Duration,
@@ -32,12 +31,11 @@ pub struct BoardWorker {
     pub step: bool,
     pub client_ready: bool,
     pub timer: Timer,
-    pub sender: Sender<WorkerResponse>,
-    pub receiver: Receiver<WorkerCommand>,
+    pub client: ClientInterface,
 }
 
 impl BoardWorker {
-    pub fn new(sender: Sender<WorkerResponse>, receiver: Receiver<WorkerCommand>) -> Self {
+    pub fn new(client: ClientInterface) -> Self {
         let width = 708;
         let height = 708;
         let board = Board::new(
@@ -47,15 +45,13 @@ impl BoardWorker {
         );
         Self {
             board,
-            view: Some(BoardView::empty()),
             slice: BoardSlice::empty(),
             slice_change: false,
             update_time: UPDATE_TIME,
             paused: true,
             step: false,
+            client,
             timer: Timer::new(Duration::from_secs(1), UPS as usize),
-            sender,
-            receiver,
             client_ready: true,
         }
     }
@@ -83,23 +79,27 @@ impl BoardWorker {
     }
 
     fn receive_messages(&mut self) {
-        for msg in self.receiver.try_iter() {
+        for msg in self.client.receiver.try_iter() {
             match msg {
                 WorkerCommand::Swap(pos1, pos2, creative) => {
                     if creative || self.board.player_can_swap(pos1, pos2) {
                         self.board.swap(pos1, pos2);
                     }
                 }
-                WorkerCommand::Save() => {
-                    if let Err(err) = save_game("save", &self.board) {
+                WorkerCommand::Save(name, state) => {
+                    if let Err(err) = save(&name, &(&self.board, state)) {
                         println!("{:?}", err);
                     }
                 }
-                WorkerCommand::Load() => {
-                    if let Err(err) = load_game(&mut self.board, "save") {
-                        println!("{:?}", err);
+                WorkerCommand::Load(name) => match load::<(Board, ClientState)>(&name) {
+                    Ok(data) => {
+                        self.board = data.0;
+                        self.board.dirty = true;
+                        self.paused = true;
+                        self.client.send(WorkerResponse::Loaded(data.1));
                     }
-                }
+                    Err(err) => println!("{:?}", err),
+                },
                 WorkerCommand::ChangeTile(pos, change) => {
                     let i = pos.index(self.board.width);
                     match change {
@@ -136,13 +136,13 @@ impl BoardWorker {
                     self.slice_change = self.slice != new;
                     self.slice = new;
                 }
-                WorkerCommand::ViewSwap(view) => self.view = Some(view),
+                WorkerCommand::ViewSwap(view) => self.client.view = Some(view),
             }
         }
     }
 
     fn sync_board(&mut self) {
-        if let Some(mut view) = self.view.take() {
+        if let Some(mut view) = self.client.view.take() {
             let board = &mut self.board;
             let slice = &mut self.slice;
             board.dirty = false;
@@ -162,7 +162,7 @@ impl BoardWorker {
             view.total_energy = self.board.total_energy;
             view.time_taken = self.timer.avg();
             view.board_pos = self.board.pos;
-            self.sender.send(WorkerResponse::ViewSwap(view)).expect("D:");
+            self.client.send(WorkerResponse::ViewSwap(view));
         }
     }
 
