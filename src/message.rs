@@ -13,6 +13,8 @@ pub enum ClientMessage {
     ChangeTile(Point<usize>, TileChange),
     Swap(Point<usize>, Point<usize>),
     Pause(bool),
+    Save(),
+    Load(),
     Step(),
     RenderFinished(),
 }
@@ -23,7 +25,7 @@ pub enum TileChange {
     Stability(f32),
     Energy(f32),
     Reactivity(f32),
-    Omega(f32)
+    Delta(i32)
 }
 
 pub enum WorldMessage {}
