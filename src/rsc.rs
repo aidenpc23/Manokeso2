@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+pub const GAME_NAME: &str = "manokeso";
 pub const DEFAULT_PLAYER_SPEED: f32 = 0.008;
 pub const DEFAULT_PLAYER_SIZE: f32 = 0.8;
 

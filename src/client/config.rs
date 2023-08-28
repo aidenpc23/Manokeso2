@@ -4,6 +4,8 @@ use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
 use winit::event::VirtualKeyCode as Key;
 
+use crate::rsc::GAME_NAME;
+
 use super::keybinds::Action;
 
 #[derive(Serialize, Deserialize)]
@@ -25,7 +27,7 @@ impl Config {
     pub fn load() -> Self {
         let ron = ron::Options::default().with_default_extension(Extensions::IMPLICIT_SOME);
         if let Some(path) = dirs::config_dir() {
-            if let Ok(contents) = std::fs::read_to_string(path.join("manokeso/config.ron")) {
+            if let Ok(contents) = std::fs::read_to_string(path.join(GAME_NAME).join("config.ron")) {
                 match ron.from_str::<Config>(&contents) {
                     Ok(config) => {
                         return config

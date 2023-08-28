@@ -19,7 +19,11 @@ use crate::{
     util::{math::SaturatingAdd, point::Point, timer::Timer},
 };
 
-use super::{board::Board, swap_buffer::SwapBuffer};
+use super::{
+    board::Board,
+    save::{load_game, save_game},
+    swap_buffer::SwapBuffer,
+};
 
 pub struct World {
     pub board: Board,
@@ -90,12 +94,14 @@ impl World {
                     }
                 }
                 ClientMessage::Save() => {
-                    self.save_to_file("resources/save.bin")
-                        .expect("Error saving file!");
+                    if let Err(err) = save_game("save", &self.board) {
+                        println!("{:?}", err);
+                    }
                 }
                 ClientMessage::Load() => {
-                    Self::load_from_file(&mut self.board, "resources/save.bin")
-                        .expect("Error loading file!");
+                    if let Err(err) = load_game(&mut self.board, "save") {
+                        println!("{:?}", err);
+                    }
                 }
                 ClientMessage::ChangeTile(pos, change) => {
                     let i = pos.index(self.board.width);
@@ -136,22 +142,6 @@ impl World {
                 ClientMessage::ViewSwap(view) => self.view = Some(view),
             }
         }
-    }
-
-    pub fn save_to_file(&self, file_path: &str) -> Result<(), Error> {
-        let encoded: Vec<u8> = bincode::serialize(&self.board).unwrap();
-        let mut file = File::create(file_path)?;
-        file.write_all(&encoded)?;
-        Ok(())
-    }
-
-    pub fn load_from_file(board: &mut Board, file_path: &str) -> Result<(), Error> {
-        let mut file = File::open(file_path)?;
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer)?;
-        *board = bincode::deserialize(&buffer).unwrap();
-        board.dirty = true;
-        Ok(())
     }
 
     fn sync_board(&mut self) {
