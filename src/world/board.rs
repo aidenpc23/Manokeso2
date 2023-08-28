@@ -1,15 +1,11 @@
-use std::fs::File;
-use std::io::{Write, Read, Error};
-
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     rsc::{ENERGY_RANGE, REACTIVITY_RANGE},
     util::point::Point,
 };
 
-use super::{gen::SwapBufferGen, swap_buffer::SwapBuffer, encode_alpha};
-
+use super::{encode_alpha, gen::SwapBufferGen, swap_buffer::SwapBuffer};
 
 #[derive(Serialize, Deserialize)]
 pub struct Board {
@@ -42,7 +38,10 @@ impl Board {
         );
         let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
         let energy = gen.gen_map(ENERGY_RANGE, 0.01);
-        let alpha = SwapBuffer::from_arr(vec![encode_alpha(0, 0, 0.0, 0.0, 0.0); width * height], width);
+        let alpha = SwapBuffer::from_arr(
+            vec![encode_alpha(0, 0, 0.0, 0.0, 0.0); width * height],
+            width,
+        );
         let beta = SwapBuffer::from_arr(vec![0; width * height], width);
         let gamma = SwapBuffer::from_arr(vec![0.0; width * height], width);
         let omega = SwapBuffer::from_arr(vec![0.0; width * height], width);
@@ -66,12 +65,6 @@ impl Board {
             delta,
             total_energy,
             dirty: true,
-        }
-    }
-
-    pub fn player_swap(&mut self, pos1: Point<usize>, pos2: Point<usize>) {
-        if self.player_can_swap(pos1, pos2) {
-            self.swap(pos1, pos2);
         }
     }
 

@@ -1,6 +1,7 @@
 use std::time::Duration;
 
-pub const PLAYER_SPEED: f32 = 0.01;
+pub const DEFAULT_PLAYER_SPEED: f32 = 0.008;
+pub const DEFAULT_PLAYER_SIZE: f32 = 0.8;
 
 pub const FPS: u32 = 60;
 pub const UPS: u32 = 100;

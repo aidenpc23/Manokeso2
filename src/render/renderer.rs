@@ -2,7 +2,7 @@ use crate::{client::Camera, message::CameraView, rsc::CLEAR_COLOR, util::point::
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
-    window::{Window, WindowBuilder},
+    window::{Window, WindowBuilder, Fullscreen},
 };
 
 use super::{
@@ -29,11 +29,15 @@ pub struct Renderer<T: TileData> {
 }
 
 impl<T: TileData> Renderer<T> {
-    pub async fn new(event_loop: &EventLoop<()>, tile_shader: &str) -> Self {
+    pub async fn new(event_loop: &EventLoop<()>, tile_shader: &str, fullscreen: bool) -> Self {
         let window = WindowBuilder::new()
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
+
+        if fullscreen {
+            window.set_fullscreen(Some(Fullscreen::Borderless(None)))
+        }
 
         let render_surface = RenderSurface::new(&window).await;
         // not exactly sure what this number should be,

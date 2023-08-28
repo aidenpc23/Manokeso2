@@ -35,15 +35,16 @@ pub struct ClientState {
     pub frame_time: Duration,
     pub camera: Camera,
     pub camera_scroll: f32,
-    pub held_tile: Option<TileInfo>,
+    pub selected_tile: Option<TileInfo>,
     pub hovered_tile: Option<TileInfo>,
     pub paused: bool,
     pub timer: Timer,
     pub world: WorldInterface,
-    pub debug_stats: DebugStats,
     pub player: Player,
+    pub debug_stats: DebugStats,
     pub last_debug: Instant,
     pub exit: bool,
+    pub debug: bool,
 }
 
 impl ClientState {
@@ -59,13 +60,14 @@ impl ClientState {
         }
         let camera = Camera::default();
         let view = BoardView::empty();
+        let fullscreen = config.fullscreen.unwrap_or(false);
         Self {
-            renderer: Renderer::new(event_loop, TILE_SHADER).await,
+            renderer: Renderer::new(event_loop, TILE_SHADER, fullscreen).await,
             keybinds,
             frame_time: FRAME_TIME,
             camera,
             camera_scroll: 0.0,
-            held_tile: None,
+            selected_tile: None,
             hovered_tile: None,
             paused: true,
             timer: Timer::new(Duration::from_secs(1), FPS as usize),
@@ -78,6 +80,7 @@ impl ClientState {
             debug_stats: DebugStats::new(),
             player: Player::default(),
             last_debug: Instant::now(),
+            debug: true,
             exit: false,
         }
     }

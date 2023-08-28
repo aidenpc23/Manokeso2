@@ -1,8 +1,8 @@
 use std::ops::AddAssign;
 
-use rand::{Rng, rngs::ThreadRng};
+use rand::Rng;
 use rayon::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct SwapBuffer<T> {
@@ -26,7 +26,7 @@ impl<T: Sync + Send + Copy + AddAssign> SwapBuffer<T> {
     }
 }
 
-impl<T : Copy> SwapBuffer<T> {
+impl<T: Copy> SwapBuffer<T> {
     pub fn from_arr(base: Vec<T>, width: usize) -> SwapBuffer<T> {
         SwapBuffer {
             width,
@@ -45,7 +45,7 @@ impl SwapBuffer<u64> {
                 let mut bitmask: u64 = 0;
                 let bit_to_flip = rng.gen_range(0..64);
                 bitmask |= 1 << bit_to_flip;
-                
+
                 for _ in 0..63 {
                     if rng.gen_range(0..=100) < 1 {
                         let additional_bit_to_flip = rng.gen_range(0..64);

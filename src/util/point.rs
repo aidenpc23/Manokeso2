@@ -207,6 +207,15 @@ impl Into<Point<usize>> for Point<f32> {
     }
 }
 
+impl Into<Point<f32>> for Point<i32> {
+    fn into(self) -> Point<f32> {
+        return Point {
+            x: self.x as f32,
+            y: self.y as f32,
+        };
+    }
+}
+
 impl<T: Add<Output = T> + Copy> Add<T> for Point<T> {
     type Output = Self;
 

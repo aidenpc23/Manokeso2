@@ -1,4 +1,4 @@
-use crate::{render::{Renderer, tile::data::TileData, primitive::RoundedRectInstance}, util::point::Point, client::ui::element::UIPoint};
+use crate::{render::{Renderer, tile::data::TileData, primitive::RoundedRectInstance}, util::point::Point, client::ui::element::UIPoint, rsc::{DEFAULT_PLAYER_SPEED, DEFAULT_PLAYER_SIZE}};
 
 use super::ui::element::RoundedRect;
 
@@ -7,20 +7,24 @@ pub struct Player {
     pub size: f32,
     pub colors: [[f32; 4]; 4],
     pub speed: f32,
+    pub creative: bool,
+    pub admin: bool,
 }
 
 impl Default for Player {
     fn default() -> Self {
         Self {
             pos: Point { x: 0.0, y: 0.0 },
-            size: 0.8,
+            size: DEFAULT_PLAYER_SIZE,
             colors: [
-                [1.0, 0.0, 0.0, 1.0],
-                [1.0, 0.0, 0.0, 1.0],
-                [1.0, 0.0, 0.0, 1.0],
-                [1.0, 0.0, 0.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
             ],
-            speed: 1.0,
+            speed: DEFAULT_PLAYER_SPEED,
+            creative: true,
+            admin: true,
         }
     }
 }

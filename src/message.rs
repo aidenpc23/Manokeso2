@@ -11,7 +11,7 @@ pub struct CameraView {
 pub enum ClientMessage {
     CameraUpdate(CameraView),
     ChangeTile(Point<usize>, TileChange),
-    Swap(Point<usize>, Point<usize>),
+    Swap(Point<usize>, Point<usize>, bool),
     Pause(bool),
     Save(),
     Load(),

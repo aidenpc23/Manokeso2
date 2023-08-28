@@ -1,8 +1,8 @@
 use std::time::Instant;
 
-use crate::{util::point::Point, sync::TileInfo};
+use crate::{sync::TileInfo, util::point::Point};
 
-use super::{ClientState, input::Input};
+use super::{input::Input, ClientState};
 
 pub fn update(state: &mut ClientState, input: &Input, now: Instant) {
     let view = &mut state.world.view;
@@ -38,35 +38,43 @@ pub fn update(state: &mut ClientState, input: &Input, now: Instant) {
             None
         };
 
-    // collisions (move to another function)
+    if !state.player.creative {
+        handle_collisions(state);
+    }
+}
+
+pub fn handle_collisions(state: &mut ClientState) {
+    let view = &mut state.world.view;
 
     if view.connex_numbers.len() != 0 {
+        // cardinal edges
+
         let rad = state.player.size / 2.0;
         let player_rel_pos = state.player.pos - view.pos;
         let player_edges = Point::<f32>::CARDINAL_DIRECTIONS.map(|v| player_rel_pos + v * rad);
         let slice = view.render_info.slice;
-
-        // cardinal edges
-
         for i in 0..4 {
             let mut edge = player_edges[i];
-            if edge.x < 0.0
+            let board_edge = edge.x < 0.0
                 || edge.y < 0.0
                 || edge.x >= slice.end.x as f32
-                || edge.y >= slice.end.y as f32
-            {
-                continue;
-            }
-            let tile: Point<usize> = edge.into();
-            let tile_i = (tile - slice.start).index(slice.width);
-            let cn = view.connex_numbers[tile_i];
-            let s = view.stability[tile_i];
-            if cn > 10 && s > 0.8 {
+                || edge.y >= slice.end.y as f32;
+            let tile_pos: Point<i32> = edge.floor().into();
+            let solid_tile = if board_edge {
+                true
+            } else {
+                let board_pos: Point<usize> = tile_pos.into();
+                let tile_i = (board_pos - slice.start).index(slice.width);
+                let cn = view.connex_numbers[tile_i];
+                let s = view.stability[tile_i];
+                cn > 10 && s > 0.8
+            };
+            if solid_tile {
                 let dir = Point::<f32>::CARDINAL_DIRECTIONS[i];
                 if dir.x < 0.0 || dir.y < 0.0 {
                     edge = edge - 1.0;
                 }
-                let a: Point<f32> = tile.into();
+                let a: Point<f32> = tile_pos.into();
                 state.player.pos += (edge - a) * -dir.abs();
             }
         }

@@ -1,7 +1,9 @@
 use std::{
+    fs::File,
+    io::{Error, Read, Write},
     ops::AddAssign,
     sync::mpsc::{Receiver, Sender},
-    time::{Duration, Instant}, io::{Error, Write, Read}, fs::File, borrow::BorrowMut,
+    time::{Duration, Instant},
 };
 
 use rayon::{
@@ -82,14 +84,18 @@ impl World {
     fn receive_messages(&mut self) {
         for msg in self.receiver.try_iter() {
             match msg {
-                ClientMessage::Swap(pos1, pos2) => {
-                    self.board.swap(pos1, pos2);
+                ClientMessage::Swap(pos1, pos2, creative) => {
+                    if creative || self.board.player_can_swap(pos1, pos2) {
+                        self.board.swap(pos1, pos2);
+                    }
                 }
                 ClientMessage::Save() => {
-                    self.save_to_file("resources/save.bin").expect("Error saving file!");
+                    self.save_to_file("resources/save.bin")
+                        .expect("Error saving file!");
                 }
                 ClientMessage::Load() => {
-                    Self::load_from_file(&mut self.board, "resources/save.bin").expect("Error loading file!");
+                    Self::load_from_file(&mut self.board, "resources/save.bin")
+                        .expect("Error loading file!");
                 }
                 ClientMessage::ChangeTile(pos, change) => {
                     let i = pos.index(self.board.width);
@@ -115,8 +121,7 @@ impl World {
                             }
                         }
                         TileChange::Delta(amt) => {
-                            self.board.delta.r[i] = self.board.delta.r[i]
-                                .sat_add(amt);
+                            self.board.delta.r[i] = self.board.delta.r[i].sat_add(amt);
                         }
                     }
                     self.board.dirty = true;
@@ -132,7 +137,7 @@ impl World {
             }
         }
     }
-    
+
     pub fn save_to_file(&self, file_path: &str) -> Result<(), Error> {
         let encoded: Vec<u8> = bincode::serialize(&self.board).unwrap();
         let mut file = File::create(file_path)?;
@@ -175,9 +180,7 @@ impl World {
             view.total_energy = self.board.total_energy;
             view.time_taken = self.timer.avg();
             view.pos = self.board.pos;
-            self.sender
-                .send(WorldMessage::ViewSwap(view))
-                .expect("D:");
+            self.sender.send(WorldMessage::ViewSwap(view)).expect("D:");
         }
     }
 

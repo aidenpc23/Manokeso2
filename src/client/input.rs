@@ -96,6 +96,7 @@ impl Input {
         self.mouse_just_pressed.contains(&button)
     }
 
+    #[allow(dead_code)]
     pub fn mouse_just_released(&self, button: MouseButton) -> bool {
         self.mouse_just_released.contains(&button)
     }

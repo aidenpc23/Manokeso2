@@ -8,7 +8,7 @@ use super::{
     state::ClientState,
 };
 
-use crate::{message::{ClientMessage, TileChange::*}, rsc::PLAYER_SPEED};
+use crate::message::{ClientMessage, TileChange::*};
 
 pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
     let ainput = (input, &state.keybinds);
@@ -20,116 +20,148 @@ pub fn handle_input(delta: &Duration, input: &Input, state: &mut ClientState) {
 
     if input.scroll_delta != 0.0 {
         state.camera_scroll += input.scroll_delta;
-        // state.camera_scroll = state.camera_scroll.clamp(-50.0, 30.0);
+        if !state.player.creative {
+            state.camera_scroll = state.camera_scroll.clamp(0.0, 30.0);
+        }
         state.camera.scale = (state.camera_scroll * 0.1).exp();
-    }
-
-    let delta_mult = delta.as_millis() as f32;
-    let move_dist = PLAYER_SPEED * delta_mult / state.camera.scale;
-
-    let pos = &mut state.player.pos;
-    if ainput.pressed(Action::MoveUp) {
-        pos.y += move_dist;
-    }
-    if ainput.pressed(Action::MoveLeft) {
-        pos.x -= move_dist;
-    }
-    if ainput.pressed(Action::MoveDown) {
-        pos.y -= move_dist;
-    }
-    if ainput.pressed(Action::MoveRight) {
-        pos.x += move_dist;
     }
 
     // interactions
 
-    if input.mouse_just_pressed(MouseButton::Left) {
-        state.held_tile = state.hovered_tile;
+    if !state.paused || state.player.creative {
+        let pos = &mut state.player.pos;
+        let delta_mult = delta.as_millis() as f32;
+        let move_dist = state.player.speed * delta_mult / state.camera.scale;
+
+        if ainput.pressed(Action::MoveUp) {
+            pos.y += move_dist;
+        }
+        if ainput.pressed(Action::MoveLeft) {
+            pos.x -= move_dist;
+        }
+        if ainput.pressed(Action::MoveDown) {
+            pos.y -= move_dist;
+        }
+        if ainput.pressed(Action::MoveRight) {
+            pos.x += move_dist;
+        }
+
+        if input.mouse_just_pressed(MouseButton::Left) {
+            state.selected_tile = state.hovered_tile;
+        }
+
+        if input.mouse_just_pressed(MouseButton::Right) {
+            if let Some(tile1) = state.selected_tile {
+                if let Some(tile2) = state.hovered_tile {
+                    state.world.send(ClientMessage::Swap(tile1.pos, tile2.pos, state.player.creative));
+                }
+            }
+            state.selected_tile = None;
+        }
     }
 
-    if input.just_pressed(Key::T) {
-        state.world.send(ClientMessage::Save());
-    }
-    if input.just_pressed(Key::G) {
-        state.world.send(ClientMessage::Load());
-    }
+    if state.player.creative {
+        if input.just_pressed(Key::T) {
+            state.world.send(ClientMessage::Save());
+        }
+        if input.just_pressed(Key::G) {
+            state.world.send(ClientMessage::Load());
+        }
 
-    if input.mouse_just_released(MouseButton::Left) {
-        if let Some(tile1) = state.held_tile {
-            if let Some(tile2) = state.hovered_tile {
-                state.world.send(ClientMessage::Swap(tile1.pos, tile2.pos));
+        if input.just_pressed(Key::Y) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(1)));
             }
         }
-        state.held_tile = None;
-    }
 
-    if input.just_pressed(Key::Y) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(1)));
+        if input.just_pressed(Key::H) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(-1)));
+            }
+        }
+
+        if input.just_pressed(Key::U) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Stability(0.1)));
+            }
+        }
+
+        if input.just_pressed(Key::J) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Stability(-0.1)));
+            }
+        }
+
+        if input.just_pressed(Key::I) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Reactivity(0.1)));
+            }
+        }
+
+        if input.just_pressed(Key::K) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Reactivity(-0.1)));
+            }
+        }
+
+        if input.just_pressed(Key::O) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Energy(20.0)));
+            }
+        }
+
+        if input.just_pressed(Key::L) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Energy(-20.0)));
+            }
+        }
+
+        if input.just_pressed(Key::P) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Delta(1)));
+            }
+        }
+
+        if input.just_pressed(Key::Semicolon) {
+            if let Some(tile) = state.hovered_tile {
+                state
+                    .world
+                    .send(ClientMessage::ChangeTile(tile.pos, Delta(-1)));
+            }
+        }
+
+        if ainput.just_pressed(Action::Step) {
+            state.world.send(ClientMessage::Step());
         }
     }
 
-    if input.just_pressed(Key::H) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(-1)));
-        }
-    }
-
-    if input.just_pressed(Key::U) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Stability(0.1)));
-        }
-    }
-
-    if input.just_pressed(Key::J) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Stability(-0.1)));
-        }
-    }
-
-    if input.just_pressed(Key::I) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Reactivity(0.1)));
-        }
-    }
-
-    if input.just_pressed(Key::K) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Reactivity(-0.1)));
-        }
-    }
-
-    if input.just_pressed(Key::O) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Energy(20.0)));
-        }
-    }
-
-    if input.just_pressed(Key::L) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Energy(-20.0)));
-        }
-    }
-
-    if input.just_pressed(Key::P) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Delta(1)));
-        }
-    }
-
-    if input.just_pressed(Key::Semicolon) {
-        if let Some(tile) = state.hovered_tile {
-            state.world.send(ClientMessage::ChangeTile(tile.pos, Delta(-1)));
+    if state.player.admin {
+        if input.just_pressed(Key::B) {
+            state.player.creative = !state.player.creative;
         }
     }
 
     if ainput.just_pressed(Action::Pause) {
         state.paused = !state.paused;
         state.world.send(ClientMessage::Pause(state.paused));
-    }
-
-    if ainput.just_pressed(Action::Step) {
-        state.world.send(ClientMessage::Step());
     }
 }
 

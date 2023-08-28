@@ -44,7 +44,7 @@ impl GameUI {
                 .to_primitive(),
             );
         }
-        if let Some(tile) = state.held_tile {
+        if let Some(tile) = state.selected_tile {
             let pos: Point<f32> = tile.pos.into();
             let start = pos + state.world.view.pos;
             let end = start + 1.0;
@@ -63,6 +63,12 @@ impl GameUI {
                         anchor: Point::zero(),
                         offset: end,
                     },
+                    colors: [
+                        [0.0, 0.0, 0.0, 1.0],
+                        [0.5, 0.5, 0.5, 1.0],
+                        [0.5, 0.5, 0.5, 1.0],
+                        [0.0, 0.0, 0.0, 1.0],
+                    ],
                     thickness: 3.0 * state.camera.scale,
                     ..Default::default()
                 }

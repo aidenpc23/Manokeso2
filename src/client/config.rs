@@ -8,12 +8,14 @@ use super::keybinds::Action;
 
 #[derive(Serialize, Deserialize)]
 pub struct Config {
+    pub fullscreen: Option<bool>,
     pub keybinds: Option<HashMap<Action, Key>>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
+            fullscreen: None,
             keybinds: None,
         }
     }

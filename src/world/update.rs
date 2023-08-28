@@ -2,12 +2,16 @@ use rayon::prelude::{
     IndexedParallelIterator, IntoParallelIterator, IntoParallelRefMutIterator, ParallelIterator,
 };
 
-use crate::{rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE}, util::SaturatingAdd};
+use crate::{
+    rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE},
+    util::SaturatingAdd,
+};
 
 use super::{
+    get_bit,
     refs::CONX_MAP,
     util::{decode_alpha, decode_beta, encode_alpha, encode_beta},
-    Board, ZERO_ALPHA, get_bit,
+    Board, ZERO_ALPHA,
 };
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
@@ -228,7 +232,7 @@ impl Board {
                 } else {
                     *gn = gi;
                 }
-                
+
                 let x = i % self.width;
                 let y = i / self.width;
 
@@ -256,10 +260,11 @@ impl Board {
 
                     let r_adjustments = [-0.5, -0.25, 0.0, 0.25, 0.5];
                     *rn = ri + r_adjustments[g2 as usize] * (1.0 - s.r[i]);
-                    
+
                     *dn = di;
                     for dir in CARDINAL_DIRECTIONS_SHORT {
-                        let i2 = (y.sat_add(dir.1).min(self.height-1)) * self.width + (x.sat_add(dir.0).min(self.width-1));
+                        let i2 = (y.sat_add(dir.1).min(self.height - 1)) * self.width
+                            + (x.sat_add(dir.0).min(self.width - 1));
                         if i != i2 {
                             *dn ^= d.r[i2];
                         }
@@ -274,7 +279,7 @@ impl Board {
                     *dn = di;
                 }
 
-                if (y + 1) < self.height{
+                if (y + 1) < self.height {
                     let i2 = (y + 1) * self.width + x;
                     if get_bit(d.r[i2], 7) && !get_bit(d.r[i2], 6) && e.r[i2] >= 50.0 {
                         *cn = c.r[i2];
@@ -302,7 +307,6 @@ impl Board {
                         *en = e.r[i2];
                         *dn = d.r[i2];
                     }
-
 
                     if get_bit(d.r[i2], 6) && !get_bit(d.r[i2], 7) && e.r[i2] >= 50.0 {
                         *cn = c.r[i2];
@@ -349,11 +353,7 @@ impl Board {
                 let y = i / self.width;
 
                 let csub = ci.saturating_sub(1);
-                let (g1, _g2, g3) = (
-                    (csub % 5),
-                    ((csub / 5) % 5),
-                    ((csub / 25) + 1),
-                );
+                let (g1, _g2, g3) = ((csub % 5), ((csub / 5) % 5), ((csub / 25) + 1));
 
                 let (dx, dy) = decode_beta(g1 as u64);
                 let i2 = (x as i32 + dx) + (y as i32 + dy) * self.width as i32;
@@ -421,11 +421,7 @@ impl Board {
                     let awave = decode_alpha(ai);
                     *bn = g1 as u64;
                     if ei >= cost && !get_bit(di, 4) {
-                        let mult = if get_bit(di, 5) {
-                            2
-                        } else {
-                            1
-                        };
+                        let mult = if get_bit(di, 5) { 2 } else { 1 };
                         *an = encode_alpha(
                             awave.0 + g3 as u64 * mult,
                             awave.1 + cnc,
@@ -467,7 +463,9 @@ impl Board {
         let b = &mut self.beta;
         let g = &mut self.gamma;
 
-        (&mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut a.w, &mut b.w, &mut g.w, &mut d.w)
+        (
+            &mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut a.w, &mut b.w, &mut g.w, &mut d.w,
+        )
             .into_par_iter()
             .enumerate()
             .for_each(|(i, (cn, sn, en, rn, an, bn, gn, dn))| {
@@ -490,11 +488,7 @@ impl Board {
                     // Group three is the g3 level of categorization of connex numbers
                     // gfactor is almost equal to g3 but a little less each time so
                     // g3 = 1 while gfactor == 1 and g3 == 2 while gfactor == 1.9 and so on
-                    let g3 = if ci == 0 {
-                        1
-                    } else {
-                        ((ci - 1) / 25) + 1
-                    };
+                    let g3 = if ci == 0 { 1 } else { ((ci - 1) / 25) + 1 };
                     let gfactor = (g3 - 1) as f32 + (1.0 - 0.04 * (g3 - 1) as f32);
 
                     // Make it such that the higher the connex number the harder to decrease stability.
@@ -517,10 +511,10 @@ impl Board {
                     *bn = bi;
                 }
                 *dn = di;
-                
+
                 let x = i % self.width;
                 let y = i / self.width;
-                
+
                 if (x + 1) < self.width {
                     let i2 = y * self.width + x + 1;
                     if get_bit(d.r[i2], 8) && !get_bit(d.r[i2], 9) && e.r[i2] >= 50.0 {
@@ -549,7 +543,6 @@ impl Board {
                         *en = e.r[i2];
                         *dn = d.r[i2];
                     }
-
 
                     if get_bit(d.r[i2], 9) && !get_bit(d.r[i2], 8) && e.r[i2] >= 50.0 {
                         *cn = c.r[i2];

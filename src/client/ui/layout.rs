@@ -2,7 +2,7 @@ use crate::{util::point::Point, world::decode_alpha};
 
 use super::{
     element::{Align, Text},
-    ui::GameUI, element::{RoundedRect, UIPoint},
+    ui::GameUI,
 };
 
 pub fn board() -> GameUI {
@@ -10,30 +10,34 @@ pub fn board() -> GameUI {
         Text {
             content: |state| {
                 if let Some(tile) = &state.hovered_tile {
-                    format!(
+                    let mut str = format!(
                         concat!(
-                            "tile pos: {:?}\n",
-                            "connex number: {:?}\n",
-                            "stability: {:?}\n",
-                            "reactivity: {:?}\n",
-                            "energy: {:?}\n",
-                            "alpha: {:?}\n",
-                            "beta: {:?}\n",
-                            "gamma: {:?}\n",
-                            "delta: {:b}\n",
-                            "omega: {:?}\n",
+                            "connex number: {}\n",
+                            "stability: {}\n",
+                            "reactivity: {}\n",
+                            "energy: {}\n",
+                            "radiation: {}\n"
                         ),
-                        tile.pos,
-                        tile.connex_number,
-                        tile.stability,
-                        tile.reactivity,
-                        tile.energy,
-                        decode_alpha(tile.alpha),
-                        tile.beta,
-                        tile.gamma,
-                        tile.delta,
-                        tile.omega,
-                    )
+                        tile.connex_number, tile.stability, tile.reactivity, tile.energy, tile.gamma
+                    );
+                    if state.debug {
+                        str = format!("tile pos: {:?}\n", tile.pos) + &str;
+                    }
+                    if state.player.creative {
+                        str.push_str(&format!(
+                            concat!(
+                                "alpha: {:?}\n",
+                                "beta: {:?}\n",
+                                "delta: {:b}\n",
+                                "omega: {:?}\n",
+                            ),
+                            decode_alpha(tile.alpha),
+                            tile.beta,
+                            tile.delta,
+                            tile.omega,
+                        ));
+                    }
+                    str
                 } else {
                     "no tile selected".to_string()
                 }
@@ -53,14 +57,18 @@ pub fn board() -> GameUI {
         },
         Text {
             content: |state| {
-                let adp_info = state.renderer.render_surface.adapter.get_info();
-                format!(
-                    "adapter: {}\nbackend: {:?}\nclient update: {:.3}ms\nworld update: {:.3}ms",
-                    adp_info.name,
-                    adp_info.backend,
-                    state.debug_stats.client_update_time,
-                    state.debug_stats.world_update_time,
-                )
+                if state.debug {
+                    let adp_info = state.renderer.render_surface.adapter.get_info();
+                    format!(
+                        "adapter: {}\nbackend: {:?}\nclient update: {:.3}ms\nworld update: {:.3}ms",
+                        adp_info.name,
+                        adp_info.backend,
+                        state.debug_stats.client_update_time,
+                        state.debug_stats.world_update_time,
+                    )
+                } else {
+                    String::new()
+                }
             },
             pos: |(w, _)| Point {
                 x: w - 20.0,
@@ -70,17 +78,6 @@ pub fn board() -> GameUI {
             bounds: |(w, h)| (w / 3.0 - 30.0, h),
         },
     ];
-    let shapes = vec![RoundedRect {
-        top_left: UIPoint::anchor_offset(0.0, 0.0, 10.0, 10.0),
-        bottom_right: UIPoint::anchor_offset(1.0/3.0, 0.0, 0.0, 275.0),
-        colors: [
-            [0.0, 0.0, 0.0, 0.5],
-            [0.0, 0.0, 0.0, 0.5],
-            [0.0, 0.0, 0.0, 0.5],
-            [0.0, 0.0, 0.0, 0.5],
-        ],
-        radius: 20.0,
-        ..Default::default()
-    }];
+    let shapes = vec![];
     GameUI { text, shapes }
 }
