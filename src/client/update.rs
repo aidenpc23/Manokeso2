@@ -4,19 +4,19 @@ use crate::{view::TileInfo, util::point::Point};
 
 use super::{input::Input, Client};
 
-pub fn update(state: &mut Client, input: &Input, now: Instant) {
-    let view = &mut state.world.view;
+pub fn update(client: &mut Client, input: &Input, now: Instant) {
+    let view = &mut client.worker.view;
 
-    let ddelta = now - state.last_debug;
-    if ddelta > state.debug_stats.period {
-        state.last_debug = now;
-        state.debug_stats.client_update_time = state.timer.avg().as_secs_f32() * 1000.0;
-        state.debug_stats.world_update_time = view.time_taken.as_secs_f32() * 1000.0;
+    let ddelta = now - client.debug.last_update;
+    if ddelta > client.debug.period {
+        client.debug.last_update = now;
+        client.debug.client_update_time = client.timer.avg().as_secs_f32() * 1000.0;
+        client.debug.board_update_time = view.time_taken.as_secs_f32() * 1000.0;
     }
 
-    let mouse_world_pos = state.renderer.pixel_to_world(input.mouse_pixel_pos);
+    let mouse_world_pos = client.renderer.pixel_to_world(input.mouse_pixel_pos);
     let Point { x, y } = mouse_world_pos - view.slice.world_pos;
-    state.hovered_tile =
+    client.hovered_tile =
         if x >= 0.0 && y >= 0.0 && x < view.slice.width as f32 && y < view.slice.height as f32 {
             let pos = Point::new(x as usize, y as usize);
             let i = pos.index(view.slice.width);
@@ -37,14 +37,14 @@ pub fn update(state: &mut Client, input: &Input, now: Instant) {
             None
         };
 
-    if !state.state.player.creative {
-        handle_collisions(state);
+    if !client.state.player.creative {
+        handle_collisions(client);
     }
 }
 
-pub fn handle_collisions(state: &mut Client) {
-    let view = &mut state.world.view;
-    let player = &mut state.state.player;
+pub fn handle_collisions(client: &mut Client) {
+    let view = &mut client.worker.view;
+    let player = &mut client.state.player;
 
     if view.connex_numbers.len() != 0 {
         // cardinal edges

@@ -8,7 +8,7 @@ use super::{
     state::Client,
 };
 
-use crate::message::{ClientMessage, TileChange::*};
+use crate::message::{WorkerCommand, TileChange::*};
 
 pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
     let ainput = (input, &client.keybinds);
@@ -55,7 +55,7 @@ pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
         if input.mouse_just_pressed(MouseButton::Right) {
             if let Some(tile1) = state.selected_tile {
                 if let Some(tile2) = client.hovered_tile {
-                    client.world.send(ClientMessage::Swap(tile1.pos, tile2.pos, state.player.creative));
+                    client.worker.send(WorkerCommand::Swap(tile1.pos, tile2.pos, state.player.creative));
                 }
             }
             state.selected_tile = None;
@@ -64,94 +64,94 @@ pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
 
     if state.player.creative {
         if input.just_pressed(Key::T) {
-            client.world.send(ClientMessage::Save());
+            client.worker.send(WorkerCommand::Save());
         }
         if input.just_pressed(Key::G) {
-            client.world.send(ClientMessage::Load());
+            client.worker.send(WorkerCommand::Load());
         }
 
         if input.just_pressed(Key::Y) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, ConnexNumber(1)));
             }
         }
 
         if input.just_pressed(Key::H) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, ConnexNumber(-1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, ConnexNumber(-1)));
             }
         }
 
         if input.just_pressed(Key::U) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Stability(0.1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Stability(0.1)));
             }
         }
 
         if input.just_pressed(Key::J) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Stability(-0.1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Stability(-0.1)));
             }
         }
 
         if input.just_pressed(Key::I) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Reactivity(0.1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Reactivity(0.1)));
             }
         }
 
         if input.just_pressed(Key::K) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Reactivity(-0.1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Reactivity(-0.1)));
             }
         }
 
         if input.just_pressed(Key::O) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Energy(20.0)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Energy(20.0)));
             }
         }
 
         if input.just_pressed(Key::L) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Energy(-20.0)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Energy(-20.0)));
             }
         }
 
         if input.just_pressed(Key::P) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Delta(1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Delta(1)));
             }
         }
 
         if input.just_pressed(Key::Semicolon) {
             if let Some(tile) = client.hovered_tile {
                 client
-                    .world
-                    .send(ClientMessage::ChangeTile(tile.pos, Delta(-1)));
+                    .worker
+                    .send(WorkerCommand::ChangeTile(tile.pos, Delta(-1)));
             }
         }
 
         if ainput.just_pressed(Action::Step) {
-            client.world.send(ClientMessage::Step());
+            client.worker.send(WorkerCommand::Step());
         }
     }
 
@@ -167,7 +167,7 @@ pub fn handle_input(delta: &Duration, input: &Input, client: &mut Client) {
 
     if ainput.just_pressed(Action::Pause) {
         client.paused = !client.paused;
-        client.world.send(ClientMessage::Pause(client.paused));
+        client.worker.send(WorkerCommand::Pause(client.paused));
     }
 }
 

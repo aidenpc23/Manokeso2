@@ -76,15 +76,15 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn into_primitive(&self, state: &Client) -> TextElement {
-        let size = state.renderer.window.inner_size();
+    pub fn into_primitive(&self, client: &Client) -> TextElement {
+        let size = client.renderer.window.inner_size();
         let bounds = (size.width as f32, size.height as f32);
         let text_bounds = (self.bounds)(bounds);
         TextElement {
             pos: (self.pos)(bounds),
             bounds: text_bounds,
             align: self.align,
-            content: (self.content)(state),
+            content: (self.content)(client),
         }
     }
 }

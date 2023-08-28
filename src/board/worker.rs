@@ -10,7 +10,7 @@ use rayon::{
 };
 
 use crate::{
-    message::{CameraView, ClientMessage, TileChange, WorldMessage},
+    message::{CameraView, WorkerCommand, TileChange, WorkerResponse},
     rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE, UPDATE_TIME, UPS},
     view::{BoardView, BoardSlice},
     util::{math::SaturatingAdd, point::Point, timer::Timer},
@@ -22,7 +22,7 @@ use super::{
     swap_buffer::SwapBuffer,
 };
 
-pub struct World {
+pub struct BoardWorker {
     pub board: Board,
     pub view: Option<BoardView>,
     pub slice: BoardSlice,
@@ -32,12 +32,12 @@ pub struct World {
     pub step: bool,
     pub client_ready: bool,
     pub timer: Timer,
-    pub sender: Sender<WorldMessage>,
-    pub receiver: Receiver<ClientMessage>,
+    pub sender: Sender<WorkerResponse>,
+    pub receiver: Receiver<WorkerCommand>,
 }
 
-impl World {
-    pub fn new(sender: Sender<WorldMessage>, receiver: Receiver<ClientMessage>) -> Self {
+impl BoardWorker {
+    pub fn new(sender: Sender<WorkerResponse>, receiver: Receiver<WorkerCommand>) -> Self {
         let width = 708;
         let height = 708;
         let board = Board::new(
@@ -85,22 +85,22 @@ impl World {
     fn receive_messages(&mut self) {
         for msg in self.receiver.try_iter() {
             match msg {
-                ClientMessage::Swap(pos1, pos2, creative) => {
+                WorkerCommand::Swap(pos1, pos2, creative) => {
                     if creative || self.board.player_can_swap(pos1, pos2) {
                         self.board.swap(pos1, pos2);
                     }
                 }
-                ClientMessage::Save() => {
+                WorkerCommand::Save() => {
                     if let Err(err) = save_game("save", &self.board) {
                         println!("{:?}", err);
                     }
                 }
-                ClientMessage::Load() => {
+                WorkerCommand::Load() => {
                     if let Err(err) = load_game(&mut self.board, "save") {
                         println!("{:?}", err);
                     }
                 }
-                ClientMessage::ChangeTile(pos, change) => {
+                WorkerCommand::ChangeTile(pos, change) => {
                     let i = pos.index(self.board.width);
                     match change {
                         TileChange::ConnexNumber(amt) => {
@@ -129,14 +129,14 @@ impl World {
                     }
                     self.board.dirty = true;
                 }
-                ClientMessage::Pause(set) => self.paused = set,
-                ClientMessage::Step() => self.step = true,
-                ClientMessage::CameraUpdate(view) => {
+                WorkerCommand::Pause(set) => self.paused = set,
+                WorkerCommand::Step() => self.step = true,
+                WorkerCommand::CameraUpdate(view) => {
                     let new = self.calc_board_slice(view);
                     self.slice_change = self.slice != new;
                     self.slice = new;
                 }
-                ClientMessage::ViewSwap(view) => self.view = Some(view),
+                WorkerCommand::ViewSwap(view) => self.view = Some(view),
             }
         }
     }
@@ -162,7 +162,7 @@ impl World {
             view.total_energy = self.board.total_energy;
             view.time_taken = self.timer.avg();
             view.board_pos = self.board.pos;
-            self.sender.send(WorldMessage::ViewSwap(view)).expect("D:");
+            self.sender.send(WorkerResponse::ViewSwap(view)).expect("D:");
         }
     }
 

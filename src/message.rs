@@ -8,7 +8,7 @@ pub struct CameraView {
 }
 
 #[derive(Debug)]
-pub enum ClientMessage {
+pub enum WorkerCommand {
     CameraUpdate(CameraView),
     ChangeTile(Point<usize>, TileChange),
     Swap(Point<usize>, Point<usize>, bool),
@@ -28,6 +28,6 @@ pub enum TileChange {
     Delta(i32)
 }
 
-pub enum WorldMessage {
+pub enum WorkerResponse {
     ViewSwap(BoardView)
 }

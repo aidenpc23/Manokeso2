@@ -5,9 +5,9 @@ mod save;
 mod swap_buffer;
 mod update;
 mod util;
-mod world;
+mod worker;
 
 pub use board::*;
 pub use refs::*;
 pub use util::*;
-pub use world::*;
+pub use worker::*;

@@ -6,10 +6,10 @@ use super::{
     ui::{layout, ui::GameUI},
 };
 use crate::{
-    message::{ClientMessage, WorldMessage},
+    message::{WorkerCommand, WorkerResponse},
     render::Renderer,
     rsc::{FPS, FRAME_TIME},
-    view::{BoardView, TileInfo, WorldInterface},
+    view::{BoardView, TileInfo, WorkerInterface},
     tile_render_data,
     util::timer::Timer,
 };
@@ -37,20 +37,18 @@ pub struct Client {
     pub hovered_tile: Option<TileInfo>,
     pub paused: bool,
     pub timer: Timer,
-    pub world: WorldInterface,
-    pub debug_stats: DebugStats,
-    pub last_debug: Instant,
+    pub worker: WorkerInterface,
+    pub debug: DebugState,
     pub tiles_dirty: bool,
     pub exit: bool,
-    pub debug: bool,
 }
 
 impl Client {
     pub async fn new(
         config: Config,
         event_loop: &EventLoop<()>,
-        sender: Sender<ClientMessage>,
-        receiver: Receiver<WorldMessage>,
+        sender: Sender<WorkerCommand>,
+        receiver: Receiver<WorkerResponse>,
     ) -> Self {
         let mut keybinds = default_keybinds();
         if let Some(config_keybinds) = config.keybinds {
@@ -66,16 +64,14 @@ impl Client {
             hovered_tile: None,
             paused: true,
             timer: Timer::new(Duration::from_secs(1), FPS as usize),
-            world: WorldInterface {
+            worker: WorkerInterface {
                 sender,
                 receiver,
                 view,
             },
             ui: layout::board(),
-            debug_stats: DebugStats::new(),
-            last_debug: Instant::now(),
+            debug: DebugState::new(),
             tiles_dirty: false,
-            debug: true,
             exit: false,
         }
     }
@@ -99,18 +95,22 @@ impl ClientState {
     }
 }
 
-pub struct DebugStats {
+pub struct DebugState {
+    pub last_update: Instant,
     pub period: Duration,
     pub client_update_time: f32,
-    pub world_update_time: f32,
+    pub board_update_time: f32,
+    pub show: bool,
 }
 
-impl DebugStats {
+impl DebugState {
     pub fn new() -> Self {
         Self {
+            last_update: Instant::now(),
             period: Duration::from_secs_f32(0.5),
             client_update_time: 0.0,
-            world_update_time: 0.0,
+            board_update_time: 0.0,
+            show: true,
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{util::point::Point, world::decode_alpha};
+use crate::{util::point::Point, board::decode_alpha};
 
 use super::{
     element::{Align, Text},
@@ -20,7 +20,7 @@ pub fn board() -> GameUI {
                         ),
                         tile.connex_number, tile.stability, tile.reactivity, tile.energy, tile.gamma
                     );
-                    if client.debug {
+                    if client.debug.show {
                         str = format!("tile pos: {:?}\n", tile.pos) + &str;
                     }
                     if client.state.player.creative {
@@ -47,7 +47,7 @@ pub fn board() -> GameUI {
             bounds: |(w, h)| (w / 3.0 - 30.0, h),
         },
         Text {
-            content: |client| format!("total energy: {}", client.world.view.total_energy),
+            content: |client| format!("total energy: {}", client.worker.view.total_energy),
             pos: |(w, _)| Point {
                 x: w / 2.0,
                 y: 15.0,
@@ -57,14 +57,14 @@ pub fn board() -> GameUI {
         },
         Text {
             content: |client| {
-                if client.debug {
+                if client.debug.show {
                     let adp_info = client.renderer.render_surface.adapter.get_info();
                     format!(
                         "adapter: {}\nbackend: {:?}\nclient update: {:.3}ms\nworld update: {:.3}ms",
                         adp_info.name,
                         adp_info.backend,
-                        client.debug_stats.client_update_time,
-                        client.debug_stats.world_update_time,
+                        client.debug.client_update_time,
+                        client.debug.board_update_time,
                     )
                 } else {
                     String::new()

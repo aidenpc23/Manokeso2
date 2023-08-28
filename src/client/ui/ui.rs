@@ -15,7 +15,7 @@ impl GameUI {
         };
         if let Some(tile) = client.hovered_tile {
             let pos: Point<f32> = tile.pos.into();
-            let start = pos + client.world.view.board_pos;
+            let start = pos + client.worker.view.board_pos;
             let end = start + 1.0;
             let mut start = client.renderer.world_to_pixel(start);
             let mut end = client.renderer.world_to_pixel(end);
@@ -46,7 +46,7 @@ impl GameUI {
         }
         if let Some(tile) = client.state.selected_tile {
             let pos: Point<f32> = tile.pos.into();
-            let start = pos + client.world.view.board_pos;
+            let start = pos + client.worker.view.board_pos;
             let end = start + 1.0;
             let mut start = client.renderer.world_to_pixel(start);
             let mut end = client.renderer.world_to_pixel(end);

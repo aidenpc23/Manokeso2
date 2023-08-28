@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    message::{ClientMessage, WorldMessage},
+    message::{WorkerCommand, WorkerResponse},
     util::point::Point,
 };
 
@@ -89,14 +89,14 @@ pub struct TileInfo {
     pub omega: f32,
 }
 
-pub struct WorldInterface {
-    pub sender: Sender<ClientMessage>,
-    pub receiver: Receiver<WorldMessage>,
+pub struct WorkerInterface {
+    pub sender: Sender<WorkerCommand>,
+    pub receiver: Receiver<WorkerResponse>,
     pub view: BoardView,
 }
 
-impl WorldInterface {
-    pub fn send(&self, message: ClientMessage) {
+impl WorkerInterface {
+    pub fn send(&self, message: WorkerCommand) {
         if let Err(err) = self.sender.send(message) {
             println!("Failed to send message to server: {:?}", err);
         }
