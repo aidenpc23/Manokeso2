@@ -18,10 +18,9 @@ use super::{client::Client, config::Config, input::Input, TileUpdateData};
 impl Client {
     pub async fn run() {
         let worker_thread_pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(rayon::current_num_threads() - 1)
+            .num_threads((rayon::current_num_threads() - 1).max(1))
             .build()
             .unwrap();
-        // Setup
 
         let event_loop = EventLoop::new();
         let (wi, ci) = interface_pair();
@@ -46,7 +45,7 @@ impl Client {
                     if window_id == client.renderer.window.id() =>
                 {
                     match event {
-                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                        WindowEvent::CloseRequested => client.exit = true,
                         WindowEvent::Resized(_) => resized = true,
                         _ => input.update(event),
                     }
@@ -73,6 +72,8 @@ impl Client {
 
                         resized = false;
                         if client.exit {
+                            client.worker.send(WorkerCommand::Exit());
+                            for _ in client.worker.receiver.iter() {}
                             *control_flow = ControlFlow::Exit;
                         }
 
