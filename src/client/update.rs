@@ -1,8 +1,6 @@
+use super::{input::Input, Client, TileInfo};
+use crate::util::point::Point;
 use std::time::Instant;
-
-use crate::{common::view::TileInfo, util::point::Point};
-
-use super::{input::Input, Client};
 
 pub fn update(client: &mut Client, input: &Input, now: Instant) {
     let view = &mut client.worker.view;

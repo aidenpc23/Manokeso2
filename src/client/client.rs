@@ -6,11 +6,11 @@ use super::{
     ui::{layout, ui::GameUI},
 };
 use crate::{
-    common::{interface::WorkerInterface, view::TileInfo},
+    common::interface::WorkerInterface,
     render::Renderer,
     rsc::{FPS, FRAME_TIME},
     tile_render_data,
-    util::timer::Timer,
+    util::{timer::Timer, point::Point},
 };
 use std::time::{Duration, Instant};
 use winit::event_loop::EventLoop;
@@ -80,6 +80,20 @@ impl ClientState {
             player: Player::default(),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct TileInfo {
+    pub pos: Point<usize>,
+    pub connex_number: u32,
+    pub stability: f32,
+    pub reactivity: f32,
+    pub energy: f32,
+    pub alpha: u64,
+    pub beta: u64,
+    pub gamma: f32,
+    pub delta: u64,
+    pub omega: f32,
 }
 
 pub struct DebugState {
