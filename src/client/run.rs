@@ -7,13 +7,13 @@ use winit::{
 
 use crate::{
     board::BoardWorker,
-    common::{message::{WorkerCommand, WorkerResponse}, interface::interface_pair},
+    common::{
+        interface::interface_pair,
+        message::{WorkerCommand, WorkerResponse},
+    },
 };
 
-use super::{
-    client::Client, config::Config, handle_input::handle_input, input::Input, update::update,
-    TileUpdateData,
-};
+use super::{client::Client, config::Config, input::Input, TileUpdateData};
 
 impl Client {
     pub async fn run() {
@@ -28,8 +28,7 @@ impl Client {
         let mut client = Client::new(Config::load(), &event_loop, wi).await;
 
         worker_thread_pool.spawn(move || {
-            BoardWorker::new(ci)
-            .run();
+            BoardWorker::new(ci).run();
         });
 
         let mut last_frame = Instant::now();
@@ -63,11 +62,11 @@ impl Client {
 
                         client.timer.start();
 
-                        Self::receive_messages(&mut client);
-                        handle_input(&fdelta, &input, &mut client);
+                        client.receive_messages();
+                        client.handle_input(&fdelta, &input);
                         input.end();
-                        update(&mut client, &input, now);
-                        Self::render(&mut client, resized);
+                        client.update(&input, now);
+                        client.render(resized);
 
                         resized = false;
                         if client.exit {
@@ -82,28 +81,28 @@ impl Client {
         });
     }
 
-    pub fn receive_messages(client: &mut Client) {
-        for msg in client.worker.receiver.try_iter() {
+    fn receive_messages(&mut self) {
+        for msg in self.worker.receiver.try_iter() {
             match msg {
                 WorkerResponse::ViewSwap(mut view) => {
-                    std::mem::swap(&mut view, &mut client.worker.view);
-                    client.worker.send(WorkerCommand::ViewSwap(view));
-                    client.view_dirty = true;
+                    std::mem::swap(&mut view, &mut self.worker.view);
+                    self.worker.send(WorkerCommand::ViewSwap(view));
+                    self.view_dirty = true;
                 }
                 WorkerResponse::Loaded(state) => {
-                    client.state = state;
-                    client.paused = true;
-                },
+                    self.state = state;
+                    self.paused = true;
+                }
             }
         }
     }
 
-    pub fn render(client: &mut Client, resized: bool) {
-        client.renderer.start_encoder();
-        let view = &mut client.worker.view;
-        client.state.camera.pos = client.state.player.pos;
-        if let Some(cam_view) = client.renderer.update(
-            if client.view_dirty {
+    fn render(&mut self, resized: bool) {
+        self.renderer.start_encoder();
+        let view = &mut self.worker.view;
+        self.state.camera.pos = self.state.player.pos;
+        if let Some(cam_view) = self.renderer.update(
+            if self.view_dirty {
                 Some(TileUpdateData {
                     slice: &view.slice,
                     connex_numbers: &view.connex_numbers,
@@ -114,14 +113,14 @@ impl Client {
             } else {
                 None
             },
-            &client.state.camera,
+            &self.state.camera,
             resized,
         ) {
-            client.worker.send(WorkerCommand::CameraUpdate(cam_view));
+            self.worker.send(WorkerCommand::CameraUpdate(cam_view));
         }
-        client.view_dirty = false;
-        let ui = client.ui.compile(&client);
-        client.renderer.update_ui(&ui, resized);
-        client.renderer.draw();
+        self.view_dirty = false;
+        let ui = self.ui.compile(&self);
+        self.renderer.update_ui(&ui, resized);
+        self.renderer.draw();
     }
 }

@@ -5,7 +5,7 @@ pub const DEFAULT_PLAYER_SPEED: f32 = 0.008;
 pub const DEFAULT_PLAYER_SIZE: f32 = 0.8;
 
 pub const FPS: u32 = 60;
-pub const UPS: u32 = 100;
+pub const UPS: u32 = 20;
 pub const FRAME_TIME: Duration = Duration::from_millis(1000 / FPS as u64);
 pub const UPDATE_TIME: Duration = Duration::from_millis(1000 / UPS as u64);
 

@@ -29,7 +29,6 @@ pub struct BoardWorker {
     pub update_time: Duration,
     pub paused: bool,
     pub step: bool,
-    pub client_ready: bool,
     pub timer: Timer,
     pub client: ClientInterface,
     pub cam_view: CameraView,
@@ -53,7 +52,6 @@ impl BoardWorker {
             step: false,
             client,
             timer: Timer::new(Duration::from_secs(1), UPS as usize),
-            client_ready: true,
             cam_view: CameraView::empty(),
         }
     }
@@ -99,7 +97,7 @@ impl BoardWorker {
                         self.board.dirty = true;
                         self.paused = true;
                         let new = self.calc_board_slice();
-                        self.slice_change = self.slice != new;
+                        self.slice_change |= self.slice != new;
                         self.slice = new;
                         self.client.send(WorkerResponse::Loaded(data.1));
                     }
@@ -139,7 +137,7 @@ impl BoardWorker {
                 WorkerCommand::CameraUpdate(view) => {
                     self.cam_view = view;
                     let new = self.calc_board_slice();
-                    self.slice_change = self.slice != new;
+                    self.slice_change |= self.slice != new;
                     self.slice = new;
                 }
                 WorkerCommand::ViewSwap(view) => self.client.view = Some(view),
