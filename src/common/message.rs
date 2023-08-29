@@ -7,6 +7,16 @@ pub struct CameraView {
     pub height: f32,
 }
 
+impl CameraView {
+    pub fn empty() -> Self {
+        Self {
+            pos: Point::zero(),
+            width: 0.0,
+            height: 0.0,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum WorkerCommand {
     CameraUpdate(CameraView),

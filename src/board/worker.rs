@@ -32,6 +32,7 @@ pub struct BoardWorker {
     pub client_ready: bool,
     pub timer: Timer,
     pub client: ClientInterface,
+    pub cam_view: CameraView,
 }
 
 impl BoardWorker {
@@ -53,6 +54,7 @@ impl BoardWorker {
             client,
             timer: Timer::new(Duration::from_secs(1), UPS as usize),
             client_ready: true,
+            cam_view: CameraView::empty(),
         }
     }
 
@@ -96,6 +98,9 @@ impl BoardWorker {
                         self.board = data.0;
                         self.board.dirty = true;
                         self.paused = true;
+                        let new = self.calc_board_slice();
+                        self.slice_change = self.slice != new;
+                        self.slice = new;
                         self.client.send(WorkerResponse::Loaded(data.1));
                     }
                     Err(err) => println!("{:?}", err),
@@ -132,7 +137,8 @@ impl BoardWorker {
                 WorkerCommand::Pause(set) => self.paused = set,
                 WorkerCommand::Step() => self.step = true,
                 WorkerCommand::CameraUpdate(view) => {
-                    let new = self.calc_board_slice(view);
+                    self.cam_view = view;
+                    let new = self.calc_board_slice();
                     self.slice_change = self.slice != new;
                     self.slice = new;
                 }
@@ -166,12 +172,12 @@ impl BoardWorker {
         }
     }
 
-    fn calc_board_slice(&self, view: CameraView) -> BoardSlice {
+    fn calc_board_slice(&self) -> BoardSlice {
         let corner = Point::new(self.board.width, self.board.height);
         // get camera position relative to board
-        let cam_rel_pos: Point<i32> = (view.pos - self.board.pos).into();
+        let cam_rel_pos: Point<i32> = (self.cam_view.pos - self.board.pos).into();
         // calculate chunk size based on max camera dimension
-        let chunk_align = (view.width.max(view.height) as u32).max(1).ilog2().max(5);
+        let chunk_align = (self.cam_view.width.max(self.cam_view.height) as u32).max(1).ilog2().max(5);
         let chunk_size = 2i32.pow(chunk_align);
         let chunk_mask = !(chunk_size - 1);
         // align with chunks and add an extra chunk in each direction
