@@ -105,10 +105,10 @@ impl Client {
             if self.view_dirty {
                 Some(TileUpdateData {
                     slice: &view.slice,
-                    connex_numbers: &view.connex_numbers,
-                    stability: &view.stability,
-                    reactivity: &view.reactivity,
-                    energy: &view.energy,
+                    connex_numbers: &view.bufs.connex_numbers,
+                    stability: &view.bufs.stability,
+                    reactivity: &view.bufs.reactivity,
+                    energy: &view.bufs.energy,
                 })
             } else {
                 None

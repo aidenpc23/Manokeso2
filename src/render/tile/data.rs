@@ -24,26 +24,26 @@ pub trait TileData {
 
 #[macro_export]
 macro_rules! tile_render_data {
-    ( $sname:ident, $vname:ident, [$( $loc:expr => $name:ident : $type:ident ),* $(,)? ] ) => {
+    ( $sname:ident, $dname:ident, [$( $loc:expr => $name:ident : $type:ident ),* $(,)? ] ) => {
         pub struct $sname {
             len: usize,
             $(
                 pub $name: crate::render::tile::InstanceField<$type>,
             )*
         }
-        pub struct $vname<'a> {
+        pub struct $dname<'a> {
             pub slice: &'a crate::common::view::BoardSlice,
             $(
                 pub $name: &'a [$type],
             )*
         }
-        impl<'a> crate::render::tile::data::TileUpdateData for $vname<'a> {
+        impl<'a> crate::render::tile::data::TileUpdateData for $dname<'a> {
             fn slice(&self) -> &crate::common::view::BoardSlice {
                 self.slice
             }
         }
         impl crate::render::tile::data::TileData for $sname {
-            type UpdateData<'a> = $vname<'a>;
+            type UpdateData<'a> = $dname<'a>;
             fn init(device: &wgpu::Device) -> Self {
                 Self {
                     len: 0,

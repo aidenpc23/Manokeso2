@@ -267,3 +267,18 @@ impl<T: Neg<Output = T> + Copy> Neg for Point<T> {
         }
     }
 }
+
+impl<T : Ord + Copy> Point<T> {
+    pub fn min(&self, other: Self) -> Self {
+        Self {
+            x: self.x.min(other.x),
+            y: self.y.min(other.y),
+        }
+    }
+    pub fn max(&self, other: Self) -> Self {
+        Self {
+            x: self.x.max(other.x),
+            y: self.y.max(other.y),
+        }
+    }
+}

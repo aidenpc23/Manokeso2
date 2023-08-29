@@ -4,7 +4,7 @@ use rayon::prelude::{
 
 use crate::{
     rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE},
-    util::SaturatingAdd,
+    util::math::SaturatingAdd,
 };
 
 use super::{
@@ -36,13 +36,11 @@ impl Board {
         self.update_gamma_delta();
         self.apply_alpha_beta_delta();
         self.apply_bounds();
-
-        self.dirty = true;
     }
 
     fn update_alpha_beta(&mut self) {
-        let a = &mut self.alpha;
-        let b = &mut self.beta;
+        let a = &mut self.bufs.alpha;
+        let b = &mut self.bufs.beta;
         self.total_energy += a
             .w
             .par_iter_mut()
@@ -103,8 +101,8 @@ impl Board {
     }
 
     fn convolve_omega(&mut self) {
-        let o = &mut self.omega;
-        let r = &self.reactivity;
+        let o = &mut self.bufs.omega;
+        let r = &self.bufs.reactivity;
         o.w.par_iter_mut().enumerate().for_each(|(i, on)| {
             let x = i % self.width;
             let y = i / self.width;
@@ -136,8 +134,8 @@ impl Board {
     }
 
     fn convolve_gamma(&mut self) {
-        let g = &mut self.gamma;
-        let r = &self.reactivity;
+        let g = &mut self.bufs.gamma;
+        let r = &self.bufs.reactivity;
         g.w.par_iter_mut().enumerate().for_each(|(i, gn)| {
             let x = i % self.width;
             let y = i / self.width;
@@ -169,8 +167,8 @@ impl Board {
     }
 
     fn convolve_energy(&mut self) {
-        let e = &mut self.energy;
-        let s = &mut self.stability;
+        let e = &mut self.bufs.energy;
+        let s = &mut self.bufs.stability;
         self.total_energy =
             e.w.par_iter_mut()
                 .enumerate()
@@ -204,12 +202,12 @@ impl Board {
     }
 
     fn update_gamma_delta(&mut self) {
-        let c = &mut self.connex_numbers;
-        let s = &mut self.stability;
-        let e = &mut self.energy;
-        let r = &mut self.reactivity;
-        let g = &mut self.gamma;
-        let d = &mut self.delta;
+        let c = &mut self.bufs.connex_numbers;
+        let s = &mut self.bufs.stability;
+        let e = &mut self.bufs.energy;
+        let r = &mut self.bufs.reactivity;
+        let g = &mut self.bufs.gamma;
+        let d = &mut self.bufs.delta;
 
         (&mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut g.w, &mut d.w)
             .into_par_iter()
@@ -332,14 +330,14 @@ impl Board {
     }
 
     fn spawnab_update_conx(&mut self) {
-        let c = &self.connex_numbers;
-        let r = &self.reactivity;
-        let s = &self.stability;
-        let e = &mut self.energy;
-        let a = &mut self.alpha;
-        let b = &mut self.beta;
-        let o = &mut self.omega;
-        let d = &self.delta;
+        let c = &self.bufs.connex_numbers;
+        let r = &self.bufs.reactivity;
+        let s = &self.bufs.stability;
+        let e = &mut self.bufs.energy;
+        let a = &mut self.bufs.alpha;
+        let b = &mut self.bufs.beta;
+        let o = &mut self.bufs.omega;
+        let d = &self.bufs.delta;
 
         (&mut e.w, &mut a.w, &mut b.w, &mut o.w)
             .into_par_iter()
@@ -459,14 +457,14 @@ impl Board {
     }
 
     fn apply_alpha_beta_delta(&mut self) {
-        let d = &mut self.delta;
-        let c = &mut self.connex_numbers;
-        let s = &mut self.stability;
-        let e = &mut self.energy;
-        let r = &mut self.reactivity;
-        let a = &mut self.alpha;
-        let b = &mut self.beta;
-        let g = &mut self.gamma;
+        let d = &mut self.bufs.delta;
+        let c = &mut self.bufs.connex_numbers;
+        let s = &mut self.bufs.stability;
+        let e = &mut self.bufs.energy;
+        let r = &mut self.bufs.reactivity;
+        let a = &mut self.bufs.alpha;
+        let b = &mut self.bufs.beta;
+        let g = &mut self.bufs.gamma;
 
         (
             &mut c.w, &mut s.w, &mut e.w, &mut r.w, &mut a.w, &mut b.w, &mut g.w, &mut d.w,
@@ -597,9 +595,9 @@ impl Board {
     }
 
     fn update_omega(&mut self) {
-        let o = &self.omega;
-        let r = &mut self.reactivity;
-        let e = &mut self.energy;
+        let o = &self.bufs.omega;
+        let r = &mut self.bufs.reactivity;
+        let e = &mut self.bufs.energy;
 
         (&mut r.w, &mut e.w)
             .into_par_iter()
@@ -659,10 +657,10 @@ impl Board {
     }
 
     fn apply_bounds(&mut self) {
-        let c = &mut self.connex_numbers;
-        let s = &mut self.stability;
-        let e = &mut self.energy;
-        let r = &mut self.reactivity;
+        let c = &mut self.bufs.connex_numbers;
+        let s = &mut self.bufs.stability;
+        let e = &mut self.bufs.energy;
+        let r = &mut self.bufs.reactivity;
 
         (&mut c.w, &mut s.w, &mut e.w, &mut r.w)
             .into_par_iter()

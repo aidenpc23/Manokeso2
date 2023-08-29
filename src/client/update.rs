@@ -25,15 +25,15 @@ impl Client {
             let pos = pos + view.slice.start;
             Some(TileInfo {
                 pos,
-                connex_number: view.connex_numbers[i],
-                stability: view.stability[i],
-                reactivity: view.reactivity[i],
-                energy: view.energy[i],
-                alpha: view.alpha[i],
-                beta: view.beta[i],
-                gamma: view.gamma[i],
-                delta: view.delta[i],
-                omega: view.omega[i],
+                connex_number: view.bufs.connex_numbers[i],
+                stability: view.bufs.stability[i],
+                reactivity: view.bufs.reactivity[i],
+                energy: view.bufs.energy[i],
+                alpha: view.bufs.alpha[i],
+                beta: view.bufs.beta[i],
+                gamma: view.bufs.gamma[i],
+                delta: view.bufs.delta[i],
+                omega: view.bufs.omega[i],
             })
         } else {
             None
@@ -48,7 +48,7 @@ impl Client {
         let view = &mut self.worker.view;
         let player = &mut self.state.player;
 
-        if view.connex_numbers.len() != 0 {
+        if view.bufs.connex_numbers.len() != 0 {
             // cardinal edges
 
             let rad = player.size / 2.0;
@@ -67,8 +67,8 @@ impl Client {
                 } else {
                     let board_pos: Point<usize> = tile_pos.into();
                     let tile_i = (board_pos - slice.start).index(slice.width);
-                    let cn = view.connex_numbers[tile_i];
-                    let s = view.stability[tile_i];
+                    let cn = view.bufs.connex_numbers[tile_i];
+                    let s = view.bufs.stability[tile_i];
                     cn > 10 && s > 0.8
                 };
                 if solid_tile {
@@ -99,8 +99,8 @@ impl Client {
                         };
                         let rel_pos = tile - view.slice.start;
                         let i = rel_pos.index(view.slice.width);
-                        let cn = view.connex_numbers[i];
-                        let s = view.stability[i];
+                        let cn = view.bufs.connex_numbers[i];
+                        let s = view.bufs.stability[i];
                         if cn > 10 && s > 0.8 {
                             let mut corner: Point<f32> = tile.into();
                             if x < player_tile.x {

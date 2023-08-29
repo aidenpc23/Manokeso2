@@ -1,20 +1,10 @@
-use crate::util::point::Point;
+use crate::{util::point::Point, board::BoardViewBufs};
 use std::time::Duration;
 
 #[derive(Debug)]
 pub struct BoardView {
     pub board_pos: Point<f32>,
-
-    pub connex_numbers: Vec<u32>,
-    pub stability: Vec<f32>,
-    pub reactivity: Vec<f32>,
-    pub energy: Vec<f32>,
-    pub alpha: Vec<u64>,
-    pub beta: Vec<u64>,
-    pub gamma: Vec<f32>,
-    pub delta: Vec<u64>,
-    pub omega: Vec<f32>,
-
+    pub bufs: BoardViewBufs,
     pub slice: BoardSlice,
     pub total_energy: f32,
     pub time_taken: Duration,
@@ -24,15 +14,7 @@ impl BoardView {
     pub fn empty() -> Self {
         Self {
             board_pos: Point::zero(),
-            connex_numbers: Vec::new(),
-            stability: Vec::new(),
-            reactivity: Vec::new(),
-            energy: Vec::new(),
-            alpha: Vec::new(),
-            beta: Vec::new(),
-            gamma: Vec::new(),
-            delta: Vec::new(),
-            omega: Vec::new(),
+            bufs: BoardViewBufs::empty(),
             slice: BoardSlice::empty(),
             total_energy: 0.0,
             time_taken: Duration::ZERO,

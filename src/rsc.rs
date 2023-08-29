@@ -14,6 +14,9 @@ pub const STABILITY_RANGE: [f32; 2] = [0.0, 1.0];
 pub const REACTIVITY_RANGE: [f32; 2] = [-1.0, 1.0];
 pub const ENERGY_RANGE: [f32; 2] = [0.0, 15.0];
 
+pub const CHUNK_VIEW_RADIUS: i32 = 1;
+pub const MIN_CHUNK_SIZE: i32 = 32;
+
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     r: 0.1,
     g: 0.1,
