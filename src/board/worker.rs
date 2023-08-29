@@ -54,12 +54,11 @@ impl BoardWorker {
     }
 
     pub fn run(&mut self) {
-        let mut last_update = Instant::now();
+        let mut target = Instant::now();
         loop {
             let now = Instant::now();
-            let udelta = now - last_update;
-            if udelta > self.update_time {
-                last_update = now;
+            if now > target {
+                target += self.update_time;
                 self.receive_messages();
                 if !self.paused || self.step {
                     self.step = false;
@@ -78,7 +77,12 @@ impl BoardWorker {
 
     fn receive_messages(&mut self) {
         let mut new_view = false;
-        for msg in self.client.receiver.try_iter() {
+        let msgs: Vec<WorkerCommand> = if self.paused {
+            vec![self.client.receiver.recv().expect("client died??")]
+        } else {
+            self.client.receiver.try_iter().collect()
+        };
+        for msg in msgs {
             match msg {
                 WorkerCommand::Swap(pos1, pos2, creative) => {
                     if creative || self.board.player_can_swap(pos1, pos2) {

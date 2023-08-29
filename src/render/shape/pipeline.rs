@@ -1,6 +1,6 @@
 use wgpu::{BindGroup, Buffer, RenderPass, RenderPipeline};
 
-use crate::render::{primitive::RoundedRectInstance, surface::RenderSurface};
+use crate::render::{primitive::RoundedRectPrimitive, surface::RenderSurface};
 
 use super::{uniform::WindowUniform, instance::RoundedRectBuffer};
 
@@ -29,7 +29,7 @@ impl ShapePipeline {
     pub fn update(
         &mut self,
         surface: &RenderSurface,
-        rects: &Vec<RoundedRectInstance>,
+        rects: &Vec<RoundedRectPrimitive>,
         resized: bool,
     ) {
         if resized {

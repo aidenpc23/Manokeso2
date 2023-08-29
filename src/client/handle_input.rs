@@ -53,17 +53,19 @@ impl Client {
                 state.selected_tile = self.hovered_tile;
             }
 
-            if input.mouse_just_pressed(MouseButton::Right) {
-                if let Some(tile1) = state.selected_tile {
-                    if let Some(tile2) = self.hovered_tile {
+            if input.mouse_just_pressed(MouseButton::Right)
+                || input.mouse_just_released(MouseButton::Left)
+            {
+                if let (Some(selected), Some(hovered)) = (state.selected_tile, self.hovered_tile) {
+                    if selected.pos != hovered.pos {
                         self.worker.send(WorkerCommand::Swap(
-                            tile1.pos,
-                            tile2.pos,
+                            selected.pos,
+                            hovered.pos,
                             state.player.creative,
                         ));
+                        state.selected_tile = None;
                     }
                 }
-                state.selected_tile = None;
             }
         }
 
@@ -79,80 +81,70 @@ impl Client {
 
             if input.just_pressed(Key::Y) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, ConnexNumber(1)));
                 }
             }
 
             if input.just_pressed(Key::H) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, ConnexNumber(-1)));
                 }
             }
 
             if input.just_pressed(Key::U) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Stability(0.1)));
                 }
             }
 
             if input.just_pressed(Key::J) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Stability(-0.1)));
                 }
             }
 
             if input.just_pressed(Key::I) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Reactivity(0.1)));
                 }
             }
 
             if input.just_pressed(Key::K) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Reactivity(-0.1)));
                 }
             }
 
             if input.just_pressed(Key::O) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Energy(20.0)));
                 }
             }
 
             if input.just_pressed(Key::L) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Energy(-20.0)));
                 }
             }
 
             if input.just_pressed(Key::P) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Delta(1)));
                 }
             }
 
             if input.just_pressed(Key::Semicolon) {
                 if let Some(tile) = self.hovered_tile {
-                    self
-                        .worker
+                    self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Delta(-1)));
                 }
             }

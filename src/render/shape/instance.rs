@@ -1,6 +1,6 @@
 use wgpu::{RenderPass, VertexAttribute};
 
-use crate::render::{primitive::RoundedRectInstance, surface::RenderSurface};
+use crate::render::{primitive::RoundedRectPrimitive, surface::RenderSurface};
 
 pub struct RoundedRectBuffer {
     buffer: wgpu::Buffer,
@@ -14,12 +14,12 @@ impl RoundedRectBuffer {
             len: 0,
         }
     }
-    pub fn update(&mut self, surface: &RenderSurface, rects: &[RoundedRectInstance]) {
+    pub fn update(&mut self, surface: &RenderSurface, rects: &[RoundedRectPrimitive]) {
         if self.len != rects.len() {
             self.len = rects.len();
             self.buffer = Self::init_buf(
                 &surface.device,
-                rects.len() * std::mem::size_of::<RoundedRectInstance>(),
+                rects.len() * std::mem::size_of::<RoundedRectPrimitive>(),
             );
         }
         surface
@@ -42,7 +42,7 @@ impl RoundedRectBuffer {
     }
 }
 
-impl RoundedRectInstance {
+impl RoundedRectPrimitive {
     const ATTRIBS: [VertexAttribute; 11] = wgpu::vertex_attr_array![
         0 => Float32x2,
         1 => Float32x2,
@@ -58,7 +58,7 @@ impl RoundedRectInstance {
     ];
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<RoundedRectInstance>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<RoundedRectPrimitive>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &Self::ATTRIBS,
         }

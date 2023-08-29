@@ -1,4 +1,4 @@
-use crate::{util::point::Point, board::decode_alpha};
+use crate::{board::decode_alpha, util::point::Point};
 
 use super::{
     element::{Align, Text},
@@ -18,7 +18,11 @@ pub fn board() -> GameUI {
                             "energy: {}\n",
                             "radiation: {}\n"
                         ),
-                        tile.connex_number, tile.stability, tile.reactivity, tile.energy, tile.gamma
+                        tile.connex_number,
+                        tile.stability,
+                        tile.reactivity,
+                        tile.energy,
+                        tile.gamma
                     );
                     if client.debug.show {
                         str = format!("tile pos: {:?}\n", tile.pos) + &str;
@@ -59,8 +63,16 @@ pub fn board() -> GameUI {
             content: |client| {
                 if client.debug.show {
                     let adp_info = client.renderer.render_surface.adapter.get_info();
+                    let Point {x, y} = client.state.player.pos;
                     format!(
-                        "adapter: {}\nbackend: {:?}\nclient update: {:.3}ms\nworld update: {:.3}ms",
+                        concat!(
+                            "pos: {:.3}, {:.3}\n",
+                            "adapter: {}\n",
+                            "backend: {:?}\n",
+                            "client update: {:.3}ms\n",
+                            "world update: {:.3}ms",
+                        ),
+                        x, y,
                         adp_info.name,
                         adp_info.backend,
                         client.debug.client_update_time,

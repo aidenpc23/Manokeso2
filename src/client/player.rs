@@ -1,6 +1,5 @@
 use crate::{
-    client::ui::element::UIPoint,
-    render::{primitive::RoundedRectInstance, tile::data::TileData, Renderer},
+    render::{primitive::{RoundedRectPrimitive, UIPoint}, tile::data::TileData, Renderer},
     rsc::{DEFAULT_PLAYER_SIZE, DEFAULT_PLAYER_SPEED},
     util::point::Point,
 };
@@ -36,7 +35,7 @@ impl Default for Player {
 }
 
 impl Player {
-    pub fn to_primitives<T: TileData>(&self, renderer: &Renderer<T>) -> Vec<RoundedRectInstance> {
+    pub fn to_primitives<T: TileData>(&self, renderer: &Renderer<T>) -> Vec<RoundedRectPrimitive> {
         let radius = self.size / 2.0;
         let point_rad = Point {
             x: radius,

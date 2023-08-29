@@ -1,8 +1,14 @@
 use crate::{
     client::Client,
-    render::primitive::{RoundedRectInstance, TextElement},
+    render::primitive::{RoundedRectPrimitive, TextPrimitive, UIPoint},
     util::point::Point,
 };
+
+pub struct UIElement<T> {
+    pub top_left: UIPoint,
+    pub bottom_right: UIPoint,
+    pub data: T
+}
 
 pub struct RoundedRect {
     pub top_left: UIPoint,
@@ -14,12 +20,10 @@ pub struct RoundedRect {
 }
 
 impl RoundedRect {
-    pub fn to_primitive(&self) -> RoundedRectInstance {
-        RoundedRectInstance {
-            top_left_anchor: self.top_left.anchor,
-            top_left_offset: self.top_left.offset,
-            bottom_right_anchor: self.bottom_right.anchor,
-            bottom_right_offset: self.bottom_right.offset,
+    pub fn to_primitive(&self) -> RoundedRectPrimitive {
+        RoundedRectPrimitive {
+            top_left: self.top_left,
+            bottom_right: self.bottom_right,
             colors: self.colors,
             radius: self.radius,
             inner_radius: self.inner_radius,
@@ -52,19 +56,6 @@ impl Default for RoundedRect {
     }
 }
 
-pub struct UIPoint {
-    pub anchor: Point<f32>,
-    pub offset: Point<f32>,
-}
-
-impl UIPoint {
-    pub fn anchor_offset(anchor_x: f32, anchor_y: f32, offset_x: f32, offset_y: f32) -> Self {
-        Self {
-            anchor: Point::new(anchor_x, anchor_y),
-            offset: Point::new(offset_x, offset_y),
-        }
-    }
-}
 
 pub type TextUpdater = fn(&Client) -> String;
 
@@ -76,11 +67,11 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn into_primitive(&self, client: &Client) -> TextElement {
+    pub fn into_primitive(&self, client: &Client) -> TextPrimitive {
         let size = client.renderer.window.inner_size();
         let bounds = (size.width as f32, size.height as f32);
         let text_bounds = (self.bounds)(bounds);
-        TextElement {
+        TextPrimitive {
             pos: (self.pos)(bounds),
             bounds: text_bounds,
             align: self.align,

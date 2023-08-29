@@ -1,17 +1,15 @@
 use crate::{util::point::Point, client::ui::element::Align};
 
 pub struct UIPrimatives {
-    pub text: Vec<TextElement>,
-    pub rounded_rects: Vec<RoundedRectInstance>,
+    pub text: Vec<TextPrimitive>,
+    pub rounded_rects: Vec<RoundedRectPrimitive>,
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct RoundedRectInstance {
-    pub top_left_anchor: Point<f32>,
-    pub top_left_offset: Point<f32>,
-    pub bottom_right_anchor: Point<f32>,
-    pub bottom_right_offset: Point<f32>,
+pub struct RoundedRectPrimitive {
+    pub top_left: UIPoint,
+    pub bottom_right: UIPoint,
     pub colors: [[f32; 4]; 4],
     pub radius: f32,
     pub inner_radius: f32,
@@ -19,14 +17,14 @@ pub struct RoundedRectInstance {
 }
 
 #[derive(PartialEq, Clone)]
-pub struct TextElement {
+pub struct TextPrimitive {
     pub content: String,
     pub align: Align,
     pub pos: Point<f32>,
     pub bounds: (f32, f32),
 }
 
-impl TextElement {
+impl TextPrimitive {
     pub fn empty() -> Self {
         Self {
             content: String::new(),
@@ -36,3 +34,20 @@ impl TextElement {
         }
     }
 }
+
+#[repr(C)]
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct UIPoint {
+    pub anchor: Point<f32>,
+    pub offset: Point<f32>,
+}
+
+impl UIPoint {
+    pub fn anchor_offset(anchor_x: f32, anchor_y: f32, offset_x: f32, offset_y: f32) -> Self {
+        Self {
+            anchor: Point::new(anchor_x, anchor_y),
+            offset: Point::new(offset_x, offset_y),
+        }
+    }
+}
+

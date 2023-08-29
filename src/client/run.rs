@@ -31,7 +31,8 @@ impl Client {
             BoardWorker::new(ci).run();
         });
 
-        let mut last_frame = Instant::now();
+        let mut target = Instant::now();
+        let mut last_update = Instant::now();
         let mut input = Input::new();
         let mut resized = false;
 
@@ -56,14 +57,16 @@ impl Client {
                 }
                 Event::MainEventsCleared => {
                     let now = Instant::now();
-                    let fdelta = now - last_frame;
-                    if fdelta > client.frame_time {
-                        last_frame = now;
+                    if now > target {
+                        target += client.frame_time;
 
                         client.timer.start();
 
+                        let time_delta = now - last_update;
+                        last_update = now;
+
                         client.receive_messages();
-                        client.handle_input(&fdelta, &input);
+                        client.handle_input(&time_delta, &input);
                         input.end();
                         client.update(&input, now);
                         client.render(resized);

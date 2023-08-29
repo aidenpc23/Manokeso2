@@ -3,7 +3,7 @@ use wgpu::{
     BufferUsages,
 };
 
-use crate::render::{primitive::RoundedRectInstance, surface::RenderSurface};
+use crate::render::{primitive::RoundedRectPrimitive, surface::RenderSurface};
 
 use super::{
     pipeline::{ShapeBuffers, ShapePipeline, SHAPE_SHADER},
@@ -63,7 +63,7 @@ impl ShapePipeline {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[RoundedRectInstance::desc()],
+                buffers: &[RoundedRectPrimitive::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,

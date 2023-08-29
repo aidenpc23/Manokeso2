@@ -6,7 +6,7 @@ use wgpu::{MultisampleState, RenderPass};
 
 use crate::{
     client::ui::element::Align,
-    render::{primitive::TextElement, surface::RenderSurface},
+    render::{primitive::TextPrimitive, surface::RenderSurface},
 };
 
 pub struct TextPipeline {
@@ -15,7 +15,7 @@ pub struct TextPipeline {
     pub atlas: glyphon::TextAtlas,
     pub cache: glyphon::SwashCache,
     pub text_buffers: Vec<glyphon::Buffer>,
-    pub old_text: Vec<TextElement>,
+    pub old_text: Vec<TextPrimitive>,
 }
 
 impl TextPipeline {
@@ -46,10 +46,10 @@ impl TextPipeline {
         self.renderer.render(&self.atlas, pass).unwrap();
     }
 
-    pub fn update(&mut self, surface: &RenderSurface, text: &[TextElement]) {
+    pub fn update(&mut self, surface: &RenderSurface, text: &[TextPrimitive]) {
         let buffers = &mut self.text_buffers;
         if buffers.len() < text.len() {
-            self.old_text.resize(text.len(), TextElement::empty());
+            self.old_text.resize(text.len(), TextPrimitive::empty());
             buffers.resize_with(text.len(), || {
                 Buffer::new(&mut self.font_system, Metrics::new(20.0, 25.0))
             })
