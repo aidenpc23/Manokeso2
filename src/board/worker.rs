@@ -77,11 +77,11 @@ impl BoardWorker {
 
     fn receive_messages(&mut self) {
         let mut new_view = false;
-        let msgs: Vec<WorkerCommand> = if self.paused {
-            vec![self.client.receiver.recv().expect("client died??")]
-        } else {
-            self.client.receiver.try_iter().collect()
-        };
+        let mut msgs: Vec<WorkerCommand> = Vec::new();
+        if self.paused {
+            msgs.push(self.client.receiver.recv().expect("client died??"));
+        }
+        msgs.extend(self.client.receiver.try_iter());
         for msg in msgs {
             match msg {
                 WorkerCommand::Swap(pos1, pos2, creative) => {
