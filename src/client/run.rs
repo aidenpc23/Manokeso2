@@ -113,6 +113,8 @@ impl Client {
                     stability: &view.bufs.stability,
                     reactivity: &view.bufs.reactivity,
                     energy: &view.bufs.energy,
+                    omega: &view.bufs.omega,
+                    gamma: &view.bufs.gamma,
                 })
             } else {
                 None

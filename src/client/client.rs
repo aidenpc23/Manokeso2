@@ -20,6 +20,8 @@ tile_render_data!(TileRenderData, TileUpdateData, [
     1 => stability:f32,
     2 => reactivity:f32,
     3 => energy:f32,
+    4 => omega:f32,
+    5 => gamma:f32,
 ]);
 
 pub const TILE_SHADER: &str = include_str!("./rsc/tile.wgsl");

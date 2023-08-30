@@ -116,7 +116,7 @@ impl Board {
             for dy in y_start..y_end {
                 for dx in x_start..x_end {
                     let i2 = dy * self.width + dx;
-                    let cond = r.r[i].abs() * r.r[i2 as usize].abs();
+                    let cond = (r.r[i].abs() * r.r[i2 as usize].abs() + 0.1).max(1.0);
                     let kernel_value =
                         OMEGA_KERNEL[(dx - x_start) as usize][(dy - y_start) as usize];
                     let a = kernel_value * cond;
@@ -125,7 +125,7 @@ impl Board {
             }
 
             let new = cur + sum * OMEGA_FLOW_RATE;
-            *on = new * 0.80;
+            *on = new * 0.99;
             if on.abs() < 0.0001 {
                 *on = 0.0;
             }
@@ -223,9 +223,10 @@ impl Board {
                 let cost_mult = (ci as f32 * 0.35) + 1.0;
                 let gamma_cost = cost_mult * cost_mult;
 
-                if ci <= 20 && gi < gamma_cost * 0.9 {
+                let can_gen = !get_bit(di, 11);
+                if ci <= 20 && gi < gamma_cost * 0.9 && can_gen {
                     *gn = gi + ((1.0002 as f32).powf(ci as f32) - 1.0);
-                } else if gi < (1.23 as f32).powf(c.r[i] as f32) {
+                } else if gi < (1.23 as f32).powf(c.r[i] as f32) && can_gen {
                     *gn = gi + ((1.02 as f32).powf(c.r[i] as f32) - 1.0);
                 } else {
                     *gn = gi;
@@ -260,11 +261,12 @@ impl Board {
                     *rn = ri + r_adjustments[g2 as usize] * (1.0 - s.r[i]);
 
                     *dn = di;
-                    
+
                     let dcost = 20.0 * ci as f32;
                     if *en > dcost {
                         for dir in CARDINAL_DIRECTIONS_SHORT {
-                            let i2 = (y.sat_add(dir.1).min(self.height-1)) * self.width + (x.sat_add(dir.0).min(self.width-1));
+                            let i2 = (y.sat_add(dir.1).min(self.height - 1)) * self.width
+                                + (x.sat_add(dir.0).min(self.width - 1));
                             if i != i2 {
                                 *dn ^= d.r[i2];
                             }
@@ -624,13 +626,20 @@ impl Board {
                             let pseudo_cap = oi.min(1.0);
                             let pseudo_cap2 = o.r[u_i2].min(1.0);
                             let other = ri * pseudo_cap2;
-                            released_reactivity += if ri < 0.0 {
-                                other.max(ri)
+                            released_reactivity += if o.r[u_i2] >= 1.0 {
+                                if ri < 0.0 {
+                                    other.max(ri)
+                                } else {
+                                    other.min(ri)
+                                }
                             } else {
-                                other.min(ri)
+                                0.0
                             };
-                            absorbed_reactivity +=
-                                (r.r[u_i2].abs() * pseudo_cap).min(r.r[u_i2].abs());
+                            absorbed_reactivity += if oi >= 1.0 {
+                                (r.r[u_i2].abs() * pseudo_cap).min(r.r[u_i2].abs())
+                            } else {
+                                0.0
+                            };
                         }
                     }
                 }

@@ -11,6 +11,8 @@ struct InstanceInput {
     @location(1) stability: f32,
     @location(2) reactivity: f32,
     @location(3) energy: f32,
+    @location(4) omega: f32,
+    @location(5) gamma: f32,
 };
 
 struct CameraUniform {
@@ -49,6 +51,10 @@ fn vs_main(
     var r = abs(in.reactivity);
     var s = in.stability;
     var e = min(in.energy * 0.011, 1.0);
+    var o = min(in.omega * 0.07, 1.0);
+    var g = smoothstep(1.0, 30.0, in.gamma) * (1.0 - smoothstep(30.0, 250.0, in.gamma));
+    var g2 = smoothstep(30.0, 250.0, in.gamma) * (1.0 - smoothstep(250.0, 500.0, in.gamma));
+    var g3 = smoothstep(250.0, 500.0, in.gamma);
     var stable = 1.0;
     if s > 0.80 && in.connex_number >= u32(10) {
         stable = 0.2;
@@ -59,13 +65,17 @@ fn vs_main(
     }
     var hsv = vec3<f32>(
         (f32(in.connex_number) * 0.027 + (0.236)) % 1.0,  // Should be multiplied by 0.035
-        (0.6 + 0.4 * e) * con0,
+        (0.6 + max(0.4 * e, 0.4 * g)) * con0,
         (0.1 * (1.0 - s) + 0.8 * e + 0.1) * stable * con0
         );
     
     out.rgb = hsv_to_rgb(hsv);
 
     out.rgb = color_shift(out.rgb, vec3<f32>(235.0/255.0, 89.0/255.0, 63.0/255.0), 0.15 * r * con0);
+    out.rgb = color_shift(out.rgb, vec3<f32>(10.0/255.0, 235.0/255.0, 30.0/255.0), 0.08 * g);
+    out.rgb = color_shift(out.rgb, vec3<f32>(20.0/255.0, 20.0/255.0, 235.0/255.0), 0.08 * g2);
+    out.rgb = color_shift(out.rgb, vec3<f32>(235.0/255.0, 20.0/255.0, 45.0/255.0), 0.08 * g3);
+    out.rgb = color_shift(out.rgb, vec3<f32>(224.0/255.0, 79.0/255.0, 29.0/255.0), 0.6 * o);
 
     return out;
 }

@@ -98,9 +98,8 @@ impl Board {
                 self.bufs.delta.r[index] = 0;
                 self.bufs.delta.r[index] |= 1 << 0;
                 self.bufs.delta.r[index] |= 1 << 1;
-                // self.bufs.delta.r[index] |= 1 << 3;
-                // self.bufs.delta.r[index] |= 1 << 4;
                 self.bufs.delta.r[index] |= 1 << 10;
+                self.bufs.delta.r[index] |= 1 << 11;
                 // self.bufs.energy.r[index] = rng.gen_range(0.0..1000.0);
                 self.bufs.connex_numbers.r[index] = 200;
             }
