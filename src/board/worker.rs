@@ -59,7 +59,9 @@ impl BoardWorker {
             let now = Instant::now();
             if now > target {
                 target += self.update_time;
-                target += self.receive_messages();
+                if self.receive_messages(&mut target) {
+                    break;
+                }
                 if !self.paused || self.step {
                     self.step = false;
 
@@ -73,16 +75,16 @@ impl BoardWorker {
                 }
             }
         }
+        println!("exiting...");
     }
 
-    fn receive_messages(&mut self) -> Duration {
+    fn receive_messages(&mut self, target: &mut Instant) -> bool {
         let mut new_view = false;
         let mut msgs: Vec<WorkerCommand> = Vec::new();
-        let mut frozen_for = Duration::ZERO;
         if self.paused {
             let start = std::time::Instant::now();
             msgs.push(self.client.receiver.recv().expect("client died??"));
-            frozen_for = std::time::Instant::now() - start;
+            *target += std::time::Instant::now() - start;
         }
         msgs.extend(self.client.receiver.try_iter());
         for msg in msgs {
@@ -146,6 +148,7 @@ impl BoardWorker {
                     new_view = true;
                 }
                 WorkerCommand::ViewSwap(view) => self.client.view = Some(view),
+                WorkerCommand::Exit() => return true
             }
         }
         if new_view {
@@ -153,7 +156,7 @@ impl BoardWorker {
             self.slice_change |= self.slice != new;
             self.slice = new;
         }
-        frozen_for
+        false
     }
 
     fn sync_board(&mut self) {

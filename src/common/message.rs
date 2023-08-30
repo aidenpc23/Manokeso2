@@ -27,6 +27,7 @@ pub enum WorkerCommand {
     Load(String),
     Step(),
     ViewSwap(BoardView),
+    Exit(),
 }
 
 #[derive(Debug)]
