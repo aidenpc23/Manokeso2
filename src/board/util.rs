@@ -61,8 +61,11 @@ pub fn decode_beta(value: u64) -> (i32, i32) {
 }
 
 pub fn set_bit(bitmask: &mut u64, value: bool, bit_index: u8) {
-    let bit = if value { 1 } else { 0 };
-    *bitmask |= bit << bit_index;
+    if value {
+        *bitmask |= 1 << bit_index;
+    } else {
+        *bitmask &= !(1 << bit_index);
+    };
 }
 
 pub fn get_bit(bitmask: u64, bit_index: u8) -> bool {

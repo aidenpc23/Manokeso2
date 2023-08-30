@@ -33,7 +33,7 @@ pub struct BoardWorker {
 impl BoardWorker {
     pub fn new(client: ClientInterface) -> Self {
         let width = 708;
-        let height = 708;
+        let height = 354;
         let board = Board::new(
             Point::new(-(width as f32) / 2.0, -(height as f32) / 2.0),
             width,

@@ -363,7 +363,7 @@ impl Board {
                 let u_i2 = i2 as usize;
 
                 let (do_conn, do_stab, do_reac) =
-                    if i2 >= 0 && i2 < self.width as i32 * self.width as i32 && ri != 0.0 {
+                    if i2 >= 0 && i2 < self.width as i32 * self.height as i32 && ri != 0.0 {
                         if ri > 0.0 {
                             (
                                 (c.r[u_i2] < CONNEX_NUMBER_RANGE[1]) as i32,
