@@ -1,12 +1,13 @@
 use std::time::Instant;
 
+use itertools::Itertools;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
 
 use crate::{
-    board::BoardWorker,
+    board::{BoardWorker, get_bit},
     common::{
         interface::interface_pair,
         message::{WorkerCommand, WorkerResponse},
@@ -105,6 +106,13 @@ impl Client {
         self.renderer.start_encoder();
         let view = &mut self.worker.view;
         self.state.camera.pos = self.state.player.pos;
+        let special = view.bufs.delta.iter().map(|&d|
+            if get_bit(d, 63) {
+                1
+            } else {
+                0
+            }
+        ).collect_vec();
         if let Some(cam_view) = self.renderer.update(
             if self.view_dirty {
                 Some(TileUpdateData {
@@ -115,6 +123,7 @@ impl Client {
                     energy: &view.bufs.energy,
                     omega: &view.bufs.omega,
                     gamma: &view.bufs.gamma,
+                    special: &special,
                 })
             } else {
                 None

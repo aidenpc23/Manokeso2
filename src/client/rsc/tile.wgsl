@@ -13,6 +13,7 @@ struct InstanceInput {
     @location(3) energy: f32,
     @location(4) omega: f32,
     @location(5) gamma: f32,
+    @location(6) special: u32,
 };
 
 struct CameraUniform {
@@ -55,6 +56,7 @@ fn vs_main(
     var g = smoothstep(1.0, 30.0, in.gamma) * (1.0 - smoothstep(30.0, 250.0, in.gamma));
     var g2 = smoothstep(30.0, 250.0, in.gamma) * (1.0 - smoothstep(250.0, 500.0, in.gamma));
     var g3 = smoothstep(250.0, 500.0, in.gamma);
+
     var stable = 1.0;
     if s > 0.80 && in.connex_number >= u32(10) {
         stable = 0.2;
@@ -64,9 +66,9 @@ fn vs_main(
         con0 = 0.7;
     }
     var hsv = vec3<f32>(
-        (f32(in.connex_number) * 0.027 + (0.236)) % 1.0,  // Should be multiplied by 0.035
-        (0.6 + max(0.4 * e, 0.4 * g)) * con0,
-        (0.1 * (1.0 - s) + 0.8 * e + 0.1) * stable * con0
+        ((f32(in.connex_number) * 0.027 + (0.236)) % 1.0) * (1.0 - f32(in.special)) + f32(in.special) * 60.0/360.0,
+        ((0.6 + max(0.4 * e, 0.4 * g)) * con0) * (1.0 - f32(in.special)) + f32(in.special),
+        ((0.1 * (1.0 - s) + 0.8 * e + 0.1) * stable * con0) * (1.0 - f32(in.special)) + f32(in.special)
         );
     
     out.rgb = hsv_to_rgb(hsv);

@@ -39,7 +39,7 @@ impl Board {
                 if !has_en {
                     self.bufs.alpha.r[index] = encode_alpha(((ex+ey)) as u64, 0, 0.0, 100.0, 0.0);
                 }
-                self.bufs.connex_numbers.r[index] = *[200].choose(&mut rng).unwrap();
+                self.bufs.connex_numbers.r[index] = *[100].choose(&mut rng).unwrap();
             }
         }
         
@@ -87,7 +87,7 @@ impl Board {
             }
         }
 
-        let room_width = 10;
+        let room_width = 11;
         let room_height = 5;
 
         let center_x = x_offset + maze_width / 2;
@@ -106,11 +106,23 @@ impl Board {
                 } else {
                     self.bufs.stability.r[index] = 0.0;
                     set_bit(&mut self.bufs.delta.r[index], false, 0);
+                    self.bufs.connex_numbers.r[index] = 0;
                     self.bufs.energy.r[index] = 0.0;
+                    self.bufs.delta.r[index] = 0;
                     self.bufs.alpha.r[index] = encode_alpha(0, 0, 0.0, 0.0, 0.0);
                 }
             }
         }
+
+        // Create delta forge
+        let center_index = center_x + center_y * self.width;
+        self.bufs.stability.r[center_index] = 0.0;
+        self.bufs.reactivity.r[center_index] = 1.0;
+        self.bufs.connex_numbers.r[center_index] = 200;
+        set_bit(&mut self.bufs.delta.r[center_index], true, 63);
+        set_bit(&mut self.bufs.delta.r[center_index], true, 10);
+        set_bit(&mut self.bufs.delta.r[center_index], true, 4);
+        set_bit(&mut self.bufs.delta.r[center_index], true, 3);
         
         let mut potential_doors_top: Vec<usize> = Vec::new();
         let mut potential_doors_bottom: Vec<usize> = Vec::new();

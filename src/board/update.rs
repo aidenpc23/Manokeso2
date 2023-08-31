@@ -138,7 +138,7 @@ impl Board {
         let g = &mut self.bufs.gamma;
         let r = &self.bufs.reactivity;
         let s = &self.bufs.stability;
-        
+
         g.w.par_iter_mut().enumerate().for_each(|(i, gn)| {
             let x = i % self.width;
             let y = i / self.width;
@@ -250,6 +250,8 @@ impl Board {
                         *cn = ci + 1;
                     } else if rme < 0.0 {
                         *cn = ci.saturating_sub(1);
+                    } else {
+                        *cn = ci;
                     }
 
                     let adjustments = [-0.1, -0.05, 0.0, 0.05, 0.1];
@@ -514,6 +516,8 @@ impl Board {
                         *cn = (ci as i32 + cnc).max(0) as u32;
                         *en -= en_in;
                         *en += en_out;
+                    } else  {
+                        *cn = ci;
                     }
 
                     // Make it such that the higher the connex number the harder to decrease stability.

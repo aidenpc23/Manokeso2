@@ -5,27 +5,51 @@ pub trait SaturatingAdd<T> {
 
 impl SaturatingAdd<i32> for u32 {
     fn sat_add(self, rhs: i32) -> Self {
-        (self as i32 + rhs).max(0) as u32
+        if rhs < 0 {
+            self.saturating_sub(rhs.abs() as u32)
+        } else {
+            self.saturating_add(rhs as u32)
+        }
     }
     fn sat_add_assign(&mut self, rhs: i32) {
-        *self = (*self as i32 + rhs).max(0) as u32
+        if rhs < 0 {
+            *self = self.saturating_sub(rhs.abs() as u32)
+        } else {
+            *self = self.saturating_add(rhs as u32)
+        }
     }
 }
 
 impl SaturatingAdd<i32> for usize {
     fn sat_add(self, rhs: i32) -> Self {
-        (self as i32 + rhs).max(0) as usize
+        if rhs < 0 {
+            self.saturating_sub(rhs.abs() as usize)
+        } else {
+            self.saturating_add(rhs as usize)
+        }
     }
     fn sat_add_assign(&mut self, rhs: i32) {
-        *self = (*self as i32 + rhs).max(0) as usize
+        if rhs < 0 {
+            *self = self.saturating_sub(rhs.abs() as usize)
+        } else {
+            *self = self.saturating_add(rhs as usize)
+        }
     }
 }
 
 impl SaturatingAdd<i32> for u64 {
     fn sat_add(self, rhs: i32) -> Self {
-        (self as i32 + rhs).max(0) as u64
+        if rhs < 0 {
+            self.saturating_sub(rhs.abs() as u64)
+        } else {
+            self.saturating_add(rhs.abs() as u64)
+        }
     }
     fn sat_add_assign(&mut self, rhs: i32) {
-        *self = (*self as i32 + rhs).max(0) as u64
+        if rhs < 0 {
+            *self = self.saturating_sub(rhs.abs() as u64)
+        } else {
+            *self = self.saturating_add(rhs.abs() as u64)
+        }
     }
 }

@@ -97,12 +97,12 @@ impl SwapBuffer<u64> {
         for _ in 0..(width * height) {
             if rng.gen_range(0..=10000) < 20 {
                 let mut bitmask: u64 = 0;
-                let bit_to_flip = rng.gen_range(0..64);
+                let bit_to_flip = rng.gen_range(0..63);
                 bitmask |= 1 << bit_to_flip;
 
                 for _ in 0..63 {
                     if rng.gen_range(0..=100) < 1 {
-                        let additional_bit_to_flip = rng.gen_range(0..64);
+                        let additional_bit_to_flip = rng.gen_range(0..63);
                         bitmask |= 1 << additional_bit_to_flip;
                     } else {
                         break;
