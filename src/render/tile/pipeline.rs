@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use crate::{
     client::Camera,
     common::message::CameraView,
-    render::tile::{CameraUniform, ConstsUniform, TileViewUniform},
+    render::tile::{CameraUniform, ConstsUniform, BoardViewUniform},
 };
 use wgpu::{util::StagingBelt, BindGroup, CommandEncoder, Device, RenderPass, RenderPipeline};
 use winit::dpi::PhysicalSize;
@@ -18,7 +18,7 @@ pub struct Buffers {
 
 pub struct Uniforms {
     pub camera: CameraUniform,
-    pub tile_view: TileViewUniform,
+    pub tile_view: BoardViewUniform,
     pub consts: ConstsUniform,
 }
 
@@ -66,7 +66,7 @@ impl<T: TileData> TilePipeline<T> {
                     0,
                     unsafe {
                         NonZeroU64::new_unchecked(
-                            (slice.len() * std::mem::size_of::<TileViewUniform>()) as u64,
+                            (slice.len() * std::mem::size_of::<BoardViewUniform>()) as u64,
                         )
                     },
                     device,

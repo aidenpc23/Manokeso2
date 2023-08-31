@@ -6,11 +6,15 @@ use super::{
     ui::{layout, ui::GameUI},
 };
 use crate::{
-    common::interface::WorkerInterface,
+    board::BoardSettings,
+    common::{
+        interface::WorkerInterface,
+        view::{BoardId, BoardView},
+    },
     render::Renderer,
     rsc::{FPS, FRAME_TIME},
     tile_render_data,
-    util::{timer::Timer, point::Point},
+    util::{point::Point, timer::Timer},
 };
 use std::time::{Duration, Instant};
 use winit::event_loop::EventLoop;
@@ -30,7 +34,7 @@ pub struct Client {
     pub ui: GameUI,
     pub keybinds: Keybinds,
     pub frame_time: Duration,
-    pub hovered_tile: Option<TileInfo>,
+    pub hovered_tile: Option<TileId>,
     pub paused: bool,
     pub timer: Timer,
     pub worker: WorkerInterface,
@@ -46,8 +50,25 @@ impl Client {
             keybinds.extend(config_keybinds);
         }
         let fullscreen = config.fullscreen.unwrap_or(false);
+
+        let width = 50;
+        let height = 50;
+        let settings = BoardSettings {
+            pos: Point::new(-(width as f32) / 2.0, -(height as f32) / 2.0),
+            width,
+            height,
+        };
+        let main_id = 0;
+        worker.send(crate::common::message::WorkerCommand::CreateBoard(settings));
+        let settings = BoardSettings {
+            pos: Point::new((width as f32) / 2.0, -(height as f32) / 2.0),
+            width,
+            height,
+        };
+        worker.send(crate::common::message::WorkerCommand::CreateBoard(settings));
+
         Self {
-            state: ClientState::new(),
+            state: ClientState::new(main_id),
             renderer: Renderer::new(event_loop, TILE_SHADER, fullscreen).await,
             keybinds,
             frame_time: FRAME_TIME,
@@ -63,37 +84,61 @@ impl Client {
     }
 }
 
+impl Client {
+    pub fn get_tile(&self, id: TileId) -> Option<TileView<'_>> {
+        if let Some(view) = self.worker.get(id.board_id) {
+            Some(TileView {
+                board_id: id.board_id,
+                view,
+                i: (id.pos - view.slice.start).index(view.slice.width),
+                pos: id.pos,
+            })
+        } else {
+            None
+        }
+    }
+
+    pub fn hovered_tile(&self) -> Option<TileView<'_>> {
+        self.get_tile(self.hovered_tile?)
+    }
+
+    pub fn selected_tile(&self) -> Option<TileView<'_>> {
+        self.get_tile(self.state.selected_tile?)
+    }
+}
+
+pub struct TileView<'a> {
+    pub board_id: BoardId,
+    pub pos: Point<usize>,
+    pub view: &'a BoardView,
+    pub i: usize,
+}
+
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct ClientState {
-    pub selected_tile: Option<TileInfo>,
+    pub selected_tile: Option<TileId>,
     pub camera: Camera,
     pub camera_scroll: f32,
     pub player: Player,
+    pub main_id: BoardId,
 }
 
 impl ClientState {
-    pub fn new() -> Self {
+    pub fn new(main_id: BoardId) -> Self {
         Self {
             camera: Camera::default(),
             camera_scroll: 0.0,
             selected_tile: None,
             player: Player::default(),
+            main_id,
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
-pub struct TileInfo {
+pub struct TileId {
+    pub board_id: BoardId,
     pub pos: Point<usize>,
-    pub connex_number: u32,
-    pub stability: f32,
-    pub reactivity: f32,
-    pub energy: f32,
-    pub alpha: u64,
-    pub beta: u64,
-    pub gamma: f32,
-    pub delta: u64,
-    pub omega: f32,
 }
 
 pub struct DebugState {

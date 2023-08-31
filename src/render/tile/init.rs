@@ -8,7 +8,7 @@ use crate::render::surface::RenderSurface;
 use super::{
     data::TileData,
     pipeline::{Buffers, TilePipeline, Uniforms},
-    CameraUniform, ConstsUniform, TileViewUniform,
+    CameraUniform, ConstsUniform, BoardViewUniform,
 };
 
 impl<T: TileData> TilePipeline<T> {
@@ -29,7 +29,7 @@ impl<T: TileData> TilePipeline<T> {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let tile_view_uniform = TileViewUniform::empty();
+        let tile_view_uniform = BoardViewUniform::empty();
         let tile_view_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Tile View Buffer"),
             contents: bytemuck::cast_slice(&[tile_view_uniform]),

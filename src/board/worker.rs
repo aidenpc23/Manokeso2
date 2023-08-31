@@ -5,16 +5,16 @@ use crate::{
     common::{
         interface::ClientInterface,
         message::{CameraView, TileChange, WorkerCommand, WorkerResponse},
-        save::{load, save},
+        save::{load, save}, view::BoardView,
     },
     rsc::{CONNEX_NUMBER_RANGE, REACTIVITY_RANGE, STABILITY_RANGE, UPDATE_TIME},
-    util::{math::SaturatingAdd, point::Point},
+    util::math::SaturatingAdd,
 };
 
 use super::{board::Board, instance::BoardInstance};
 
 pub struct BoardWorker {
-    pub board: BoardInstance,
+    pub boards: Vec<BoardInstance>,
     pub update_time: Duration,
     pub paused: bool,
     pub step: bool,
@@ -24,15 +24,8 @@ pub struct BoardWorker {
 
 impl BoardWorker {
     pub fn new(client: ClientInterface) -> Self {
-        let width = 708;
-        let height = 354;
-        let board = Board::new(
-            Point::new(-(width as f32) / 2.0, -(height as f32) / 2.0),
-            width,
-            height,
-        );
         Self {
-            board: BoardInstance::new(board),
+            boards: Vec::new(),
             update_time: UPDATE_TIME,
             paused: true,
             step: false,
@@ -53,7 +46,9 @@ impl BoardWorker {
                 if !self.paused || self.step {
                     self.step = false;
 
-                    self.board.update();
+                    for board in &mut self.boards {
+                        board.update();
+                    }
                 }
                 self.sync_board();
             }
@@ -63,7 +58,7 @@ impl BoardWorker {
 
     fn receive_messages(&mut self, target: &mut Instant) -> bool {
         let mut new_view = false;
-        let mut msgs: Vec<WorkerCommand> = Vec::new();
+        let mut msgs: Vec<_> = Vec::new();
         if self.paused {
             let start = std::time::Instant::now();
             msgs.push(self.client.receiver.recv().expect("client died??"));
@@ -72,31 +67,42 @@ impl BoardWorker {
         msgs.extend(self.client.receiver.try_iter());
         for msg in msgs {
             match msg {
-                WorkerCommand::Swap(pos1, pos2, creative) => {
-                    if creative || self.board.read().player_can_swap(pos1, pos2) {
-                        self.board.write().swap(pos1, pos2);
+                WorkerCommand::Swap(t1, t2, creative) => {
+                    let b1 = &self.boards[t1.board_id];
+                    let b2 = &self.boards[t2.board_id];
+                    if creative
+                        || (b1.read().player_can_move(t1.pos) && b2.read().player_can_move(t2.pos))
+                    {
+                        let i1 = t1.pos.index(b1.read().width);
+                        let i2 = t2.pos.index(b2.read().width);
+                        let a1 = b1.read().bufs.get_tile(i1);
+                        let a2 = b2.read().bufs.get_tile(i2);
+                        self.boards[t1.board_id].write().bufs.set_tile(i1, a2);
+                        self.boards[t2.board_id].write().bufs.set_tile(i2, a1);
                     }
                 }
                 WorkerCommand::Save(name, state) => {
-                    if let Err(err) = save(&name, &(&self.board.read(), state)) {
+                    let boards: Vec<_> = self.boards.iter().map(|b| b.read()).collect();
+                    if let Err(err) = save(&name, &(&boards, state)) {
                         println!("{:?}", err);
                     }
                 }
-                WorkerCommand::Load(name) => match load::<(Board, ClientState)>(&name) {
-                    Ok(data) => {
-                        self.board = BoardInstance::new(data.0);
+                WorkerCommand::Load(name) => match load::<(Vec<Board>, ClientState)>(&name) {
+                    Ok(mut data) => {
+                        self.boards = data.0.drain(..).map(|b| BoardInstance::new(b)).collect();
                         self.paused = true;
                         new_view = true;
                         self.client.send(WorkerResponse::Loaded(data.1));
                     }
                     Err(err) => println!("{:?}", err),
                 },
-                WorkerCommand::ChangeTile(pos, change) => {
-                    let i = pos.index(self.board.read().width);
-                    let bufs = &mut self.board.write().bufs;
+                WorkerCommand::ChangeTile(tile, change) => {
+                    let board = &mut self.boards[tile.board_id as usize];
+                    let i = tile.pos.index(board.read().width);
+                    let bufs = &mut board.write().bufs;
                     match change {
                         TileChange::ConnexNumber(amt) => {
-                            bufs.connex_numbers.r[i] = bufs.connex_numbers.r[i]
+                            bufs.connex_number.r[i] = bufs.connex_number.r[i]
                                 .sat_add(amt)
                                 .clamp(CONNEX_NUMBER_RANGE[0], CONNEX_NUMBER_RANGE[1]);
                         }
@@ -126,21 +132,30 @@ impl BoardWorker {
                     self.cam_view = view;
                     new_view = true;
                 }
-                WorkerCommand::ViewSwap(view) => self.client.view = Some(view),
+                WorkerCommand::ViewsSwapped(view) => self.client.views = Some(view),
+                WorkerCommand::CreateBoard(settings) => {
+                    self.boards.push(BoardInstance::new(Board::new(settings)));
+                }
                 WorkerCommand::Exit() => return true,
             }
         }
         if new_view {
-            self.board.update_view(&self.cam_view);
+            for board in &mut self.boards {
+                board.update_view(&self.cam_view);
+            }
         }
         false
     }
 
     fn sync_board(&mut self) {
-        if let Some(mut view) = self.client.view.take() {
-            if self.board.sync(&mut view) {
-                self.client.send(WorkerResponse::ViewSwap(view));
+        if let Some(mut views) = self.client.views.take() {
+            for (i, board) in self.boards.iter_mut().enumerate() {
+                if i == views.len() {
+                    views.push(BoardView::empty());
+                }
+                board.sync(&mut views[i]);
             }
+            self.client.send(WorkerResponse::ViewsUpdated(views));
         }
     }
 }

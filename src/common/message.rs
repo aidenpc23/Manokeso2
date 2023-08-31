@@ -1,4 +1,9 @@
-use crate::{client::ClientState, common::view::BoardView, util::point::Point};
+use crate::{
+    board::BoardSettings,
+    client::{ClientState, TileId},
+    common::view::BoardView,
+    util::point::Point,
+};
 
 #[derive(Debug)]
 pub struct CameraView {
@@ -20,13 +25,14 @@ impl CameraView {
 #[derive(Debug)]
 pub enum WorkerCommand {
     CameraUpdate(CameraView),
-    ChangeTile(Point<usize>, TileChange),
-    Swap(Point<usize>, Point<usize>, bool),
+    ChangeTile(TileId, TileChange),
+    Swap(TileId, TileId, bool),
     Pause(bool),
     Save(String, ClientState),
     Load(String),
     Step(),
-    ViewSwap(BoardView),
+    ViewsSwapped(Vec<BoardView>),
+    CreateBoard(BoardSettings),
     Exit(),
 }
 
@@ -40,6 +46,6 @@ pub enum TileChange {
 }
 
 pub enum WorkerResponse {
-    ViewSwap(BoardView),
+    ViewsUpdated(Vec<BoardView>),
     Loaded(ClientState),
 }

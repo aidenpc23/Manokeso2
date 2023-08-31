@@ -8,12 +8,12 @@ use crate::{
 };
 
 use rand::{seq::SliceRandom, Rng, SeedableRng};
-use std::collections::{HashSet, VecDeque, HashMap};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use super::{encode_alpha, gen::SwapBufferGen, get_bit, set_bit, swap_buffer::SwapBuffer};
 
-board_attrs!(BoardBufs, BoardViewBufs, [
-    connex_numbers: u32,
+board_attrs!(BoardBufs, BoardViewBufs, Tile, [
+    connex_number: u32,
     stability: f32,
     reactivity: f32,
     energy: f32,
@@ -23,6 +23,13 @@ board_attrs!(BoardBufs, BoardViewBufs, [
     omega: f32,
     delta: u64
 ]);
+
+#[derive(Debug, Clone, Copy)]
+pub struct BoardSettings {
+    pub pos: Point<f32>,
+    pub width: usize,
+    pub height: usize,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct Board {
@@ -34,7 +41,8 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(pos: Point<f32>, width: usize, height: usize) -> Board {
+    pub fn new(settings: BoardSettings) -> Board {
+        let BoardSettings { pos, width, height } = settings;
         let mut gen = (width, height);
 
         let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
@@ -63,7 +71,7 @@ impl Board {
             width,
             height,
             bufs: BoardBufs {
-                connex_numbers,
+                connex_number: connex_numbers,
                 stability,
                 reactivity,
                 energy,
@@ -80,16 +88,16 @@ impl Board {
     }
 
     pub fn generate_maze(&mut self) {
-        let maze_width = self.width/7;
+        let maze_width = self.width / 7;
         let maze_height = self.height;
 
         let mut rng = ChaCha8Rng::seed_from_u64(69);
-        let x_offset = self.width/2;
+        let x_offset = self.width / 2;
         let y_offset = rng.gen_range(0..=(self.height - maze_height));
 
         let mut visited: HashSet<(usize, usize)> = HashSet::new();
         let mut stack: Vec<(usize, usize)> = Vec::new();
-        
+
         for x in x_offset..x_offset + maze_width {
             for y in y_offset..y_offset + maze_height {
                 let index = x + y * self.width;
@@ -102,10 +110,10 @@ impl Board {
                 // self.bufs.delta.r[index] |= 1 << 4;
                 self.bufs.delta.r[index] |= 1 << 10;
                 // self.bufs.energy.r[index] = rng.gen_range(0.0..1000.0);
-                self.bufs.connex_numbers.r[index] = 200;
+                self.bufs.connex_number.r[index] = 200;
             }
         }
-        
+
         // Using the algorithm DFS because it garuntees everything is connected
         let start_x = x_offset + rng.gen_range(0..maze_width / 2) * 2;
         let start_y = y_offset + rng.gen_range(0..maze_height / 2) * 2;
@@ -131,7 +139,7 @@ impl Board {
             if !neighbors.is_empty() {
                 // Randomly select one of the neighbors
                 let &(nx, ny) = neighbors.choose(&mut rng).unwrap();
-                
+
                 visited.insert((nx, ny));
                 stack.push((cx, cy));
                 stack.push((nx, ny));
@@ -168,7 +176,7 @@ impl Board {
                 }
             }
         }
-        
+
         let mut potential_doors_top: Vec<usize> = Vec::new();
         let mut potential_doors_bottom: Vec<usize> = Vec::new();
         let mut potential_doors_left: Vec<usize> = Vec::new();
@@ -293,20 +301,11 @@ impl Board {
         }
     }
 
-    pub fn swap(&mut self, pos1: Point<usize>, pos2: Point<usize>) {
-        let pos1 = pos1.index(self.width);
-        let pos2 = pos2.index(self.width);
-        self.bufs.swap_cells(pos1, pos2);
-    }
+    pub fn player_can_move(&self, pos: Point<usize>) -> bool {
+        let pos = pos.index(self.width);
 
-    pub fn player_can_swap(&self, pos1: Point<usize>, pos2: Point<usize>) -> bool {
-        let pos1 = pos1.index(self.width);
-        let pos2 = pos2.index(self.width);
-
-        if (self.bufs.connex_numbers.r[pos1] > 20 && self.bufs.stability.r[pos1] > 0.8)
-            || (self.bufs.connex_numbers.r[pos2] > 20 && self.bufs.stability.r[pos2] > 0.8)
-            || get_bit(self.bufs.delta.r[pos1], 10)
-            || get_bit(self.bufs.delta.r[pos2], 10)
+        if (self.bufs.connex_number.r[pos] > 20 && self.bufs.stability.r[pos] > 0.8)
+            || get_bit(self.bufs.delta.r[pos], 10)
         {
             false
         } else {
@@ -336,10 +335,10 @@ fn has_valid_path(
     let mut visited: HashSet<usize> = HashSet::new();
     let mut queue: VecDeque<usize> = VecDeque::new();
     let mut predecessor: HashMap<usize, usize> = HashMap::new();
-    
+
     visited.insert(start);
     queue.push_back(start);
-    
+
     while let Some(current) = queue.pop_front() {
         if outside_doors.contains(&current) {
             let mut path = vec![current];
@@ -351,17 +350,17 @@ fn has_valid_path(
             path.reverse();
             return Ok(path);
         }
-        
+
         let x = current % board.width;
         let y = current / board.width;
-        
+
         let neighbors = vec![
             (x as isize - 1, y as isize),
             (x as isize + 1, y as isize),
             (x as isize, y as isize - 1),
             (x as isize, y as isize + 1),
         ];
-        
+
         for (nx, ny) in neighbors {
             if nx >= 0 && nx < board.width as isize && ny >= 0 && ny < board.height as isize {
                 let neighbor_idx = nx as usize + ny as usize * board.width;
@@ -373,6 +372,6 @@ fn has_valid_path(
             }
         }
     }
-    
+
     Err(())
 }

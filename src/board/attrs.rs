@@ -8,7 +8,12 @@ use std::ops::AddAssign;
 
 #[macro_export]
 macro_rules! board_attrs {
-    ( $bname:ident, $vname:ident, [$( $name:ident : $type:ident ),* $(,)? ] ) => {
+    ( $bname:ident, $vname:ident, $tname:ident, [$( $name:ident : $type:ident ),* $(,)? ] ) => {
+        pub struct $tname {
+            $(
+                $name: $type,
+            )*
+        }
         #[derive(serde::Serialize, serde::Deserialize)]
         pub struct $bname {
             $(
@@ -17,10 +22,17 @@ macro_rules! board_attrs {
         }
 
         impl $bname {
-            pub fn swap_cells(&mut self, pos1: usize, pos2: usize) {
+            pub fn set_tile(&mut self, pos: usize, tile: Tile) {
                 $(
-                    self.$name.swap_cells(pos1, pos2);
+                    self.$name.r[pos] = tile.$name;
                 )*
+            }
+            pub fn get_tile(&self, pos: usize) -> $tname {
+                $tname {
+                    $(
+                        $name: self.$name.r[pos],
+                    )*
+                }
             }
             pub fn copy_to_view(&self, view: &mut $vname, slice: &crate::common::view::BoardSlice) {
                 $(

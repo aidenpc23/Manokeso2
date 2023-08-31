@@ -1,5 +1,7 @@
-use crate::{util::point::Point, board::BoardViewBufs};
+use crate::{board::BoardViewBufs, util::point::Point};
 use std::time::Duration;
+
+pub type BoardId = usize;
 
 #[derive(Debug)]
 pub struct BoardView {

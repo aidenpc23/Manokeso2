@@ -1,4 +1,8 @@
-use crate::{client::Client, render::primitive::{UIPrimatives, UIPoint}, util::point::Point};
+use crate::{
+    client::Client,
+    render::primitive::{UIPoint, UIPrimatives},
+    util::point::Point,
+};
 
 use super::element::{RoundedRect, Text};
 
@@ -13,9 +17,10 @@ impl GameUI {
             text: self.text.iter().map(|t| t.into_primitive(client)).collect(),
             rounded_rects: self.shapes.iter().map(|t| t.to_primitive()).collect(),
         };
-        if let Some(tile) = client.hovered_tile {
+        if let Some(tile) = client.hovered_tile() {
             let pos: Point<f32> = tile.pos.into();
-            let start = pos + client.worker.view.board_pos;
+            let start = pos
+                + tile.view.board_pos;
             let end = start + 1.0;
             let mut start = client.renderer.world_to_pixel(start);
             let mut end = client.renderer.world_to_pixel(end);
@@ -44,9 +49,9 @@ impl GameUI {
                 .to_primitive(),
             );
         }
-        if let Some(tile) = client.state.selected_tile {
+        if let Some(tile) = client.selected_tile() {
             let pos: Point<f32> = tile.pos.into();
-            let start = pos + client.worker.view.board_pos;
+            let start = pos + tile.view.board_pos;
             let end = start + 1.0;
             let mut start = client.renderer.world_to_pixel(start);
             let mut end = client.renderer.world_to_pixel(end);
@@ -76,7 +81,9 @@ impl GameUI {
             );
         }
 
-        primatives.rounded_rects.append(&mut client.state.player.to_primitives(&client.renderer));
+        primatives
+            .rounded_rects
+            .append(&mut client.state.player.to_primitives(&client.renderer));
 
         primatives
     }

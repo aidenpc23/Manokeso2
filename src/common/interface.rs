@@ -1,4 +1,4 @@
-use crate::common::message::{WorkerCommand, WorkerResponse};
+use crate::{common::message::{WorkerCommand, WorkerResponse}, board::BoardSettings};
 use std::sync::mpsc::{channel, Receiver, Sender};
 
 use super::view::BoardView;
@@ -6,7 +6,7 @@ use super::view::BoardView;
 pub struct WorkerInterface {
     pub sender: Sender<WorkerCommand>,
     pub receiver: Receiver<WorkerResponse>,
-    pub view: BoardView,
+    views: Vec<BoardView>,
 }
 
 impl WorkerInterface {
@@ -15,12 +15,21 @@ impl WorkerInterface {
             println!("Failed to send message to server: {:?}", err);
         }
     }
+    pub fn swap(&mut self, views: &mut Vec<BoardView>) {
+        std::mem::swap(&mut self.views, views);
+    }
+    pub fn get(&self, index: usize) -> Option<&BoardView> {
+        self.views.get(index)
+    }
+    pub fn views(&self) -> std::slice::Iter<'_, BoardView> {
+        self.views.iter()
+    }
 }
 
 pub struct ClientInterface {
     pub sender: Sender<WorkerResponse>,
     pub receiver: Receiver<WorkerCommand>,
-    pub view: Option<BoardView>,
+    pub views: Option<Vec<BoardView>>,
 }
 
 impl ClientInterface {
@@ -38,12 +47,12 @@ pub fn interface_pair() -> (WorkerInterface, ClientInterface) {
         WorkerInterface {
             sender: s1,
             receiver: r2,
-            view: BoardView::empty(),
+            views: Vec::new(),
         },
         ClientInterface {
             sender: s2,
             receiver: r1,
-            view: Some(BoardView::empty()),
+            views: Some(Vec::new()),
         },
     )
 }

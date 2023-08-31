@@ -9,7 +9,7 @@ use crate::{
     board::BoardWorker,
     common::{
         interface::interface_pair,
-        message::{WorkerCommand, WorkerResponse},
+        message::{WorkerCommand, WorkerResponse}, view::BoardView,
     },
 };
 
@@ -86,11 +86,12 @@ impl Client {
     }
 
     fn receive_messages(&mut self) {
-        for msg in self.worker.receiver.try_iter() {
+        let msgs: Vec<_> = self.worker.receiver.try_iter().collect();
+        for msg in msgs {
             match msg {
-                WorkerResponse::ViewSwap(mut view) => {
-                    std::mem::swap(&mut view, &mut self.worker.view);
-                    self.worker.send(WorkerCommand::ViewSwap(view));
+                WorkerResponse::ViewsUpdated(mut view) => {
+                    self.worker.swap(&mut view);
+                    self.worker.send(WorkerCommand::ViewsSwapped(view));
                     self.view_dirty = true;
                 }
                 WorkerResponse::Loaded(state) => {
@@ -103,13 +104,14 @@ impl Client {
 
     fn render(&mut self, resized: bool) {
         self.renderer.start_encoder();
-        let view = &mut self.worker.view;
+        let mut a = BoardView::empty();
+        let view = self.worker.get(self.state.main_id).unwrap_or(&mut a);
         self.state.camera.pos = self.state.player.pos;
         if let Some(cam_view) = self.renderer.update(
             if self.view_dirty {
                 Some(TileUpdateData {
                     slice: &view.slice,
-                    connex_numbers: &view.bufs.connex_numbers,
+                    connex_numbers: &view.bufs.connex_number,
                     stability: &view.bufs.stability,
                     reactivity: &view.bufs.reactivity,
                     energy: &view.bufs.energy,

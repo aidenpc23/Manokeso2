@@ -9,7 +9,9 @@ pub fn board() -> GameUI {
     let text = vec![
         Text {
             content: |client| {
-                if let Some(tile) = &client.hovered_tile {
+                if let Some(tile) = &client.hovered_tile() {
+                    let bufs = &tile.view.bufs;
+                    let i = tile.i;
                     let mut str = format!(
                         concat!(
                             "connex number: {}\n",
@@ -18,11 +20,11 @@ pub fn board() -> GameUI {
                             "energy: {}\n",
                             "radiation: {}\n"
                         ),
-                        tile.connex_number,
-                        tile.stability,
-                        tile.reactivity,
-                        tile.energy,
-                        tile.gamma
+                        bufs.connex_number[i],
+                        bufs.stability[i],
+                        bufs.reactivity[i],
+                        bufs.energy[i],
+                        bufs.gamma[i]
                     );
                     if client.debug.show {
                         str = format!("tile pos: {:?}\n", tile.pos) + &str;
@@ -35,10 +37,10 @@ pub fn board() -> GameUI {
                                 "delta: {:b}\n",
                                 "omega: {:?}\n",
                             ),
-                            decode_alpha(tile.alpha),
-                            tile.beta,
-                            tile.delta,
-                            tile.omega,
+                            decode_alpha(bufs.alpha[i]),
+                            bufs.beta[i],
+                            bufs.delta[i],
+                            bufs.omega[i],
                         ));
                     }
                     str
@@ -51,7 +53,16 @@ pub fn board() -> GameUI {
             bounds: |(w, h)| (w / 3.0 - 30.0, h),
         },
         Text {
-            content: |client| format!("total energy: {}", client.worker.view.total_energy),
+            content: |client| {
+                format!(
+                    "total energy: {}",
+                    client
+                        .worker
+                        .get(client.state.main_id)
+                        .map(|v| v.total_energy)
+                        .unwrap_or(0.0)
+                )
+            },
             pos: |(w, _)| Point {
                 x: w / 2.0,
                 y: 15.0,
@@ -63,7 +74,7 @@ pub fn board() -> GameUI {
             content: |client| {
                 if client.debug.show {
                     let adp_info = client.renderer.render_surface.adapter.get_info();
-                    let Point {x, y} = client.state.player.pos;
+                    let Point { x, y } = client.state.player.pos;
                     format!(
                         concat!(
                             "pos: {:.3}, {:.3}\n",
@@ -72,7 +83,8 @@ pub fn board() -> GameUI {
                             "client update: {:.3}ms\n",
                             "world update: {:.3}ms",
                         ),
-                        x, y,
+                        x,
+                        y,
                         adp_info.name,
                         adp_info.backend,
                         client.debug.client_update_time,

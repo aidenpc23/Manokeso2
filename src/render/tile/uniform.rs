@@ -56,14 +56,14 @@ impl CameraUniform {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct TileViewUniform {
+pub struct BoardViewUniform {
     pub pos: Point<f32>,
     pub width: u32,
     // shader has an alignment of 8, so we need to add padding
     _padding: u32,
 }
 
-impl TileViewUniform {
+impl BoardViewUniform {
     pub fn new(pos: Point<f32>, width: u32) -> Self {
         Self {
             pos,

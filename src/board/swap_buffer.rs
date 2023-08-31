@@ -15,9 +15,6 @@ impl<T: Sync + Send + Copy> SwapBuffer<T> {
     pub fn par_rows(&self, from: usize, to: usize) -> rayon::slice::ChunksExact<'_, T> {
         self.r[from * self.width..to * self.width].par_chunks_exact(self.width)
     }
-    pub fn swap_cells(&mut self, pos1: usize, pos2: usize) {
-        self.r.swap(pos1, pos2);
-    }
 }
 
 impl<T: Copy> SwapBuffer<T> {

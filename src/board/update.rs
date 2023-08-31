@@ -202,7 +202,7 @@ impl Board {
     }
 
     fn update_gamma_delta(&mut self) {
-        let c = &mut self.bufs.connex_numbers;
+        let c = &mut self.bufs.connex_number;
         let s = &mut self.bufs.stability;
         let e = &mut self.bufs.energy;
         let r = &mut self.bufs.reactivity;
@@ -330,7 +330,7 @@ impl Board {
     }
 
     fn spawnab_update_conx(&mut self) {
-        let c = &self.bufs.connex_numbers;
+        let c = &self.bufs.connex_number;
         let r = &self.bufs.reactivity;
         let s = &self.bufs.stability;
         let e = &mut self.bufs.energy;
@@ -458,7 +458,7 @@ impl Board {
 
     fn apply_alpha_beta_delta(&mut self) {
         let d = &mut self.bufs.delta;
-        let c = &mut self.bufs.connex_numbers;
+        let c = &mut self.bufs.connex_number;
         let s = &mut self.bufs.stability;
         let e = &mut self.bufs.energy;
         let r = &mut self.bufs.reactivity;
@@ -657,7 +657,7 @@ impl Board {
     }
 
     fn apply_bounds(&mut self) {
-        let c = &mut self.bufs.connex_numbers;
+        let c = &mut self.bufs.connex_number;
         let s = &mut self.bufs.stability;
         let e = &mut self.bufs.energy;
         let r = &mut self.bufs.reactivity;
