@@ -3,7 +3,7 @@ use std::collections::{HashSet, VecDeque, HashMap};
 use rand::{SeedableRng, seq::SliceRandom, Rng};
 use rand_chacha::ChaCha8Rng;
 
-use crate::board::{Board, set_bit};
+use crate::board::{Board, set_bit, encode_alpha};
 
 impl Board {
     pub fn generate_maze(&mut self) {
@@ -21,14 +21,25 @@ impl Board {
             for y in y_offset..y_offset + maze_height {
                 let index = x + y * self.width;
                 self.bufs.stability.r[index] = 1.0;
-                self.bufs.reactivity.r[index] = 0.0;
+                self.bufs.reactivity.r[index] = rng.gen_range(-0.1..0.1);
                 self.bufs.delta.r[index] = 0;
                 self.bufs.delta.r[index] |= 1 << 0;
-                self.bufs.delta.r[index] |= 1 << 1;
+                // self.bufs.delta.r[index] |= 1 << 1;
                 self.bufs.delta.r[index] |= 1 << 10;
                 self.bufs.delta.r[index] |= 1 << 11;
-                // self.bufs.energy.r[index] = rng.gen_range(0.0..1000.0);
-                self.bufs.connex_numbers.r[index] = 200;
+                let ex = x-x_offset;
+                let ey = y-y_offset;
+                let mut has_en = false;
+                self.bufs.energy.r[index] = if rng.gen_range(0..100) < 5 {
+                    has_en = true;
+                    rng.gen_range(100.0..250.0)
+                } else {
+                    0.0
+                };
+                if !has_en {
+                    self.bufs.alpha.r[index] = encode_alpha(((ex+ey)) as u64, 0, 0.0, 100.0, 0.0);
+                }
+                self.bufs.connex_numbers.r[index] = *[200].choose(&mut rng).unwrap();
             }
         }
         
@@ -69,6 +80,10 @@ impl Board {
                 self.bufs.stability.r[ux + uy * self.width] = 0.0;
                 set_bit(&mut self.bufs.delta.r[wx + wy * self.width], false, 0);
                 set_bit(&mut self.bufs.delta.r[ux + uy * self.width], false, 0);
+                self.bufs.energy.r[wx + wy * self.width] = 0.0;
+                self.bufs.energy.r[ux + uy * self.width] = 0.0;
+                self.bufs.alpha.r[wx + wy * self.width] = encode_alpha(0, 0, 0.0, 0.0, 0.0);
+                self.bufs.alpha.r[ux + uy * self.width] = encode_alpha(0, 0, 0.0, 0.0, 0.0);
             }
         }
 
@@ -91,6 +106,8 @@ impl Board {
                 } else {
                     self.bufs.stability.r[index] = 0.0;
                     set_bit(&mut self.bufs.delta.r[index], false, 0);
+                    self.bufs.energy.r[index] = 0.0;
+                    self.bufs.alpha.r[index] = encode_alpha(0, 0, 0.0, 0.0, 0.0);
                 }
             }
         }
@@ -142,10 +159,10 @@ impl Board {
         }
 
         let mut outside_doors: HashSet<usize> = HashSet::new();
-        select_door(self, &potential_doors_top, &mut outside_doors);
-        select_door(self, &potential_doors_bottom, &mut outside_doors);
-        select_door(self, &potential_doors_left, &mut outside_doors);
-        select_door(self, &potential_doors_right, &mut outside_doors);
+        select_door(self, &mut rng, &potential_doors_top, &mut outside_doors);
+        select_door(self, &mut rng, &potential_doors_bottom, &mut outside_doors);
+        select_door(self, &mut rng, &potential_doors_left, &mut outside_doors);
+        select_door(self, &mut rng, &potential_doors_right, &mut outside_doors);
 
         let mut potential_doors: Vec<usize> = Vec::new();
 
@@ -208,6 +225,8 @@ impl Board {
             for &&door in doors.iter() {
                 self.bufs.stability.r[door] = 0.0;
                 set_bit(&mut self.bufs.delta.r[door], false, 0);
+                self.bufs.energy.r[door] = 0.0;
+                self.bufs.alpha.r[door] = encode_alpha(0, 0, 0.0, 0.0, 0.0);
 
                 // Get the path and set Connex numbers to 0
                 if let Ok(path) = has_valid_path(self, door, &outside_doors) {
@@ -221,13 +240,14 @@ impl Board {
 }
 
 
-fn select_door(
+fn select_door<T: Rng>(
     board: &mut Board,
+    rng: &mut T,
     potential_doors: &Vec<usize>,
     outside_doors: &mut HashSet<usize>,
 ) {
     if !potential_doors.is_empty() {
-        let door = potential_doors.choose(&mut rand::thread_rng()).unwrap();
+        let door = potential_doors.choose(rng).unwrap();
         outside_doors.insert(*door);
         board.bufs.stability.r[*door] = 0.0;
         set_bit(&mut board.bufs.delta.r[*door], false, 0);

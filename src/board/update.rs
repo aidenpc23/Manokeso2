@@ -41,6 +41,7 @@ impl Board {
     fn update_alpha_beta(&mut self) {
         let a = &mut self.bufs.alpha;
         let b = &mut self.bufs.beta;
+
         self.total_energy += a
             .w
             .par_iter_mut()
@@ -226,7 +227,7 @@ impl Board {
                 let can_gen = !get_bit(di, 11);
                 if ci <= 20 && gi < gamma_cost * 0.9 && can_gen {
                     *gn = gi + ((1.0002 as f32).powf(ci as f32) - 1.0);
-                } else if gi < (1.23 as f32).powf(c.r[i] as f32) && can_gen {
+                } else if gi < gamma_cost && can_gen {
                     *gn = gi + ((1.02 as f32).powf(c.r[i] as f32) - 1.0);
                 } else {
                     *gn = gi;
@@ -383,10 +384,6 @@ impl Board {
                         (0, 0.0, 0.0)
                     };
 
-                // if x == 274 && y == 654 {
-                //     println!("{:?} : {:?}", (c.r[i], s.r[i], r.r[i]), (c.r[u_i2], s.r[u_i2], r.r[u_i2]));
-                // }
-
                 // ========== CONNEX CALCULATIONS ============================
                 if ci > 0 {
                     let gfactor = (g3 - 1) as f32 + (1.0 - 0.04 * (g3 - 1) as f32);
@@ -425,7 +422,12 @@ impl Board {
 
                     let awave = decode_alpha(ai);
                     *bn = g1 as u64;
-                    if ei >= cost && !get_bit(di, 4) {
+
+                    // if x == 538 && y == 245 {
+                    //     println!("{cost} > 0.0 && {ei} >= {cost}");
+                    // }
+
+                    if cost > 0.0 && ei >= cost && !get_bit(di, 4) {
                         let mult = if get_bit(di, 5) { 2 } else { 1 };
                         *an = encode_alpha(
                             awave.0 + g3 as u64 * mult,
