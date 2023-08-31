@@ -11,7 +11,7 @@ use super::{
     get_bit,
     refs::CONX_MAP,
     util::{decode_alpha, decode_beta, encode_alpha, encode_beta},
-    Board, ZERO_ALPHA,
+    Board, ZERO_ALPHA, CONX_POW_MAP,
 };
 
 const BASE_KERNEL: [[f32; 3]; 3] = [[0.5, 1.0, 0.5], [1.0, 2.0, 1.0], [0.5, 1.0, 0.5]];
@@ -137,6 +137,8 @@ impl Board {
     fn convolve_gamma(&mut self) {
         let g = &mut self.bufs.gamma;
         let r = &self.bufs.reactivity;
+        let s = &self.bufs.stability;
+        
         g.w.par_iter_mut().enumerate().for_each(|(i, gn)| {
             let x = i % self.width;
             let y = i / self.width;
@@ -150,7 +152,8 @@ impl Board {
             for dy in y_start..y_end {
                 for dx in x_start..x_end {
                     let i2 = dy * self.width + dx;
-                    let cond = r.r[i].abs() * r.r[i2 as usize].abs();
+                    let cond = (((1.0 - s.r[i]) + r.r[i].abs()) * 0.5) * (((1.0 - s.r[i2 as usize]) + r.r[i2 as usize].abs()) * 0.5);
+                    
                     let kernel_value =
                         GAMMA_KERNEL[(dx - x_start) as usize][(dy - y_start) as usize];
                     let a = kernel_value * cond;
@@ -263,17 +266,17 @@ impl Board {
 
                     *dn = di;
 
-                    let dcost = 20.0 * ci as f32;
-                    if *en > dcost {
-                        for dir in CARDINAL_DIRECTIONS_SHORT {
-                            let i2 = (y.sat_add(dir.1).min(self.height - 1)) * self.width
-                                + (x.sat_add(dir.0).min(self.width - 1));
-                            if i != i2 {
-                                *dn ^= d.r[i2];
-                            }
-                        }
-                        *en -= dcost;
-                    }
+                    // let dcost = 20.0 * ci as f32;
+                    // if *en > dcost {
+                    //     for dir in CARDINAL_DIRECTIONS_SHORT {
+                    //         let i2 = (y.sat_add(dir.1).min(self.height - 1)) * self.width
+                    //             + (x.sat_add(dir.0).min(self.width - 1));
+                    //         if i != i2 {
+                    //             *dn ^= d.r[i2];
+                    //         }
+                    //     }
+                    //     *en -= dcost;
+                    // }
 
                     *gn -= gamma_cost;
                 } else {
@@ -391,7 +394,7 @@ impl Board {
 
                     let (ccost, cnc) = if CONX_MAP[cindex].3 {
                         (
-                            (ci as f32 * gfactor).powf(2.305865) * do_conn as f32,
+                            (ci as f32 * gfactor) * do_conn as f32,
                             if ri == 0.0 {
                                 0
                             } else {
@@ -487,10 +490,6 @@ impl Board {
 
                 let (counter, cnc, sc, ec, rc) = decode_alpha(ai);
                 if counter == 0 && ai != *ZERO_ALPHA {
-                    // Apply delta values to all attributes
-                    // Connex number cant fall below 0
-                    *cn = (ci as i32 + cnc).max(0) as u32;
-
                     // Calculate group 3 and the gfactor
                     // Group three is the g3 level of categorization of connex numbers
                     // gfactor is almost equal to g3 but a little less each time so
@@ -498,12 +497,30 @@ impl Board {
                     let g3 = if ci == 0 { 1 } else { ((ci - 1) / 25) + 1 };
                     let gfactor = (g3 - 1) as f32 + (1.0 - 0.04 * (g3 - 1) as f32);
 
+                    *en = ei + ec;
+
+                    // Apply delta values to all attributes
+                    // Connex number cant fall below 0;
+
+                    let mut en_out = 0.0;
+                    for i in cn.sat_add(cnc)..*cn {
+                        en_out += CONX_POW_MAP[i as usize];
+                    }
+                    let mut en_in = 0.0;
+                    for i in *cn..cn.sat_add(cnc) {
+                        en_in += CONX_POW_MAP[i as usize];
+                    }
+                    if *en >= en_out {
+                        *cn = (ci as i32 + cnc).max(0) as u32;
+                        *en -= en_in;
+                        *en += en_out;
+                    }
+
                     // Make it such that the higher the connex number the harder to decrease stability.
                     *sn = si
                         + sc * (10.0 / (ci as f32).powf(1.05 - 0.01 * gfactor))
                             .min(1.0)
-                            .max(0.025);
-                    *en = ei + ec;
+                            .max(0.01);
 
                     *rn = ri + rc;
                     *an = *ZERO_ALPHA;

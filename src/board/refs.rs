@@ -1,4 +1,6 @@
 use crate::rsc::CONNEX_NUMBER_RANGE;
+extern crate lazy_static;
+use lazy_static::lazy_static;
 
 const MAP_LEN: usize = (CONNEX_NUMBER_RANGE[1] + 1) as usize;
 
@@ -38,3 +40,20 @@ const fn gen_map() -> [(bool, bool, bool, bool, bool); MAP_LEN] {
 }
 
 pub const CONX_MAP: [(bool, bool, bool, bool, bool); 201] = gen_map();
+
+
+lazy_static! {
+    pub static ref CONX_POW_MAP: [f32; 201] = {
+        let mut arr = [0.0; 201];
+        
+        for ci in 0..=200 {
+            let g3 = if ci == 0 { 1 } else { ((ci - 1) / 25) + 1 };
+            let gfactor = (g3 - 1) as f32 + (1.0 - 0.04 * (g3 - 1) as f32);
+            let final_value = (ci as f32 * gfactor).powf(2.305865);
+            
+            arr[ci as usize] = final_value;
+        }
+        
+        arr
+    };
+}
