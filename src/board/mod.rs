@@ -1,11 +1,12 @@
+mod attrs;
 mod board;
 mod gen;
+mod instance;
 mod refs;
 mod swap_buffer;
 mod update;
 mod util;
 mod worker;
-mod attrs;
 
 pub use board::*;
 pub use refs::*;
