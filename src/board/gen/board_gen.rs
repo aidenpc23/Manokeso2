@@ -1,5 +1,4 @@
-use super::swap_buffer::SwapBuffer;
-use crate::util::noise::{simplex_noise, simplex_simplex_noise, NoiseNum};
+use crate::{util::noise::{simplex_noise, simplex_simplex_noise, NoiseNum}, board::SwapBuffer};
 use itertools::izip;
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},
