@@ -4,14 +4,18 @@ use wgpu::{util::StagingBelt, BindingResource, Buffer, BufferDescriptor, BufferU
 
 use crate::util::point::Point;
 
+const ALIGN: u64 = 256;
+const MAX: usize = 1000;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct BoardViewUniform {
     pub pos: Point<f32>,
     pub width: u32,
-    // shader has an alignment of 8, so we need to add padding
+    /// shader has an alignment of 8, so we need to add padding
     _padding: u32,
-    bruh: [u64; 30],
+    /// dynamic uniform buffers have min alignment of 256 (as of august 23rd 2023)
+    _padding2: [u64; 30],
 }
 
 impl BoardViewUniform {
@@ -20,7 +24,7 @@ impl BoardViewUniform {
             pos,
             width,
             _padding: 0,
-            bruh: [0; 30],
+            _padding2: [0; 30],
         }
     }
     pub fn update(&mut self, pos: Point<f32>, width: u32) -> bool {
@@ -44,7 +48,7 @@ pub struct BoardViews {
 
 impl BoardViews {
     pub fn new(device: &Device) -> Self {
-        let views = vec![BoardViewUniform::empty(); 1024];
+        let views = vec![BoardViewUniform::empty(); MAX];
         let len = views.len();
         Self {
             views,
@@ -52,24 +56,40 @@ impl BoardViews {
             changed: false,
         }
     }
-    pub fn binding(&self) -> BindingResource<'_> {
-        BindingResource::Buffer(wgpu::BufferBinding {
-            buffer: &self.buffer,
-            offset: 0,
-            size: NonZeroU64::new(256),
-        })
+    pub fn binding(&self, binding: u32) -> wgpu::BindGroupEntry<'_> {
+        wgpu::BindGroupEntry {
+            binding,
+            resource: BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &self.buffer,
+                offset: 0,
+                size: NonZeroU64::new(ALIGN),
+            }),
+        }
+    }
+    pub fn layout_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: wgpu::ShaderStages::VERTEX,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: true,
+                min_binding_size: None,
+            },
+            count: None,
+        }
     }
     pub fn init_buf(device: &Device, size: usize) -> Buffer {
         device.create_buffer(&BufferDescriptor {
             label: Some("Board View Buffer"),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            size: (size * 256) as u64,
+            size: size as u64 * ALIGN,
             mapped_at_creation: false,
         })
     }
     pub fn update(&mut self, index: usize, pos: Point<f32>, width: usize) {
-        if index + 1 > self.views.len() {
-            self.views.resize(index + 1, BoardViewUniform::empty());
+        if index >= MAX {
+            println!("tried to write too many boards!");
+            return;
         }
         self.changed |= self.views[index].update(pos, width as u32);
     }
@@ -79,10 +99,7 @@ impl BoardViews {
         encoder: &mut wgpu::CommandEncoder,
         device: &Device,
     ) {
-        let size = (std::mem::size_of::<BoardViewUniform>() * self.views.len()) as u64;
-        if size > self.buffer.size() {
-            self.buffer = Self::init_buf(device, self.views.len());
-        }
+        let size = (std::mem::size_of::<BoardViewUniform>() * self.views.len().min(MAX)) as u64;
         if size != 0 {
             let mut view = belt.write_buffer(
                 encoder,

@@ -1,6 +1,4 @@
-use crate::{
-    client::Camera, common::message::CameraView, rsc::CLEAR_COLOR, util::point::Point,
-};
+use crate::{client::Camera, common::message::CameraView, rsc::CLEAR_COLOR, util::point::Point};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
     event_loop::EventLoop,
@@ -63,7 +61,12 @@ impl<T: TileData> Renderer<T> {
         ));
     }
 
-    pub fn update<'a>(&mut self, data: Option<Vec<T::UpdateData<'a>>>, camera: &Camera, resized: bool) -> Option<CameraView> {
+    pub fn update<'a>(
+        &mut self,
+        data: Option<Vec<T::UpdateData<'a>>>,
+        camera: &Camera,
+        resized: bool,
+    ) -> Option<CameraView> {
         let size = &self.window.inner_size();
         if resized {
             self.render_surface.resize(size);
@@ -134,7 +137,6 @@ impl<T: TileData> Renderer<T> {
 
     pub fn pixel_to_world(&self, pos: Point<f32>) -> Point<f32> {
         self.tile_pipeline
-            .uniforms
             .camera
             .render_to_world(self.pixel_to_render(pos))
     }
@@ -148,6 +150,6 @@ impl<T: TileData> Renderer<T> {
     }
 
     pub fn world_to_pixel(&self, pos: Point<f32>) -> Point<f32> {
-        self.render_to_pixel(self.tile_pipeline.uniforms.camera.world_to_render(pos))
+        self.render_to_pixel(self.tile_pipeline.camera.world_to_render(pos))
     }
 }

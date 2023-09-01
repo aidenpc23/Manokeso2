@@ -1,14 +1,8 @@
-use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BufferUsages,
-};
-
 use crate::render::surface::RenderSurface;
 
 use super::{
-    data::TileData,
-    pipeline::{Buffers, TilePipeline, Uniforms},
-    CameraUniform, ConstsUniform, view::BoardViews,
+    camera::RenderCamera, consts::RenderConsts, data::TileData, pipeline::TilePipeline,
+    uniform::view::BoardViews,
 };
 
 impl<T: TileData> TilePipeline<T> {
@@ -22,76 +16,23 @@ impl<T: TileData> TilePipeline<T> {
 
         let data = T::init(device);
 
-        let camera_uniform = CameraUniform::new();
-        let camera_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniform]),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
-
+        let camera = RenderCamera::new(device);
         let board_views = BoardViews::new(device);
-
-        let consts_uniform = ConstsUniform::new();
-        let consts_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Constants Buffer"),
-            contents: bytemuck::cast_slice(&[consts_uniform]),
-            usage: BufferUsages::UNIFORM,
-        });
+        let consts = RenderConsts::new(device);
 
         // bind groups
-        let bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::VERTEX,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: true,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                ],
-                label: Some("tile_bind_group_layout"),
-            });
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                RenderCamera::layout_entry(0),
+                BoardViews::layout_entry(1),
+                RenderConsts::layout_entry(2),
+            ],
+            label: Some("tile_bind_group_layout"),
+        });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: board_views.binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: consts_buffer.as_entire_binding(),
-                },
-            ],
+            entries: &[camera.binding(0), board_views.binding(1), consts.binding(2)],
             label: Some("tile_bind_group"),
         });
 
@@ -142,14 +83,8 @@ impl<T: TileData> TilePipeline<T> {
             pipeline: render_pipeline,
             data: Vec::new(),
             board_views,
-            buffers: Buffers {
-                camera: camera_buffer,
-                consts: consts_buffer,
-            },
-            uniforms: Uniforms {
-                camera: camera_uniform,
-                consts: consts_uniform,
-            },
+            camera,
+            consts,
             bind_group,
         }
     }
