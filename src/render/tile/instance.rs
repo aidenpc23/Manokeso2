@@ -15,21 +15,18 @@ pub struct InstanceField<T> {
 }
 
 impl<T: bytemuck::Pod + Send + Default + Sync> InstanceField<T> {
-    pub fn init(device: &Device, name: &str, location: u32) -> Self
-    where
-        T: InstanceFieldType,
-    {
+    pub fn init(device: &Device, name: &str, location: u32, format: VertexFormat) -> Self {
         Self {
             label: name.to_owned(),
             len: 0,
             buffer: Self::init_buf(device, name, 0),
             location,
             attrs: [VertexAttribute {
-                format: T::format(),
+                format,
                 offset: 0,
                 shader_location: location,
             }],
-            _type: PhantomData {},
+            _type: PhantomData {}
         }
     }
 
@@ -77,34 +74,5 @@ impl<T: bytemuck::Pod + Send + Default + Sync> InstanceField<T> {
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &self.attrs,
         }
-    }
-}
-
-pub trait InstanceFieldType {
-    type RustType;
-    fn format() -> VertexFormat
-    where
-        Self: Sized;
-}
-
-impl InstanceFieldType for f32 {
-    type RustType = f32;
-    fn format() -> VertexFormat {
-        VertexFormat::Float32
-    }
-}
-
-impl InstanceFieldType for u32 {
-    type RustType = u32;
-    fn format() -> VertexFormat {
-        VertexFormat::Uint32
-    }
-}
-
-
-impl InstanceFieldType for [u32; 2] {
-    type RustType = [u32; 2];
-    fn format() -> VertexFormat {
-        VertexFormat::Uint32x2
     }
 }

@@ -106,9 +106,6 @@ impl Client {
         self.renderer.start_encoder();
         let view = &mut self.worker.view;
         self.state.camera.pos = self.state.player.pos;
-        let split_delta = view.bufs.delta.iter().map(
-            |&d| [(d >> 32) as u32, (d & 0xFFFF) as u32]
-        ).collect_vec();
         if let Some(cam_view) = self.renderer.update(
             if self.view_dirty {
                 Some(TileUpdateData {
@@ -119,7 +116,7 @@ impl Client {
                     energy: &view.bufs.energy,
                     omega: &view.bufs.omega,
                     gamma: &view.bufs.gamma,
-                    delta: &split_delta,
+                    delta: &view.bufs.delta,
                 })
             } else {
                 None

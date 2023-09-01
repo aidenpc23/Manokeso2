@@ -95,13 +95,13 @@ fn fs_main(
 fn get_bit(bits: vec2<u32>, position: u32) -> u32 {
     let mask: u32 = 1u << (position % 32u);
     if (position < 32u) {
-        if ((bits.y & mask) != 0u) {
+        if ((bits.x & mask) != 0u) {
             return 1u;
         } else {
             return 0u;
         }
     } else {
-        if ((bits.x & mask) != 0u) {
+        if ((bits.y & mask) != 0u) {
             return 1u;
         } else {
             return 0u;

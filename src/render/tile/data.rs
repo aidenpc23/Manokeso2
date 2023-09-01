@@ -24,7 +24,7 @@ pub trait TileData {
 
 #[macro_export]
 macro_rules! tile_render_data {
-    ( $sname:ident, $dname:ident, [$( $loc:expr => $name:ident : $type:ident ),* $(,)? ] ) => {
+    ( $sname:ident, $dname:ident, [$( $loc:expr => $name:ident : $type:ident : $format:ident ),* $(,)? ] ) => {
         pub struct $sname {
             len: usize,
             $(
@@ -48,7 +48,7 @@ macro_rules! tile_render_data {
                 Self {
                     len: 0,
                     $(
-                        $name: crate::render::tile::InstanceField::init(device, stringify!($name), $loc),
+                        $name: crate::render::tile::InstanceField::init(device, stringify!($name), $loc, wgpu::VertexFormat::$format),
                     )*
                 }
             }
