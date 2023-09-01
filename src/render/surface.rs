@@ -40,7 +40,7 @@ impl RenderSurface {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::empty(),
+                    features: wgpu::Features::BUFFER_BINDING_ARRAY,
                     limits: wgpu::Limits::default(),
                 },
                 None, // Trace path

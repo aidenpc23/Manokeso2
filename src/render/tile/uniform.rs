@@ -56,36 +56,6 @@ impl CameraUniform {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct BoardViewUniform {
-    pub pos: Point<f32>,
-    pub width: u32,
-    // shader has an alignment of 8, so we need to add padding
-    _padding: u32,
-}
-
-impl BoardViewUniform {
-    pub fn new(pos: Point<f32>, width: u32) -> Self {
-        Self {
-            pos,
-            width,
-            _padding: 0,
-        }
-    }
-    pub fn update(&mut self, pos: Point<f32>, width: u32) -> bool {
-        if self.pos == pos && self.width == width {
-            return false;
-        }
-        self.pos = pos;
-        self.width = width;
-        true
-    }
-    pub fn empty() -> Self {
-        Self::new(Point::zero(), 0)
-    }
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ConstsUniform {
     pub connex_number_range: [u32; 2],
     pub stability_range: [f32; 2],

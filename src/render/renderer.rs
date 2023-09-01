@@ -63,7 +63,7 @@ impl<T: TileData> Renderer<T> {
         ));
     }
 
-    pub fn update<'a>(&mut self, data: Option<T::UpdateData<'a>>, camera: &Camera, resized: bool) -> Option<CameraView> {
+    pub fn update<'a>(&mut self, data: Option<Vec<T::UpdateData<'a>>>, camera: &Camera, resized: bool) -> Option<CameraView> {
         let size = &self.window.inner_size();
         if resized {
             self.render_surface.resize(size);

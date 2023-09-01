@@ -9,7 +9,8 @@ use crate::{
     board::BoardWorker,
     common::{
         interface::interface_pair,
-        message::{WorkerCommand, WorkerResponse}, view::BoardView,
+        message::{WorkerCommand, WorkerResponse},
+        view::BoardView,
     },
 };
 
@@ -104,18 +105,21 @@ impl Client {
 
     fn render(&mut self, resized: bool) {
         self.renderer.start_encoder();
-        let mut a = BoardView::empty();
-        let view = self.worker.get(self.state.main_id).unwrap_or(&mut a);
         self.state.camera.pos = self.state.player.pos;
         if let Some(cam_view) = self.renderer.update(
             if self.view_dirty {
-                Some(TileUpdateData {
-                    slice: &view.slice,
-                    connex_numbers: &view.bufs.connex_number,
-                    stability: &view.bufs.stability,
-                    reactivity: &view.bufs.reactivity,
-                    energy: &view.bufs.energy,
-                })
+                Some(
+                    self.worker
+                        .views()
+                        .map(|view| TileUpdateData {
+                            slice: &view.slice,
+                            connex_numbers: &view.bufs.connex_number,
+                            stability: &view.bufs.stability,
+                            reactivity: &view.bufs.reactivity,
+                            energy: &view.bufs.energy,
+                        })
+                        .collect(),
+                )
             } else {
                 None
             },

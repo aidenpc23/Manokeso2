@@ -8,7 +8,7 @@ use crate::render::surface::RenderSurface;
 use super::{
     data::TileData,
     pipeline::{Buffers, TilePipeline, Uniforms},
-    CameraUniform, ConstsUniform, BoardViewUniform,
+    CameraUniform, ConstsUniform, view::BoardViews,
 };
 
 impl<T: TileData> TilePipeline<T> {
@@ -29,12 +29,7 @@ impl<T: TileData> TilePipeline<T> {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
 
-        let tile_view_uniform = BoardViewUniform::empty();
-        let tile_view_buffer = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Tile View Buffer"),
-            contents: bytemuck::cast_slice(&[tile_view_uniform]),
-            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-        });
+        let board_views = BoardViews::new(device);
 
         let consts_uniform = ConstsUniform::new();
         let consts_buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -62,7 +57,7 @@ impl<T: TileData> TilePipeline<T> {
                         visibility: wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
+                            has_dynamic_offset: true,
                             min_binding_size: None,
                         },
                         count: None,
@@ -90,7 +85,7 @@ impl<T: TileData> TilePipeline<T> {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: tile_view_buffer.as_entire_binding(),
+                    resource: board_views.binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
@@ -145,15 +140,14 @@ impl<T: TileData> TilePipeline<T> {
 
         Self {
             pipeline: render_pipeline,
-            data,
+            data: Vec::new(),
+            board_views,
             buffers: Buffers {
                 camera: camera_buffer,
-                tile_view: tile_view_buffer,
                 consts: consts_buffer,
             },
             uniforms: Uniforms {
                 camera: camera_uniform,
-                tile_view: tile_view_uniform,
                 consts: consts_uniform,
             },
             bind_group,

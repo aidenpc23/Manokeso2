@@ -2,13 +2,13 @@ use std::time::Duration;
 
 use winit::event::{MouseButton, VirtualKeyCode as Key};
 
+use crate::common::message::{WorkerCommand as Cmd, TileChange as TC};
+
 use super::{
     client::Client,
     input::Input,
     keybinds::{Action, Keybinds},
 };
-
-use crate::common::message::{TileChange::*, WorkerCommand::*};
 
 impl Client {
     pub fn handle_input(&mut self, delta: &Duration, input: &Input) {
@@ -58,7 +58,7 @@ impl Client {
                     (self.state.selected_tile, self.hovered_tile)
                 {
                     if selected.pos != hovered.pos {
-                        self.worker.send(Swap(
+                        self.worker.send(Cmd::Swap(
                             selected,
                             hovered,
                             self.state.player.creative,
@@ -73,83 +73,77 @@ impl Client {
             if input.just_pressed(Key::T) {
                 let name = "save".to_string();
                 self.worker
-                    .send(Save(name, self.state.clone()));
+                    .send(Cmd::Save(name, self.state.clone()));
             }
             if input.just_pressed(Key::G) {
                 let name = "save".to_string();
-                self.worker.send(Load(name));
+                self.worker.send(Cmd::Load(name));
             }
 
-            if input.just_pressed(Key::Y) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, ConnexNumber(1)));
+            {
+                if input.just_pressed(Key::Y) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::ConnexNumber(1)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::H) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, ConnexNumber(-1)));
+                if input.just_pressed(Key::H) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::ConnexNumber(-1)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::U) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, Stability(0.1)));
+                if input.just_pressed(Key::U) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Stability(0.1)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::J) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, Stability(-0.1)));
+                if input.just_pressed(Key::J) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Stability(-0.1)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::I) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, Reactivity(0.1)));
+                if input.just_pressed(Key::I) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Reactivity(0.1)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::K) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, Reactivity(-0.1)));
+                if input.just_pressed(Key::K) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Reactivity(-0.1)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::O) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, Energy(20.0)));
+                if input.just_pressed(Key::O) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Energy(20.0)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::L) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker
-                        .send(ChangeTile(tile, Energy(-20.0)));
+                if input.just_pressed(Key::L) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Energy(-20.0)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::P) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker.send(ChangeTile(tile, Delta(1)));
+                if input.just_pressed(Key::P) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Delta(1)));
+                    }
                 }
-            }
 
-            if input.just_pressed(Key::Semicolon) {
-                if let Some(tile) = self.hovered_tile {
-                    self.worker.send(ChangeTile(tile, Delta(-1)));
+                if input.just_pressed(Key::Semicolon) {
+                    if let Some(tile) = self.hovered_tile {
+                        self.worker.send(Cmd::ChangeTile(tile, TC::Delta(-1)));
+                    }
                 }
             }
 
             if ainput.just_pressed(Action::Step) {
-                self.worker.send(Step());
+                self.worker.send(Cmd::Step());
             }
         }
 
@@ -167,7 +161,7 @@ impl Client {
 
         if ainput.just_pressed(Action::Pause) {
             self.paused = !self.paused;
-            self.worker.send(Pause(self.paused));
+            self.worker.send(Cmd::Pause(self.paused));
         }
     }
 }
