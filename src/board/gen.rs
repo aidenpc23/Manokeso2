@@ -1,6 +1,7 @@
 use super::swap_buffer::SwapBuffer;
 use crate::util::noise::{simplex_noise, simplex_simplex_noise, NoiseNum};
 use itertools::izip;
+use noise::OpenSimplex;
 use rand::{
     distributions::{uniform::SampleUniform, Uniform},
     Rng,
@@ -20,15 +21,22 @@ impl<T: Copy> SwapBuffer<T> {
 }
 
 pub trait SwapBufferGen {
-    fn gen_map<T: NoiseNum>(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T>;
+    fn gen_map<T: NoiseNum>(
+        &mut self,
+        open_simplex: &mut OpenSimplex,
+        range: [T; 2],
+        frequency: f64,
+    ) -> SwapBuffer<T>;
     fn gen_map_cut<T: NoiseNum>(
         &mut self,
+        open_simplex: &mut OpenSimplex,
         range: [T; 2],
         cut: [f64; 2],
         frequency: f64,
     ) -> SwapBuffer<T>;
     fn gen_map_base(
         &mut self,
+        open_simplex: &mut OpenSimplex,
         cut1: [f64; 2],
         cut: [f64; 2],
         freq1: f64,
@@ -38,22 +46,32 @@ pub trait SwapBufferGen {
 }
 
 impl SwapBufferGen for (usize, usize) {
-    fn gen_map<T: NoiseNum>(&mut self, range: [T; 2], frequency: f64) -> SwapBuffer<T> {
+    fn gen_map<T: NoiseNum>(
+        &mut self,
+        open_simplex: &mut OpenSimplex,
+        range: [T; 2],
+        frequency: f64,
+    ) -> SwapBuffer<T> {
         SwapBuffer::from_arr(
-            simplex_noise(self.0, self.1, range, [0.0, 0.0], frequency),
+            simplex_noise(open_simplex, self.0, self.1, range, [0.0, 0.0], frequency),
             self.0,
         )
     }
     fn gen_map_cut<T: NoiseNum>(
         &mut self,
+        open_simplex: &mut OpenSimplex,
         range: [T; 2],
         cut: [f64; 2],
         frequency: f64,
     ) -> SwapBuffer<T> {
-        SwapBuffer::from_arr(simplex_noise(self.0, self.1, range, cut, frequency), self.0)
+        SwapBuffer::from_arr(
+            simplex_noise(open_simplex, self.0, self.1, range, cut, frequency),
+            self.0,
+        )
     }
     fn gen_map_base(
         &mut self,
+        open_simplex: &mut OpenSimplex,
         cut1: [f64; 2],
         cut2: [f64; 2],
         freq1: f64,
@@ -63,6 +81,7 @@ impl SwapBufferGen for (usize, usize) {
         SwapBuffer::from_arr(
             izip!(
                 simplex_simplex_noise(
+                    open_simplex,
                     self.0,
                     self.1,
                     [0.0, 1.0],
@@ -71,8 +90,9 @@ impl SwapBufferGen for (usize, usize) {
                     freq1,
                     freqfreq
                 ),
-                simplex_noise(self.0, self.1, [0., 0.5], cut2, freq2),
+                simplex_noise(open_simplex, self.0, self.1, [0., 0.5], cut2, freq2),
                 simplex_simplex_noise(
+                    open_simplex,
                     self.0,
                     self.1,
                     [0., 1.25],
@@ -81,8 +101,8 @@ impl SwapBufferGen for (usize, usize) {
                     0.0093,
                     0.008
                 ),
-                simplex_noise(self.0, self.1, [0., 2.5], [5.0, 0.0], 0.002),
-                simplex_noise(self.0, self.1, [0.0, 1.0], [1.0, 5.0], 0.006)
+                simplex_noise(open_simplex, self.0, self.1, [0., 2.5], [5.0, 0.0], 0.002),
+                simplex_noise(open_simplex, self.0, self.1, [0.0, 1.0], [1.0, 5.0], 0.006)
             )
             .map(|(a, b, c, d, e)| (a.max(b).max(c) * e).max(d))
             .collect(),

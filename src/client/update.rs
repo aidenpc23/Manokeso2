@@ -45,19 +45,23 @@ impl Client {
                 for i in 0..4 {
                     let mut edge = player_edges[i];
                     let tile_pos: Point<i32> = edge.floor().into();
+                    let near_board = tile_pos.x >= -1
+                        && tile_pos.y >= -1
+                        && tile_pos.x <= slice.end.x as i32
+                        && tile_pos.y <= slice.end.y as i32;
                     let board_edge = tile_pos.x == -1
                         || tile_pos.y == -1
                         || tile_pos.x == slice.end.x as i32
                         || tile_pos.y == slice.end.y as i32;
-                    let solid_tile = if board_edge {
-                        true
-                    } else {
-                        let board_pos: Point<usize> = tile_pos.into();
-                        let tile_i = (board_pos - slice.start).index(slice.width);
-                        let cn = view.bufs.connex_number[tile_i];
-                        let s = view.bufs.stability[tile_i];
-                        cn > 10 && s > 0.8
-                    };
+                    let solid_tile = near_board
+                        && (board_edge || {
+                            let board_pos: Point<usize> = tile_pos.into();
+                            let tile_i = (board_pos - slice.start).index(slice.width);
+                            let cn = view.bufs.connex_number[tile_i];
+                            let s = view.bufs.stability[tile_i];
+                            cn > 10 && s > 0.8
+                        });
+
                     if solid_tile {
                         let dir = Point::<f32>::CARDINAL_DIRECTIONS[i];
                         if dir.x < 0.0 || dir.y < 0.0 {

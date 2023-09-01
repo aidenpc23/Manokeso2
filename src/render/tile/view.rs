@@ -53,13 +53,17 @@ impl BoardViews {
         }
     }
     pub fn binding(&self) -> BindingResource<'_> {
-        self.buffer.as_entire_binding()
+        BindingResource::Buffer(wgpu::BufferBinding {
+            buffer: &self.buffer,
+            offset: 0,
+            size: NonZeroU64::new(256),
+        })
     }
     pub fn init_buf(device: &Device, size: usize) -> Buffer {
         device.create_buffer(&BufferDescriptor {
             label: Some("Board View Buffer"),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
-            size: (size * std::mem::size_of::<BoardViewUniform>()) as u64,
+            size: (size * 256) as u64,
             mapped_at_creation: false,
         })
     }

@@ -1,3 +1,4 @@
+use noise::OpenSimplex;
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
@@ -29,6 +30,7 @@ pub struct BoardSettings {
     pub pos: Point<f32>,
     pub width: usize,
     pub height: usize,
+    pub seed: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -42,18 +44,19 @@ pub struct Board {
 
 impl Board {
     pub fn new(settings: BoardSettings) -> Board {
-        let BoardSettings { pos, width, height } = settings;
+        let BoardSettings { pos, width, height, seed } = settings;
         let mut gen = (width, height);
 
-        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(1);
+        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(seed);
+        let mut open_simplex = OpenSimplex::new(seed as u32);
 
-        let stability = gen.gen_map_base([0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.06);
+        let stability = gen.gen_map_base(&mut open_simplex, [0.6, 0.2], [0.6, 0.0], 0.058, 0.015, 0.06);
         let connex_numbers = SwapBuffer::from_arr(
             stability.r.iter().map(|a| (a * 20.0) as u32).collect(),
             width,
         );
-        let reactivity = gen.gen_map(REACTIVITY_RANGE, 0.05);
-        let energy = gen.gen_map(ENERGY_RANGE, 0.01);
+        let reactivity = gen.gen_map(&mut open_simplex, REACTIVITY_RANGE, 0.05);
+        let energy = gen.gen_map(&mut open_simplex, ENERGY_RANGE, 0.01);
         let alpha = SwapBuffer::from_arr(
             vec![encode_alpha(0, 0, 0.0, 0.0, 0.0); width * height],
             width,
@@ -83,15 +86,14 @@ impl Board {
             },
             total_energy,
         };
-        board.generate_maze();
+        board.generate_maze(&mut rng);
         board
     }
 
-    pub fn generate_maze(&mut self) {
+    pub fn generate_maze(&mut self, rng: &mut ChaCha8Rng) {
         let maze_width = self.width / 7;
         let maze_height = self.height;
 
-        let mut rng = ChaCha8Rng::seed_from_u64(69);
         let x_offset = self.width / 2;
         let y_offset = rng.gen_range(0..=(self.height - maze_height));
 
@@ -138,7 +140,7 @@ impl Board {
 
             if !neighbors.is_empty() {
                 // Randomly select one of the neighbors
-                let &(nx, ny) = neighbors.choose(&mut rng).unwrap();
+                let &(nx, ny) = neighbors.choose(rng).unwrap();
 
                 visited.insert((nx, ny));
                 stack.push((cx, cy));
@@ -286,7 +288,7 @@ impl Board {
             .collect();
 
         if valid_inside_doors.len() >= 2 {
-            let doors: Vec<&usize> = valid_inside_doors.choose_multiple(&mut rng, 2).collect();
+            let doors: Vec<&usize> = valid_inside_doors.choose_multiple(rng, 2).collect();
             for &&door in doors.iter() {
                 self.bufs.stability.r[door] = 0.0;
                 set_bit(&mut self.bufs.delta.r[door], false, 0);

@@ -57,6 +57,7 @@ impl Client {
             pos: Point::new(-(width as f32) / 2.0, -(height as f32) / 2.0),
             width,
             height,
+            seed: 69,
         };
         let main_id = 0;
         worker.send(crate::common::message::WorkerCommand::CreateBoard(settings));
@@ -64,6 +65,7 @@ impl Client {
             pos: Point::new((width as f32) / 2.0, -(height as f32) / 2.0),
             width,
             height,
+            seed: 420,
         };
         worker.send(crate::common::message::WorkerCommand::CreateBoard(settings));
 

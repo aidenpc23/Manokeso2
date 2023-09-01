@@ -2,13 +2,13 @@ use std::ops::{Add, Mul, Sub};
 use noise::{NoiseFn, OpenSimplex};
 
 pub fn simplex_noise<T: NoiseNum>(
+    open_simplex: &mut OpenSimplex,
     width: usize,
     height: usize,
     range: [T; 2],
     cut: [f64; 2],
     frequency: f64,
 ) -> Vec<T> {
-    let open_simplex = OpenSimplex::new(1234567);
     let mut result = Vec::new();
 
     let mut smax: f64 = f64::MIN;
@@ -36,6 +36,7 @@ pub fn simplex_noise<T: NoiseNum>(
 }
 
 pub fn simplex_simplex_noise(
+    open_simplex: &mut OpenSimplex,
     width: usize,
     height: usize,
     range: [f32; 2],
@@ -44,8 +45,8 @@ pub fn simplex_simplex_noise(
     frequency: f64,
     freqfreq: f64,
 ) -> Vec<f32> {
-    let noise1 = simplex_noise(width, height, range, cut, frequency);
-    let noise2 = simplex_noise(width, height, range2, [0.0, 0.7], freqfreq);
+    let noise1 = simplex_noise(open_simplex, width, height, range, cut, frequency);
+    let noise2 = simplex_noise(open_simplex, width, height, range2, [0.0, 0.7], freqfreq);
 
     noise1
         .iter()
