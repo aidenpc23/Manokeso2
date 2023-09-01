@@ -40,27 +40,33 @@ impl Client {
                 let rad = player.size / 2.0;
                 let player_rel_pos = player.pos - view.board_pos;
                 let player_edges =
-                    Point::<f32>::CARDINAL_DIRECTIONS.map(|v| player_rel_pos + v * rad);
+                    Point::<f32>::CARDINAL_DIRECTIONS.map(|d| player_rel_pos + d * rad);
                 let slice = view.slice;
+                let on_board = player_edges.iter().any(|e| {
+                    e.x >= 0.0
+                        && e.y >= 0.0
+                        && e.x <= slice.end.x as f32
+                        && e.y <= slice.end.y as f32
+                });
+                if !on_board {
+                    continue;
+                }
                 for i in 0..4 {
                     let mut edge = player_edges[i];
                     let tile_pos: Point<i32> = edge.floor().into();
-                    let near_board = tile_pos.x >= -1
-                        && tile_pos.y >= -1
-                        && tile_pos.x <= slice.end.x as i32
-                        && tile_pos.y <= slice.end.y as i32;
-                    let board_edge = tile_pos.x == -1
-                        || tile_pos.y == -1
-                        || tile_pos.x == slice.end.x as i32
-                        || tile_pos.y == slice.end.y as i32;
-                    let solid_tile = near_board
-                        && (board_edge || {
+                    let solid_tile = {
+                        let board_edge = tile_pos.x == -1
+                            || tile_pos.y == -1
+                            || tile_pos.x == slice.end.x as i32
+                            || tile_pos.y == slice.end.y as i32;
+                        board_edge || {
                             let board_pos: Point<usize> = tile_pos.into();
                             let tile_i = (board_pos - slice.start).index(slice.width);
                             let cn = view.bufs.connex_number[tile_i];
                             let s = view.bufs.stability[tile_i];
                             cn > 10 && s > 0.8
-                        });
+                        }
+                    };
 
                     if solid_tile {
                         let dir = Point::<f32>::CARDINAL_DIRECTIONS[i];

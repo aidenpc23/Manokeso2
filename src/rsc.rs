@@ -18,9 +18,9 @@ pub const CHUNK_VIEW_RADIUS: i32 = 1;
 pub const MIN_CHUNK_SIZE: i32 = 32;
 
 pub const CLEAR_COLOR: wgpu::Color = wgpu::Color {
-    r: 0.1,
-    g: 0.1,
-    b: 0.1,
+    r: 0.0,
+    g: 0.0,
+    b: 0.0,
     a: 1.0,
 };
 

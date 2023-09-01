@@ -10,7 +10,6 @@ use crate::{
     common::{
         interface::interface_pair,
         message::{WorkerCommand, WorkerResponse},
-        view::BoardView,
     },
 };
 

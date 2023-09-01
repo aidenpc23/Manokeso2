@@ -44,7 +44,7 @@ pub struct BoardViews {
 
 impl BoardViews {
     pub fn new(device: &Device) -> Self {
-        let views = vec![BoardViewUniform::empty(), BoardViewUniform::empty()];
+        let views = vec![BoardViewUniform::empty(); 1024];
         let len = views.len();
         Self {
             views,
