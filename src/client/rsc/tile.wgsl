@@ -13,7 +13,7 @@ struct InstanceInput {
     @location(3) energy: f32,
     @location(4) omega: f32,
     @location(5) gamma: f32,
-    @location(6) special: u32,
+    @location(6) delta: vec2<u32>,
 };
 
 struct CameraUniform {
@@ -41,7 +41,7 @@ fn vs_main(
     var out: VertexOutput;
     out.i = i;
 
-    var pos = vec2<f32>(f32(vi % u32(2)), f32(vi / u32(2)));
+    var pos = vec2<f32>(f32(vi % 2u), f32(vi / 2u));
     pos -= camera.pos;
     pos.x += f32(i % tile_view.width);
     pos.y += f32(i / tile_view.width);
@@ -56,19 +56,20 @@ fn vs_main(
     var g = smoothstep(1.0, 30.0, in.gamma) * (1.0 - smoothstep(30.0, 250.0, in.gamma));
     var g2 = smoothstep(30.0, 250.0, in.gamma) * (1.0 - smoothstep(250.0, 500.0, in.gamma));
     var g3 = smoothstep(250.0, 500.0, in.gamma);
+    var delta_forge = f32(get_bit(in.delta, 63u));
 
     var stable = 1.0;
-    if s > 0.80 && in.connex_number >= u32(10) {
+    if s > 0.80 && in.connex_number >= 10u {
         stable = 0.2;
     }
     var con0 = 1.0;
-    if in.connex_number == u32(0) {
+    if in.connex_number == 0u {
         con0 = 0.7;
     }
     var hsv = vec3<f32>(
-        ((f32(in.connex_number) * 0.027 + (0.236)) % 1.0) * (1.0 - f32(in.special)) + f32(in.special) * 60.0/360.0,
-        ((0.6 + max(0.4 * e, 0.4 * g)) * con0) * (1.0 - f32(in.special)) + f32(in.special),
-        ((0.1 * (1.0 - s) + 0.8 * e + 0.1) * stable * con0) * (1.0 - f32(in.special)) + f32(in.special)
+        ((f32(in.connex_number) * 0.027 + (0.236)) % 1.0) * (1.0 - delta_forge) + delta_forge * 60.0/360.0,
+        ((0.6 + max(0.4 * e, 0.4 * g)) * con0) * (1.0 - delta_forge) + delta_forge,
+        ((0.1 * (1.0 - s) + 0.8 * e + 0.1) * stable * con0) * (1.0 - delta_forge) + delta_forge
         );
     
     out.rgb = hsv_to_rgb(hsv);
@@ -82,30 +83,6 @@ fn vs_main(
     return out;
 }
 
-// @vertex
-// fn vs_main(
-//     @builtin(vertex_index) vi: u32,
-//     @builtin(instance_index) i: u32,
-//     in: InstanceInput,
-// ) -> VertexOutput {
-//     var out: VertexOutput;
-//     out.i = i;
-
-//     var pos = vec2<f32>(f32(vi % u32(2)), f32(vi / u32(2)));
-//     pos -= camera.pos;
-//     pos.x += f32(i % tile_view.width);
-//     pos.y += f32(i / tile_view.width);
-//     pos += tile_view.pos;
-//     pos *= camera.proj;
-//     out.clip_position = vec4<f32>(pos.x, pos.y, 0.0, 1.0);
-
-//     var r = (min(max(in.reactivity, -1.0), 1.0) + 1.0) / 2.0;
-//     var s = (min(max(in.stability, -1.0), 1.0) + 1.0) / 2.0;
-//     out.rgb = vec3<f32>(r, s, 0.0);
-
-//     return out;
-// }
-
 // Fragment shader
 
 @fragment
@@ -114,6 +91,24 @@ fn fs_main(
 ) -> @location(0) vec4<f32> {
     return vec4<f32>(in.rgb, 1.0);
 }
+
+fn get_bit(bits: vec2<u32>, position: u32) -> u32 {
+    let mask: u32 = 1u << (position % 32u);
+    if (position < 32u) {
+        if ((bits.y & mask) != 0u) {
+            return 1u;
+        } else {
+            return 0u;
+        }
+    } else {
+        if ((bits.x & mask) != 0u) {
+            return 1u;
+        } else {
+            return 0u;
+        }
+    }
+}
+
 
 fn rgb_to_hsv(color: vec3<f32>) -> vec3<f32> {
     let R = color.x;

@@ -35,6 +35,7 @@ impl Board {
         self.update_alpha_beta();
         self.update_gamma_delta();
         self.apply_alpha_beta_delta();
+        self.delta_forge();
         self.apply_bounds();
     }
 
@@ -686,6 +687,34 @@ impl Board {
 
         r.swap();
         e.swap();
+    }
+
+    fn delta_forge(&mut self) {
+        let d = &mut self.bufs.delta;
+        let c = &mut self.bufs.connex_numbers;
+        let r = &mut self.bufs.reactivity;
+        let s = &mut self.bufs.stability;
+
+        (&mut d.w, &mut c.w, &mut r.w, &mut s.w)
+            .into_par_iter()
+            .enumerate()
+            .for_each(|(i, (dn, cn, rn, sn))| {
+                let ci = c.r[i];
+                let si = s.r[i];
+                let ri = r.r[i];
+                let di = d.r[i];
+                let x = i % self.width;
+                let y = i / self.width;
+
+                if y > 1 {
+                    let tile_below = (y-1) * self.width + x;
+                }
+            });
+
+        d.swap();
+        c.swap();
+        r.swap();
+        s.swap();
     }
 
     fn apply_bounds(&mut self) {

@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Instant, SystemTime};
 
 use itertools::Itertools;
 use winit::{
@@ -106,12 +106,8 @@ impl Client {
         self.renderer.start_encoder();
         let view = &mut self.worker.view;
         self.state.camera.pos = self.state.player.pos;
-        let special = view.bufs.delta.iter().map(|&d|
-            if get_bit(d, 63) {
-                1
-            } else {
-                0
-            }
+        let split_delta = view.bufs.delta.iter().map(
+            |&d| [(d >> 32) as u32, (d & 0xFFFF) as u32]
         ).collect_vec();
         if let Some(cam_view) = self.renderer.update(
             if self.view_dirty {
@@ -123,7 +119,7 @@ impl Client {
                     energy: &view.bufs.energy,
                     omega: &view.bufs.omega,
                     gamma: &view.bufs.gamma,
-                    special: &special,
+                    delta: &split_delta,
                 })
             } else {
                 None

@@ -15,6 +15,8 @@ use crate::{
 use std::time::{Duration, Instant};
 use winit::event_loop::EventLoop;
 
+type DeltaType = [u32; 2];
+
 tile_render_data!(TileRenderData, TileUpdateData, [
     0 => connex_numbers:u32,
     1 => stability:f32,
@@ -22,7 +24,7 @@ tile_render_data!(TileRenderData, TileUpdateData, [
     3 => energy:f32,
     4 => omega:f32,
     5 => gamma:f32,
-    6 => special:u32,
+    6 => delta:DeltaType,
 ]);
 
 pub const TILE_SHADER: &str = include_str!("./rsc/tile.wgsl");

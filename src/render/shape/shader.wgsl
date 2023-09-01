@@ -44,19 +44,19 @@ fn vs_main(
     let size = bottom_right - top_left;
 
     var pos = top_left + vec2<f32>(
-        f32(vi % u32(2)),
-        f32(vi / u32(2))
+        f32(vi % 2u),
+        f32(vi / 2u)
     ) * size;
     pos = pos / window.dim * 2.0 - 1.0;
     out.clip_position = vec4<f32>(pos.x, -pos.y, 0.0, 1.0);
 
-    if vi == u32(0) {
+    if vi == 0u {
         out.color = in.top_left_color;
-    } else if vi == u32(1) {
+    } else if vi == 1u {
         out.color = in.top_right_color;
-    } else if vi == u32(2) {
+    } else if vi == 2u {
         out.color = in.bottom_left_color;
-    } else if vi == u32(3) {
+    } else if vi == 3u {
         out.color = in.bottom_right_color;
     }
 

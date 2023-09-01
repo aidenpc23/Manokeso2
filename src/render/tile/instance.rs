@@ -100,3 +100,11 @@ impl InstanceFieldType for u32 {
         VertexFormat::Uint32
     }
 }
+
+
+impl InstanceFieldType for [u32; 2] {
+    type RustType = [u32; 2];
+    fn format() -> VertexFormat {
+        VertexFormat::Uint32x2
+    }
+}
