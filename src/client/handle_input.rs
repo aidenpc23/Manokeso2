@@ -24,7 +24,7 @@ impl Client {
         if input.scroll_delta != 0.0 {
             state.camera_scroll += input.scroll_delta;
             if !state.player.creative {
-                state.camera_scroll = state.camera_scroll.clamp(0.0, 30.0);
+                state.camera_scroll = state.camera_scroll.clamp(2.0, 30.0);
             }
             state.camera.scale = (state.camera_scroll * 0.1).exp();
         }
@@ -66,6 +66,20 @@ impl Client {
                         state.selected_tile = None;
                     }
                 }
+            }
+        }
+
+        if input.just_pressed(Key::F) {
+            self.renderer.window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+        }
+        if !state.player.creative {
+            if input.just_pressed(Key::T) {
+                let name = "save".to_string();
+                self.worker.send(WorkerCommand::Save(name, state.clone()));
+            }
+            if input.just_pressed(Key::G) {
+                let name = "save".to_string();
+                self.worker.send(WorkerCommand::Load(name));
             }
         }
 

@@ -17,7 +17,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            fullscreen: None,
+            fullscreen: Some(true),
             keybinds: None,
         }
     }

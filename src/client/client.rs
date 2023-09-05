@@ -114,7 +114,7 @@ impl DebugState {
             period: Duration::from_secs_f32(0.5),
             client_update_time: 0.0,
             board_update_time: 0.0,
-            show: true,
+            show: false,
         }
     }
 }
