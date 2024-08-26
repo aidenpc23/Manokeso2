@@ -1,9 +1,11 @@
-use super::{input::Input, Client, TileInfo};
+use super::{Client, TileInfo};
 use crate::util::point::Point;
 use std::time::Instant;
 
-impl Client {
-    pub fn update(&mut self, input: &Input, now: Instant) {
+impl Client<'_> {
+    pub fn update_world(&mut self, now: Instant) {
+        let input = &self.input;
+
         let view = &mut self.worker.view;
 
         let ddelta = now - self.debug.last_update;

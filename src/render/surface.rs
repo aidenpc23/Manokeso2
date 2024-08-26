@@ -1,16 +1,18 @@
+use std::sync::Arc;
+
 use wgpu::{Adapter, Backends, Device, Queue, Surface, SurfaceConfiguration};
 use winit::{dpi::PhysicalSize, window::Window};
 
-pub struct RenderSurface {
-    pub surface: Surface,
+pub struct RenderSurface<'a> {
+    pub surface: Surface<'a>,
     pub device: Device,
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pub adapter: Adapter,
 }
 
-impl RenderSurface {
-    pub async fn new(window: &Window) -> RenderSurface {
+impl RenderSurface<'_> {
+    pub async fn new<'a>(window: Arc<Window>) -> RenderSurface<'a> {
         let size = window.inner_size();
 
         // ==============================================
@@ -21,11 +23,9 @@ impl RenderSurface {
             ..Default::default()
         });
 
-        let surface = unsafe {
-            instance
-                .create_surface(&window)
-                .expect("Could not create window surface!")
-        };
+        let surface = instance
+            .create_surface(window)
+            .expect("Could not create window surface!");
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -40,8 +40,8 @@ impl RenderSurface {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::empty(),
-                    limits: wgpu::Limits::default(),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::default(),
                 },
                 None, // Trace path
             )
@@ -69,6 +69,7 @@ impl RenderSurface {
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
+            desired_maximum_frame_latency: 2,
         };
 
         surface.configure(&device, &config);

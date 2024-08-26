@@ -29,7 +29,7 @@ impl Default for Player {
             ],
             speed: DEFAULT_PLAYER_SPEED,
             creative: false,
-            admin: false,
+            admin: true,
         }
     }
 }

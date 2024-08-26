@@ -1,14 +1,18 @@
 use std::collections::HashSet;
 
-use winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode, WindowEvent, MouseButton};
+use winit::{
+    event::{DeviceEvent, ElementState, MouseButton, MouseScrollDelta, WindowEvent},
+    keyboard::{KeyCode, PhysicalKey},
+};
 
 use crate::util::point::Point;
 
 pub struct Input {
     pub mouse_pixel_pos: Point<f32>,
+    pub mouse_delta: Point<f32>,
 
-    pressed: HashSet<VirtualKeyCode>,
-    just_pressed: HashSet<VirtualKeyCode>,
+    pressed: HashSet<KeyCode>,
+    just_pressed: HashSet<KeyCode>,
 
     mouse_pressed: HashSet<MouseButton>,
     mouse_just_pressed: HashSet<MouseButton>,
@@ -21,6 +25,7 @@ impl Input {
     pub fn new() -> Self {
         Self {
             mouse_pixel_pos: Point::zero(),
+            mouse_delta: Point::zero(),
             pressed: HashSet::new(),
             just_pressed: HashSet::new(),
             mouse_pressed: HashSet::new(),
@@ -29,44 +34,62 @@ impl Input {
             scroll_delta: 0.,
         }
     }
-    pub fn update(&mut self, event: WindowEvent) {
+
+    pub fn update_window(&mut self, event: WindowEvent) {
         match event {
-            WindowEvent::KeyboardInput { input, .. } => {
-                if let Some(code) = input.virtual_keycode {
-                    match input.state {
-                        ElementState::Pressed => {
-                            self.just_pressed.insert(code);
-                            self.pressed.insert(code);
-                        }
-                        ElementState::Released => {
-                            self.pressed.remove(&code);
-                        }
-                    };
-                }
+            WindowEvent::KeyboardInput { event, .. } => {
+                let code = if let PhysicalKey::Code(code) = event.physical_key {
+                    code
+                } else {
+                    return;
+                };
+                match event.state {
+                    ElementState::Pressed => {
+                        self.just_pressed.insert(code);
+                        self.pressed.insert(code);
+                    }
+                    ElementState::Released => {
+                        self.pressed.remove(&code);
+                    }
+                };
             }
+            WindowEvent::CursorLeft { .. } => {
+                self.pressed.clear();
+                self.mouse_pressed.clear();
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.mouse_pixel_pos = Point::new(position.x as f32, position.y as f32);
+            }
+            WindowEvent::MouseInput { button, state, .. } => match state {
+                ElementState::Pressed => {
+                    self.mouse_just_pressed.insert(button);
+                    self.mouse_pressed.insert(button);
+                }
+                ElementState::Released => {
+                    self.mouse_pressed.remove(&button);
+                    self.mouse_just_released.insert(button);
+                }
+            },
             WindowEvent::MouseWheel { delta, .. } => {
                 self.scroll_delta = match delta {
                     MouseScrollDelta::LineDelta(_, v) => v,
                     MouseScrollDelta::PixelDelta(v) => (v.y / 2.0) as f32,
                 };
             }
-            WindowEvent::CursorLeft { .. } => {
-                self.pressed.clear();
+            _ => (),
+        }
+    }
+
+    pub fn update_device(&mut self, event: DeviceEvent) {
+        match event {
+            DeviceEvent::MouseWheel { delta } => {
+                self.scroll_delta = match delta {
+                    MouseScrollDelta::LineDelta(_, v) => v,
+                    MouseScrollDelta::PixelDelta(v) => (v.y / 2.0) as f32,
+                };
             }
-            WindowEvent::CursorMoved { position, .. } => {
-                self.mouse_pixel_pos = Point::new(position.x as f32, position.y as f32);
-            }
-            WindowEvent::MouseInput { button, state, .. } => {
-                match state {
-                    ElementState::Pressed => {
-                        self.mouse_just_pressed.insert(button);
-                        self.mouse_pressed.insert(button);
-                    }
-                    ElementState::Released => {
-                        self.mouse_pressed.remove(&button);
-                        self.mouse_just_released.insert(button);
-                    }
-                }
+            DeviceEvent::MouseMotion { delta } => {
+                self.mouse_delta += Point::new(delta.0 as f32, delta.1 as f32);
             }
             _ => (),
         }
@@ -79,11 +102,19 @@ impl Input {
         self.mouse_just_released.clear();
     }
 
-    pub fn pressed(&self, key: VirtualKeyCode) -> bool {
+    pub fn clear(&mut self) {
+        self.pressed.clear();
+        self.mouse_pressed.clear();
+        self.end();
+    }
+
+    #[allow(dead_code)]
+    pub fn pressed(&self, key: KeyCode) -> bool {
         self.pressed.contains(&key)
     }
 
-    pub fn just_pressed(&self, key: VirtualKeyCode) -> bool {
+    #[allow(dead_code)]
+    pub fn just_pressed(&self, key: KeyCode) -> bool {
         self.just_pressed.contains(&key)
     }
 
@@ -92,6 +123,7 @@ impl Input {
         self.mouse_pressed.contains(&button)
     }
 
+    #[allow(dead_code)]
     pub fn mouse_just_pressed(&self, button: MouseButton) -> bool {
         self.mouse_just_pressed.contains(&button)
     }

@@ -29,8 +29,8 @@ impl TextPipeline {
 
         let font_system = FontSystem::new();
         let cache = SwashCache::new();
-        let mut atlas = TextAtlas::new(&device, &queue, config.format);
-        let renderer = TextRenderer::new(&mut atlas, &device, MultisampleState::default(), None);
+        let mut atlas = TextAtlas::new(device, queue, config.format);
+        let renderer = TextRenderer::new(&mut atlas, device, MultisampleState::default(), None);
 
         Self {
             font_system,
@@ -68,7 +68,7 @@ impl TextPipeline {
         }
         let color = Color::rgb(255, 255, 255);
         let areas = buffers.iter().zip(text).map(|(buffer, text)| {
-            let width = measure(&buffer).0;
+            let width = measure(buffer).0;
             let mut left = text.pos.x
                 - match text.align {
                     Align::Left => 0.0,
@@ -86,7 +86,7 @@ impl TextPipeline {
                 left = x_bounds.0;
             }
             TextArea {
-                buffer: &buffer,
+                buffer,
                 left,
                 top: text.pos.y,
                 scale: 1.0,

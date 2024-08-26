@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use winit::event::{MouseButton, VirtualKeyCode as Key};
+use winit::{event::MouseButton, keyboard::KeyCode as Key};
 
 use super::{
     client::Client,
@@ -10,8 +10,10 @@ use super::{
 
 use crate::common::message::{TileChange::*, WorkerCommand};
 
-impl Client {
-    pub fn handle_input(&mut self, delta: &Duration, input: &Input) {
+impl Client<'_> {
+    pub fn handle_input(&mut self, delta: &Duration) {
+        let input = &self.input;
+
         let ainput = (input, &self.keybinds);
         if ainput.pressed(Action::Exit) {
             self.exit = true;
@@ -69,87 +71,87 @@ impl Client {
             }
         }
 
-        if input.just_pressed(Key::F) {
+        if input.just_pressed(Key::KeyF) {
             self.renderer.window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
         }
         if !state.player.creative {
-            if input.just_pressed(Key::T) {
+            if input.just_pressed(Key::KeyT) {
                 let name = "save".to_string();
                 self.worker.send(WorkerCommand::Save(name, state.clone()));
             }
-            if input.just_pressed(Key::G) {
+            if input.just_pressed(Key::KeyG) {
                 let name = "save".to_string();
                 self.worker.send(WorkerCommand::Load(name));
             }
         }
 
         if state.player.creative {
-            if input.just_pressed(Key::T) {
+            if input.just_pressed(Key::KeyT) {
                 let name = "save".to_string();
                 self.worker.send(WorkerCommand::Save(name, state.clone()));
             }
-            if input.just_pressed(Key::G) {
+            if input.just_pressed(Key::KeyG) {
                 let name = "save".to_string();
                 self.worker.send(WorkerCommand::Load(name));
             }
 
-            if input.just_pressed(Key::Y) {
+            if input.just_pressed(Key::KeyY) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, ConnexNumber(1)));
                 }
             }
 
-            if input.just_pressed(Key::H) {
+            if input.just_pressed(Key::KeyH) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, ConnexNumber(-1)));
                 }
             }
 
-            if input.just_pressed(Key::U) {
+            if input.just_pressed(Key::KeyU) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Stability(0.1)));
                 }
             }
 
-            if input.just_pressed(Key::J) {
+            if input.just_pressed(Key::KeyJ) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Stability(-0.1)));
                 }
             }
 
-            if input.just_pressed(Key::I) {
+            if input.just_pressed(Key::KeyI) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Reactivity(0.1)));
                 }
             }
 
-            if input.just_pressed(Key::K) {
+            if input.just_pressed(Key::KeyK) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Reactivity(-0.1)));
                 }
             }
 
-            if input.just_pressed(Key::O) {
+            if input.just_pressed(Key::KeyO) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Energy(20.0)));
                 }
             }
 
-            if input.just_pressed(Key::L) {
+            if input.just_pressed(Key::KeyL) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Energy(-20.0)));
                 }
             }
 
-            if input.just_pressed(Key::P) {
+            if input.just_pressed(Key::KeyP) {
                 if let Some(tile) = self.hovered_tile {
                     self.worker
                         .send(WorkerCommand::ChangeTile(tile.pos, Delta(1)));
@@ -169,7 +171,7 @@ impl Client {
         }
 
         if state.player.admin {
-            if input.just_pressed(Key::B) {
+            if input.just_pressed(Key::KeyB) {
                 state.player.creative = !state.player.creative;
                 if !state.player.creative {
                     state.camera_scroll = state.camera_scroll.clamp(0.0, 30.0);

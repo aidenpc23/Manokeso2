@@ -1,10 +1,10 @@
-use crate::{
-    client::Camera, common::message::CameraView, rsc::CLEAR_COLOR, util::point::Point,
-};
+use std::sync::Arc;
+
+use crate::{client::Camera, common::message::CameraView, rsc::CLEAR_COLOR, util::point::Point};
 use wgpu::{util::StagingBelt, CommandEncoder};
 use winit::{
-    event_loop::EventLoop,
-    window::{Fullscreen, Window, WindowBuilder},
+    event_loop::{ActiveEventLoop},
+    window::{Fullscreen, Window, WindowAttributes},
 };
 
 use super::{
@@ -16,10 +16,10 @@ use super::{
     tile::{data::TileData, pipeline::TilePipeline},
 };
 
-pub struct Renderer<T: TileData> {
-    pub window: Window,
-    pub render_surface: RenderSurface,
-    encoder: Option<CommandEncoder>,
+pub struct Renderer<'a, T: TileData> {
+    pub window: Arc<Window>,
+    pub render_surface: RenderSurface<'a>,
+    encoder: CommandEncoder,
     tile_pipeline: TilePipeline<T>,
     shape_pipeline: ShapePipeline,
     texture_pipeline: TexturePipeline,
@@ -27,25 +27,24 @@ pub struct Renderer<T: TileData> {
     staging_belt: StagingBelt,
 }
 
-impl<T: TileData> Renderer<T> {
-    pub async fn new(event_loop: &EventLoop<()>, tile_shader: &str, fullscreen: bool) -> Self {
-        let window = WindowBuilder::new()
-            .with_visible(false)
-            .build(&event_loop)
-            .unwrap();
+impl<'a, T: TileData> Renderer<'a, T> {
+    pub fn new(event_loop: &ActiveEventLoop, tile_shader: &str, fullscreen: bool) -> Self {
+        let window = Arc::new(event_loop
+            .create_window(WindowAttributes::default().with_visible(false))
+            .unwrap());
 
         if fullscreen {
             window.set_fullscreen(Some(Fullscreen::Borderless(None)))
         }
 
-        let render_surface = RenderSurface::new(&window).await;
+        let render_surface = pollster::block_on(RenderSurface::new(window.clone()));
         // not exactly sure what this number should be,
         // doesn't affect performance much and depends on "normal" zoom
         let staging_belt = StagingBelt::new(4096 * 4);
 
         Self {
             window,
-            encoder: None,
+            encoder: Self::create_encoder(&render_surface.device),
             tile_pipeline: TilePipeline::new(&render_surface, tile_shader),
             shape_pipeline: ShapePipeline::new(&render_surface),
             text_pipeline: TextPipeline::new(&render_surface),
@@ -55,30 +54,31 @@ impl<T: TileData> Renderer<T> {
         }
     }
 
-    pub fn start_encoder(&mut self) {
-        self.encoder = Some(self.render_surface.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            },
-        ));
+    fn create_encoder(device: &wgpu::Device) -> wgpu::CommandEncoder {
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        })
     }
 
-    pub fn update<'a>(&mut self, data: Option<T::UpdateData<'a>>, camera: &Camera, resized: bool) -> Option<CameraView> {
+    pub fn update(
+        &mut self,
+        data: Option<T::UpdateData<'_>>,
+        camera: &Camera,
+        resized: bool,
+    ) -> Option<CameraView> {
         let size = &self.window.inner_size();
         if resized {
             self.render_surface.resize(size);
         }
 
-        let mut encoder = self.encoder.take().expect("encoder not started");
         let camera_view = self.tile_pipeline.update(
             &self.render_surface.device,
-            &mut encoder,
+            &mut self.encoder,
             &mut self.staging_belt,
             data,
             camera,
             size,
         );
-        self.encoder = Some(encoder);
 
         camera_view
     }
@@ -94,7 +94,7 @@ impl<T: TileData> Renderer<T> {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self.encoder.take().expect("encoder not started");
+        let mut encoder = std::mem::replace(&mut self.encoder, Self::create_encoder(&self.render_surface.device));
         {
             let render_pass = &mut encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -103,10 +103,12 @@ impl<T: TileData> Renderer<T> {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(CLEAR_COLOR),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
             self.tile_pipeline.draw(render_pass);
             self.shape_pipeline.draw(render_pass);

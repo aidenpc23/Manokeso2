@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
-use winit::event::VirtualKeyCode as Key;
+use winit::keyboard::KeyCode;
 
 use crate::rsc::GAME_NAME;
 
@@ -11,7 +11,7 @@ use super::keybinds::Action;
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     pub fullscreen: Option<bool>,
-    pub keybinds: Option<HashMap<Action, Key>>,
+    pub keybinds: Option<HashMap<Action, KeyCode>>,
 }
 
 impl Default for Config {

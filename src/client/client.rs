@@ -1,6 +1,7 @@
 use super::{
     camera::Camera,
     config::Config,
+    input::Input,
     keybinds::{default_keybinds, Keybinds},
     player::Player,
     ui::{layout, ui::GameUI},
@@ -10,10 +11,10 @@ use crate::{
     render::Renderer,
     rsc::{FPS, FRAME_TIME},
     tile_render_data,
-    util::{timer::Timer, point::Point},
+    util::{point::Point, timer::Timer},
 };
 use std::time::{Duration, Instant};
-use winit::event_loop::EventLoop;
+use winit::event_loop::ActiveEventLoop;
 
 tile_render_data!(TileRenderData, TileUpdateData, [
     0 => connex_numbers:u32:Uint32,
@@ -27,9 +28,9 @@ tile_render_data!(TileRenderData, TileUpdateData, [
 
 pub const TILE_SHADER: &str = include_str!("./rsc/tile.wgsl");
 
-pub struct Client {
+pub struct Client<'a> {
     pub state: ClientState,
-    pub renderer: Renderer<TileRenderData>,
+    pub renderer: Renderer<'a, TileRenderData>,
     pub ui: GameUI,
     pub keybinds: Keybinds,
     pub frame_time: Duration,
@@ -40,10 +41,14 @@ pub struct Client {
     pub debug: DebugState,
     pub view_dirty: bool,
     pub exit: bool,
+    pub input: Input,
+    pub target: Instant,
+    pub last_update: Instant,
+    pub resized: bool,
 }
 
-impl Client {
-    pub async fn new(config: Config, event_loop: &EventLoop<()>, worker: WorkerInterface) -> Self {
+impl Client<'_> {
+    pub fn new(config: Config, event_loop: &ActiveEventLoop, worker: WorkerInterface) -> Self {
         let mut keybinds = default_keybinds();
         if let Some(config_keybinds) = config.keybinds {
             keybinds.extend(config_keybinds);
@@ -51,7 +56,7 @@ impl Client {
         let fullscreen = config.fullscreen.unwrap_or(false);
         Self {
             state: ClientState::new(),
-            renderer: Renderer::new(event_loop, TILE_SHADER, fullscreen).await,
+            renderer: Renderer::new(event_loop, TILE_SHADER, fullscreen),
             keybinds,
             frame_time: FRAME_TIME,
             hovered_tile: None,
@@ -62,6 +67,10 @@ impl Client {
             debug: DebugState::new(),
             view_dirty: false,
             exit: false,
+            input: Input::new(),
+            last_update: Instant::now(),
+            target: Instant::now(),
+            resized: false,
         }
     }
 }
