@@ -30,7 +30,7 @@ pub struct Renderer<'a, T: TileData> {
 impl<'a, T: TileData> Renderer<'a, T> {
     pub fn new(event_loop: &ActiveEventLoop, tile_shader: &str, fullscreen: bool) -> Self {
         let window = Arc::new(event_loop
-            .create_window(WindowAttributes::default().with_visible(false))
+            .create_window(WindowAttributes::default()/*.with_visible(false)*/)
             .unwrap());
 
         if fullscreen {
