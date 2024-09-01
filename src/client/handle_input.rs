@@ -72,7 +72,13 @@ impl Client<'_> {
         }
 
         if input.just_pressed(Key::KeyF) {
-            self.renderer.window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+            if let None = self.renderer.window.fullscreen() {
+                self.renderer
+                    .window
+                    .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+            } else {
+                self.renderer.window.set_fullscreen(None);
+            }
         }
         if !state.player.creative {
             if input.just_pressed(Key::KeyT) {
